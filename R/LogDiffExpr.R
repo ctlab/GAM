@@ -94,52 +94,53 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
     return(res)
 }
 
-library(optparse)
-
-option_list <- list(
-    #    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
-    #                help="Print extra output [default]"),
-    #    make_option(c("-q", "--quietly"), action="store_false",
-    #                dest="verbose", help="Print little output"),
-    make_option(c("-e", "--expressions"),
-                dest="expressions_file",
-                help="File to read expressions from",
-                metavar="csv file"),
-    make_option(c("-c", "--conditions"),
-                dest="conditions_file",
-                help="File to read conditions from",
-                metavar="csv file"),
-    make_option(c("--deseq"),
-                dest="deseq",
-                action="store_true",
-                default=FALSE,
-                help="Use DESeq for differential expression (with non-normalized data)"),
-    make_option(c("--log2"),
-                dest="log2",
-                action="store_true",
-                default=FALSE,
-                help="Use log2 normalization"),
-    make_option(c("--quantile"),
-                dest="quantile",
-                action="store_true",
-                default=FALSE,
-                help="Use quantile normalization"),
-    make_option(c("-s1", "--state-1"),
-                dest="state1",
-                help="First state for differential expression",
-                metavar="state"),
-    make_option(c("-s2", "--state-2"),
-                dest="state2",
-                help="Second state for differential expression",
-                metavar="state"),
-    make_option(c("-o", "--output-file"),
-                dest="output_file",
-                help="Output file",
-                metavar="file")
-)
 
 
 main <-function() {
+    library(optparse)
+    
+    option_list <- list(
+        #    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
+        #                help="Print extra output [default]"),
+        #    make_option(c("-q", "--quietly"), action="store_false",
+        #                dest="verbose", help="Print little output"),
+        make_option(c("-e", "--expressions"),
+                    dest="expressions_file",
+                    help="File to read expressions from",
+                    metavar="csv file"),
+        make_option(c("-c", "--conditions"),
+                    dest="conditions_file",
+                    help="File to read conditions from",
+                    metavar="csv file"),
+        make_option(c("--deseq"),
+                    dest="deseq",
+                    action="store_true",
+                    default=FALSE,
+                    help="Use DESeq for differential expression (with non-normalized data)"),
+        make_option(c("--log2"),
+                    dest="log2",
+                    action="store_true",
+                    default=FALSE,
+                    help="Use log2 normalization"),
+        make_option(c("--quantile"),
+                    dest="quantile",
+                    action="store_true",
+                    default=FALSE,
+                    help="Use quantile normalization"),
+        make_option(c("-s1", "--state-1"),
+                    dest="state1",
+                    help="First state for differential expression",
+                    metavar="state"),
+        make_option(c("-s2", "--state-2"),
+                    dest="state2",
+                    help="Second state for differential expression",
+                    metavar="state"),
+        make_option(c("-o", "--output-file"),
+                    dest="output_file",
+                    help="Output file",
+                    metavar="file")
+    )
+    
     opt <- newEmptyObject()
     opt$expressions_file <- "./data_new_good/Gene.exp.tsv"
     opt$conditions_file <- "./data_new_good/Gene.conditions.csv"
@@ -168,4 +169,3 @@ main <-function() {
     write.table(to_write, file=opt$output_file, sep="\t", row.names=F, quote=F)
     
 }
-main()

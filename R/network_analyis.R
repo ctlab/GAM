@@ -99,53 +99,56 @@ find_module <- function(data.pval, network, fdr, nModules=1, heinz.py=NULL) {
     return(res)
 }
 
-library(optparse)
-option_list <- list(
-    #    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
-    #                help="Print extra output [default]"),
-    #    make_option(c("-q", "--quietly"), action="store_false",
-    #                dest="verbose", help="Print little output"),
-    make_option(c("-i", "--pvals"),
-                dest="pvals_file",
-                help="File to read p-values from",
-                metavar="file"),
-    make_option(c("-n", "--network"),
-                dest="network_file",
-                help="File to read p-values from",
-                metavar="file"),
-    make_option(c("-o", "--output"),
-                dest="output_file",
-                help="Output file prefix to write network to",
-                metavar="file"),
-    make_option(c("--heinz"),
-                dest="heinz.py",
-                help="Path to file heinz.py",
-                metavar="file"),
-    make_option(c("--fdr"),
-                dest="fdr",
-                help="False discovery rate to coontrol component size",
-                metavar="number")
-)
-
-opt <- newEmptyObject()
-opt$network_file <- "./networks//mouse1415/mouse1415.nogene.masked.squared.nocomp.noex.hmdb.esc"
-opt$pvals_file <- "./data_new_MandLPSandIFNg-MandIL4/combined.pval"
-
-opt <- parse_args(OptionParser(option_list=option_list))
 
 
-
-data.pval<-read.table(file=opt$pvals_file,head=TRUE,sep="\t")
-network <- loadNetwork.sif(
-    paste(opt$network_file, "sif", sep="."),
-    list.files(dirname(opt$network_file), paste(basename(opt$network_file), "_\\w+.NA", sep=""), full.names=T)
+network_analysis.main <-function() {
+    library(optparse)
+    option_list <- list(
+        #    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
+        #                help="Print extra output [default]"),
+        #    make_option(c("-q", "--quietly"), action="store_false",
+        #                dest="verbose", help="Print little output"),
+        make_option(c("-i", "--pvals"),
+                    dest="pvals_file",
+                    help="File to read p-values from",
+                    metavar="file"),
+        make_option(c("-n", "--network"),
+                    dest="network_file",
+                    help="File to read p-values from",
+                    metavar="file"),
+        make_option(c("-o", "--output"),
+                    dest="output_file",
+                    help="Output file prefix to write network to",
+                    metavar="file"),
+        make_option(c("--heinz"),
+                    dest="heinz.py",
+                    help="Path to file heinz.py",
+                    metavar="file"),
+        make_option(c("--fdr"),
+                    dest="fdr",
+                    help="False discovery rate to coontrol component size",
+                    metavar="number")
     )
-
-
-
-modules <- find_module(data.pval=data.pval, network=network, nModules=2, fdr=as.numeric(opt$fdr), heinz.py=opt$heinz.py)
-
-for (i in 1:length(modules)) {
-    module <- modules[[i]]
-    save_module(module, paste(opt$output_file, opt$fdr, paste("#", i, sep=""), sep="."))
+    opt <- newEmptyObject()
+    opt$network_file <- "./networks//mouse1415/mouse1415.nogene.masked.squared.nocomp.noex.hmdb.esc"
+    opt$pvals_file <- "./data_new_MandLPSandIFNg-MandIL4/combined.pval"
+    
+    opt <- parse_args(OptionParser(option_list=option_list))
+    
+    
+    
+    data.pval<-read.table(file=opt$pvals_file,head=TRUE,sep="\t")
+    network <- loadNetwork.sif(
+        paste(opt$network_file, "sif", sep="."),
+        list.files(dirname(opt$network_file), paste(basename(opt$network_file), "_\\w+.NA", sep=""), full.names=T)
+    )
+    
+    
+    
+    modules <- find_module(data.pval=data.pval, network=network, nModules=2, fdr=as.numeric(opt$fdr), heinz.py=opt$heinz.py)
+    
+    for (i in 1:length(modules)) {
+        module <- modules[[i]]
+        save_module(module, paste(opt$output_file, opt$fdr, paste("#", i, sep=""), sep="."))
+    }
 }
