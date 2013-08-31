@@ -87,7 +87,6 @@ find_module <- function(data.pval, network, fdr, nModules=1, heinz.py=NULL) {
         
         
         for (i in 0:(nModules-1)) {
-            print(paste("Loading module #", i, sep=""))
             module = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
                                     network = subnet)
             res <- c(res, module)            

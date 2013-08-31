@@ -14,8 +14,7 @@ network_from_sif <- function(file.basename) {
             network$meta <- meta.cur
         } else {
             network$meta <- merge(network$meta, meta.cur, by="v", all=T)
-        }
-        
+        }        
     }
     
     return(network)
@@ -30,7 +29,7 @@ network_to_sif <- function(network, file.basename) {
             rownames(x) <- network$meta$v
             x <- na.omit(x)
             f <- paste(file.basename, "_", colnames(x), ".NA", sep="")
-            write.table(x, f, row.names=T, quote=F, col.names=T, sep=" = ")
+            write.table(x, f, row.names=T, quote=T, col.names=T, sep=" = ")
         }
     }
 }

@@ -44,9 +44,9 @@ metabolite.ids <- read.csv(opt$met.ids, header=T, colClasses="character", sep="\
 
 net <- network_from_sif(opt$network_file); suffix = ""
 net <- rm.nodes(net, net$meta$v[net$meta$nodeType == "gene"]); suffix=paste(suffix, "nogene", sep=".")
+net <- rm.comp.network(net); suffix=paste(suffix, "nocomp", sep=".")
 net <- rm.nodes(net, net$meta$v[!is.na(match(sapply(net$meta$v, rm.comp), to_mask))]); suffix=paste(suffix, "masked", sep=".")
 net <- add.square.network(net); suffix=paste(suffix, "squared", sep=".")
-net <- rm.comp.network(net); suffix=paste(suffix, "nocomp", sep=".")
 net <- rm.ex.network(net); suffix=paste(suffix, "noex", sep=".")
 net <- convert.ids.network(net, cobra2hmdb.map$Cobra, cobra2hmdb.map$HMDB); suffix=paste(suffix, "hmdb", sep=".")
 net <- escape.names(net); suffix=paste(suffix, "esc", sep=".")
