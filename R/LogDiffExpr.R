@@ -1,0 +1,155 @@
+#!/usr/bin/env Rscript
+library(limma)
+
+
+normalize_expressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
+    if (zero.rm) {
+        # removing unexpressed genes
+        keep <- apply(exprs, 1, max) > 0
+        exprs <- exprs[keep,]
+    }
+    if (log2) {
+        # adding pseudocount for zero expressions  
+        min2s <- apply(exprs, 2, function(x) { min(x[x != 0]) })
+        
+        for (sample in colnames(exprs)) {
+            t <- exprs[,sample]
+            t[t == 0] <- min2s[sample];
+            exprs[,sample] <- t
+        }
+        
+        exprs <- log2(exprs)
+    }
+    
+    if (quantile) {
+        library(preprocessCore)
+        exprs2 <- as.data.frame(normalize.quantiles(as.matrix(exprs), copy=T))
+        colnames(exprs2) <- colnames(exprs)
+        rownames(exprs2) <- rownames(exprs)
+        exprs <- exprs2
+    }
+    return(exprs)
+}
+
+library(optparse)
+
+option_list <- list(
+#    make_option(c("-v", "--verbose"), action="store_true", default=TRUE,
+#                help="Print extra output [default]"),
+#    make_option(c("-q", "--quietly"), action="store_false",
+#                dest="verbose", help="Print little output"),
+    make_option(c("-e", "--expressions"),
+                dest="expressions_file",
+                help="File to read expressions from",
+                metavar="csv file"),
+    make_option(c("-c", "--conditions"),
+                dest="conditions_file",
+                help="File to read conditions from",
+                metavar="csv file"),
+    make_option(c("--deseq"),
+                dest="deseq",
+                action="store_true",
+                default=FALSE,
+                help="Use DESeq for differential expression (with non-normalized data)"),
+    make_option(c("--log2"),
+                dest="log2",
+                action="store_true",
+                default=FALSE,
+                help="Use log2 normalization"),
+    make_option(c("--quantile"),
+                dest="quantile",
+                action="store_true",
+                default=FALSE,
+                help="Use quantile normalization"),
+    make_option(c("-s1", "--state-1"),
+                dest="state1",
+                help="First state for differential expression",
+                metavar="state"),
+    make_option(c("-s2", "--state-2"),
+                dest="state2",
+                help="Second state for differential expression",
+                metavar="state"),
+    make_option(c("-o", "--output-file"),
+                dest="output_file",
+                help="Output file",
+                metavar="file")
+)
+
+opt <- parse_args(OptionParser(option_list=option_list))
+exprs.sep=","
+
+if (grepl("tsv$", opt$expressions_file)) {
+    exprs.sep <- "\t"
+}
+
+exprs<-read.csv(file=opt$expressions_file, head=TRUE, row.names=1, sep=exprs.sep)
+conditions <- read.csv(file=opt$conditions_file, head=TRUE)
+
+
+expression_matrix<-as.matrix(exprs)
+
+###
+
+classes_vector <- conditions$condition[match(colnames(exprs), conditions$sample)]
+classes_vector <- as.character(classes_vector)
+
+
+unique_classes_vector<-unique(classes_vector)
+unique_classes_vector
+number_samples<-ncol(expression_matrix)
+number_classes<-length(unique_classes_vector)
+print(paste('Number of samples:',number_samples,'      Number of Cell Types:',number_classes))
+
+
+####################
+
+if (opt$deseq) {
+    library(DESeq)
+    counts <- expression_matrix
+    #counts <- 2 ** expression_matrix
+        
+    cds <- newCountDataSet(round(counts), classes_vector)
+    cds <- estimateSizeFactors(cds)
+    cds <- estimateDispersions(cds)
+    res <- nbinomTest(cds, opt$state1, opt$state2)
+    res <- res[order(res$baseMean, decreasing=T)[1:10000],]
+    res <- res[order(res$pval),]
+    res <- na.omit(res)
+    to_write <- res[, c("id", "pval", "log2FoldChange")]
+    colnames(to_write) <- c("ID", "pval", "logFC")
+} else {
+    log_expression_matrix<-normalize_expressions(expression_matrix, zero.rm=T, log2=opt$log2, quantile=opt$quantile)
+    group_names<-classes_vector
+
+    names(group_names)<-group_names
+    group_names<-factor(group_names)
+
+    design<-model.matrix(~0+group_names)
+    colnames(design)<-levels(group_names)
+
+    colnames(log_expression_matrix)<-group_names
+        
+    fit<-lmFit(log_expression_matrix, design)
+    j = which(unique_classes_vector == opt$state1)
+    if (length(j) != 1) {
+        stop(c("invalied state '", opt$state1, "'", sep=""))
+    }
+    jj = which(unique_classes_vector == opt$state2)
+    if (length(jj) != 1) {
+        stop(c("invalied state '", opt$state2, "'", sep=""))
+    }
+
+    contr.str<-paste(unique_classes_vector[j],unique_classes_vector[jj],sep="-")
+    contr.mat<-makeContrasts(contrasts=contr.str, levels=group_names)
+
+    fit2<-contrasts.fit(fit,contr.mat)
+    fit2<-eBayes(fit2)
+
+    f.top<-topTable(fit2, number=Inf)
+    f.top[1:50,]
+    to_write = data.frame(ID=f.top$ID, pval=f.top$adj.P.Val, logFC=-f.top$logFC)
+    
+}
+
+
+write.table(to_write, file=opt$output_file, sep="\t", row.names=F, quote=F)
