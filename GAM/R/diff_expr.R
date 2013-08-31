@@ -47,14 +47,14 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
     
     ####################
     
-    if (opt$deseq) {
+    if (use.deseq) {
         library(DESeq)
         counts <- expression_matrix
                 
         cds <- newCountDataSet(round(counts), classes_vector)
         cds <- estimateSizeFactors(cds)
         cds <- estimateDispersions(cds)
-        res <- nbinomTest(cds, opt$state1, opt$state2)
+        res <- nbinomTest(cds, state1, state2)
         res <- res[order(res$baseMean, decreasing=T)[1:top],]
         res <- res[order(res$pval),]
         res <- na.omit(res)
@@ -75,7 +75,7 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
         fit<-lmFit(log_expression_matrix, design)
         j = which(unique_classes_vector == state1)
         if (length(j) != 1) {
-            stop(c("invalied state '", opt$state1, "'", sep=""))
+            stop(c("invalied state '", state1, "'", sep=""))
         }
         jj = which(unique_classes_vector == state2)
         if (length(jj) != 1) {
