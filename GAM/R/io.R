@@ -5,7 +5,7 @@ network_from_sif <- function(file.basename) {
     network$edges <- read.table(paste(file.basename, "sif", sep="."), header=FALSE, colClasses=c("character", "factor", "character"), comment.char="#", col.names=c("u", "e", "v"))
     
     for (f in list.files(dirname(file.basename), paste(basename(file.basename), "_\\w+.NA", sep=""), full.names=T)) {
-        meta_type.cur <- sub("^.*_(\\w+).NA", "\\1", f)        
+        meta_type.cur <- sub(paste("^", file.basename, "_(\\w+).NA", sep=""), "\\1", f)        
         print(paste("Loading attribute", meta_type.cur))
         meta_temp <- unique(read.table(f, skip=1, comment.char="#", colClasses="character"))
         meta.cur <- data.frame(meta_temp[,1], meta_temp[,3], stringsAsFactors=F)
