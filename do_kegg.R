@@ -23,7 +23,7 @@ met.conditions.file <- "./data_new_good/Met.conditions.csv"
 #nModules=1; heinz.py=NULL
 nModules=2; heinz.py="./heinz.py"
 
-met.ids <- read.table("./misc/metabolite_ids.tsv", header=T, colClasses="character")
+hmdb2kegg <- read.csv("./misc/hmdb2kegg.tsv", header=T, colClasses="character", sep="\t")
 
 #detach('package:GAM', unload=T)
 library(GAM)
@@ -32,7 +32,7 @@ enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="ch
 rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
 rxn2gene = merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
 
-
+reflink <- read.csv("./misc/reflink.txt", sep="\t", header=T, colClasses="character")
 
 
 gene.exprs.sep=","; if (grepl("tsv$", gene.exprs.file)) { gene.exprs.sep <- "\t" }
@@ -56,15 +56,11 @@ met.de <- diff.expr(
     log2=F, quantile=F, use.deseq=F, top=Inf)
 
 
-if (!is.null(network.ensembl.dataset) && !is.null(gene.data.ids) && !is.null(gene.network.ids)) {
-    library(biomaRt)
-    mart = useMart("ensembl", dataset=network.ensembl.dataset)
-    gene.de <- convert.pval.biomart(gene.de, from=gene.data.ids, to=gene.network.ids, mart=mart)
-    gene.de$origin <- NULL
-}    
+gene.de <- convert.pval(gene.de, from=reflink$mrnaAcc, to=reflink$locusLinkId)
+gene.de$origin <- NULL
 
 enz.de <- convert.pval(gene.de, from=enz2gene$gene, to=enz2gene$enz)
-met.de <- convert.pval(met.de, from=met.ids$HMDB, to=met.ids$KEGG)
+met.de <- convert.pval(met.de, from=hmdb2kegg$HMDB, to=hmdb2kegg$KEGG)
 rxn.de <- convert.pval(enz.de, from=rxn2enz$enz, to=rxn2enz$rxn)
 
 
@@ -110,7 +106,7 @@ network <- convert.node.names(network, rxn.de$ID, rxn.de$origin)
 rxn.de.orig <- rxn.de
 rxn.de$ID <- rxn.de$origin
 
-reflink <- read.csv("../reflink.txt", sep="\t", header=T, colClasses="character")
+
 rxn.de <- rxn.de[rxn.de$ID %in% nodes(network), ]
 nodeData(network, rxn.de$ID, "shortName") <- reflink$name[match(rxn.de$origin, reflink$locusLinkId)]
 
