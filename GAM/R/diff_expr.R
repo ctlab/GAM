@@ -1,8 +1,6 @@
 #!/usr/bin/env Rscript
-library(limma)
 
 convert.pval.biomart <- function(pval, from, to, mart) {
-    library(biomaRt)
     map <- getBM(attributes=c(from, to), filters=from, values=pval$ID, mart=mart)
     colnames(map) <- c("from", "to")
     map$to <- as.character(map$to)
@@ -13,7 +11,14 @@ convert.pval.biomart <- function(pval, from, to, mart) {
 convert.pval <- function(pval, from, to) {
     map <- data.frame(from=from, to=to, stringsAsFactors=F)
     pval.ext <- merge(map, pval, by.x = "from", by.y = "ID")
-    res <- data.frame(ID=pval.ext[,"to"], pval=pval.ext$pval, logFC=pval.ext$logFC, stringsAsFactors=F)    
+    origin.field = if ("origin" %in% colnames(pval)) "origin" else "from"
+    
+    res <- data.frame(
+        ID=pval.ext[,"to"], 
+        pval=pval.ext$pval, 
+        logFC=pval.ext$logFC, 
+        origin=pval.ext[,origin.field],
+        stringsAsFactors=F)    
     
     get_min_pval <- function(id) {
         subset <- res[res$ID == id,]
@@ -46,7 +51,6 @@ normalize_expressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     }
     
     if (quantile) {
-        library(preprocessCore)
         exprs2 <- as.data.frame(normalize.quantiles(as.matrix(exprs), copy=T))
         colnames(exprs2) <- colnames(exprs)
         rownames(exprs2) <- rownames(exprs)
@@ -72,7 +76,6 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
     ####################
     
     if (use.deseq) {
-        library(DESeq)
         counts <- expression_matrix
                 
         cds <- newCountDataSet(round(counts), classes_vector)
@@ -85,7 +88,6 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
         res <- res[, c("id", "pval", "log2FoldChange")]
         colnames(res) <- c("ID", "pval", "logFC")
     } else {
-        library(limma)
         log_expression_matrix<-normalize_expressions(expression_matrix, zero.rm=T, log2=log2, quantile=quantile)
         group_names<-classes_vector
         

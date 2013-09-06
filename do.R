@@ -69,7 +69,6 @@ rxn2genes <- read.csv(rxn2genes.map.file, header= TRUE, check.names=F, sep="\t",
 
 rxn.de <- convert.pval(gene.de, from=rxn2genes$gene, to=rxn2genes$rxn)
 
-combined.de <- rbind(met.de, rxn.de)
 
 library(BioNet)
 network <- loadNetwork.sif(
@@ -79,7 +78,7 @@ network <- loadNetwork.sif(
 
 dir.create(outdir)
 for (fdr in fdrs) {
-    modules <- find_modules(data.pval=combined.de, network=network, nModules=nModules, fdrs=fdrs, heinz.py=heinz.py)
+    modules <- find_modules(met.de=met.de, rxn.de=rxn.de, network=network, nModules=nModules, fdrs=fdrs, heinz.py=heinz.py)
     for (module in modules) {
         save_module(module$graph, 
                     paste0(outdir, "/module.", 
