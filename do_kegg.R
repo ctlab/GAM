@@ -5,8 +5,10 @@ state1="MandLPSandIFNg"
 state2="MandIL4"
 outdir=paste("./kegg_", state1, "-", state2, sep="")
 
-met.fdrs=c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5, 1e-3)
-rxn.fdrs=c(1e-7, 1e-5, 1e-5, 1e-3, 1e-3, 1e-3)
+met.fdrs=c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5)
+rxn.fdrs=c(1e-9, 1e-7, 1e-7, 1e-5, 1e-5)
+
+
 
 network.base="./networks//kegg/net.sq"
 
@@ -59,8 +61,10 @@ met.de <- diff.expr(
 gene.de <- convert.pval(gene.de, from=reflink$mrnaAcc, to=reflink$locusLinkId)
 gene.de$origin <- NULL
 
-enz.de <- convert.pval(gene.de, from=enz2gene$gene, to=enz2gene$enz)
+
 met.de <- convert.pval(met.de, from=hmdb2kegg$HMDB, to=hmdb2kegg$KEGG)
+
+enz.de <- convert.pval(gene.de, from=enz2gene$gene, to=enz2gene$enz)
 rxn.de <- convert.pval(enz.de, from=rxn2enz$enz, to=rxn2enz$rxn)
 
 
@@ -112,13 +116,64 @@ nodeData(network, rxn.de$ID, "shortName") <- reflink$name[match(rxn.de$origin, r
 
 
 dir.create(outdir)
+
 modules <- find_modules(met.de=met.de, rxn.de=rxn.de,
                         network=network, 
                         met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
-                        nModules=nModules, heinz.py=heinz.py)
+                        nModules=nModules, heinz.py=heinz.py,
+                        score.separately=T)
 for (module in modules) {
     save_module(module$graph, 
                 paste0(outdir, "/module.", 
+                       "mf=", module$met.fdr,
+                       ".rf=", module$rxn.fdr,
+                       if (is.null(module$n)) "" else paste0("#", module$n)
+                )
+    )
+}
+
+
+modules <- find_modules(met.de=met.de, rxn.de=rxn.de,
+                        network=network, 
+                        met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
+                        nModules=nModules, heinz.py=heinz.py,
+                        score.separately=F)
+for (module in modules) {
+    save_module(module$graph, 
+                paste0(outdir, "/module.nogroup.", 
+                       "mf=", module$met.fdr,
+                       ".rf=", module$rxn.fdr,
+                       if (is.null(module$n)) "" else paste0("#", module$n)
+                )
+    )
+}
+
+met.fdrs=c(1e-9, 1e-7, 1e-5, 1e-3)
+rxn.fdrs=c(1e-9, 1e-7, 1e-5, 1e-3)
+
+modules.nogenes <- find_modules(met.de=met.de, rxn.de=met.de,
+                        network=network, 
+                        met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
+                        nModules=nModules, heinz.py=heinz.py,
+                        score.separately=T)
+for (module in modules.nogenes) {
+    save_module(module$graph, 
+                paste0(outdir, "/module.nogenes.", 
+                       "mf=", module$met.fdr,
+                       ".rf=", module$rxn.fdr,
+                       if (is.null(module$n)) "" else paste0("#", module$n)
+                )
+    )
+}
+
+modules.nomets <- find_modules(met.de=rxn.de, rxn.de=rxn.de,
+                                network=network, 
+                                met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
+                                nModules=nModules, heinz.py=heinz.py,
+                                score.separately=T)
+for (module in modules.nomets) {
+    save_module(module$graph, 
+                paste0(outdir, "/module.nomets.", 
                        "mf=", module$met.fdr,
                        ".rf=", module$rxn.fdr,
                        if (is.null(module$n)) "" else paste0("#", module$n)

@@ -27,7 +27,7 @@ save_module <- function(module, outputFilePrefix) {
     #saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type="XGMML")
 }
 
-find_modules <- function(met.de, rxn.de, network, met.fdrs=NULL, rxn.fdrs=NULL, nModules=1, heinz.py=NULL) {
+find_modules <- function(met.de, rxn.de, network, met.fdrs=NULL, rxn.fdrs=NULL, nModules=1, heinz.py=NULL, score.separately=T) {
     met.de$origin <- NULL
     rxn.de$origin <- NULL
     data.pval <- rbind(met.de, rxn.de)
@@ -36,6 +36,7 @@ find_modules <- function(met.de, rxn.de, network, met.fdrs=NULL, rxn.fdrs=NULL, 
     names(rxn.pval) <- rxn.de$ID
     met.pval <- met.de$pval
     names(met.pval) <- met.de$ID
+    all.pval <- c(rxn.pval, met.pval)
 
         
     network
@@ -58,14 +59,20 @@ find_modules <- function(met.de, rxn.de, network, met.fdrs=NULL, rxn.fdrs=NULL, 
     nodeData(subnet, nodes(subnet), "diff.expr") <- dm[nodes(subnet)]
     fb.met <- fitBumModel(met.pval, plot = TRUE)
     fb.rxn <- fitBumModel(rxn.pval, plot = TRUE)
+    fb.all <- fitBumModel(all.pval, plot = TRUE)
     res <- list()
         
     
     for (j in 1:length(met.fdrs)) {    
         met.fdr <- met.fdrs[j]
         rxn.fdr <- rxn.fdrs[j] 
-        met.scores <- scoreFunction(fb.met, met.fdr)
-        rxn.scores <- scoreFunction(fb.rxn, rxn.fdr)
+        if (score.separately) {
+            met.scores <- scoreFunction(fb.met, met.fdr)
+            rxn.scores <- scoreFunction(fb.rxn, rxn.fdr)
+        } else {
+            met.scores <- scoreFunction(fb.all, met.fdr)[names(met.pval)]
+            rxn.scores <- scoreFunction(fb.all, rxn.fdr)[names(rxn.pval)]
+        }
         all.scores <- c(met.scores, rxn.scores)
         
         scores <- all.scores[nodes(subnet)]
