@@ -10,7 +10,7 @@ met2name <- read.table("./networks//kegg/met2name.tsv", header=T, colClasses="ch
 mets2mask <- read.table("./networks//kegg/mets2mask.lst", colClasses="character")[,1]
 
 
-rxn2gene = merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
+rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
 rxns2keep <- unique(rxn2gene$rxn)
 write.table(rxns2keep, "./networks//kegg/rxns2keep.lst", row.names=F, col.names=F, quote=F)
 
@@ -45,17 +45,17 @@ met.degree <- get_met.degree(net)
 write.csv(met.degree, "met.degree.3.csv")
 
 rxn2met <- get_rxn2met(net)
-met2rxn = rxn2met[,c("met", "rxn")]
+met2rxn <- rxn2met[,c("met", "rxn")]
 
-rxn2rxn = unique(merge(rxn2met, met2rxn, by="met")[,c("rxn.x", "rxn.y")])
+rxn2rxn <- unique(merge(rxn2met, met2rxn, by="met")[,c("rxn.x", "rxn.y")])
 
 write.table(rxn2rxn, "./networks//kegg/rxn2rxn.masked.tsv", row.names=F, quote=F, col.names=T)
 
 
 
-net.sq.1 = cbind(u=net$met.x, e="m2m", v=net$met.y)
-net.sq.2 = cbind(u=rxn2met$rxn, e="r2m", v=rxn2met$met)
-net.sq.3 = cbind(u=rxn2rxn$rxn.x, e="r2r", v=rxn2rxn$rxn.y)
+net.sq.1 <- cbind(u=net$met.x, e="m2m", v=net$met.y)
+net.sq.2 <- cbind(u=rxn2met$rxn, e="r2m", v=rxn2met$met)
+net.sq.3 <- cbind(u=rxn2rxn$rxn.x, e="r2r", v=rxn2rxn$rxn.y)
 net.sq <- rbind(net.sq.1, net.sq.2, net.sq.3)
 
 write.table(net.sq, "./networks//kegg/net.sq.sif", row.names=F, quote=F, col.names=F)
@@ -74,3 +74,15 @@ colnames(short_names) <- "shortName"
 short_names$shortName <- gsub(";.*$", "", short_names$shortName)
 write.table(short_names, "./networks//kegg/net.sq_ShortName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
 # remove quotes from first line!
+
+kegg_mouse <- newEmptyObject()
+kegg_mouse$enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="character")
+kegg_mouse$rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
+kegg_mouse$rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
+network.base <- "./networks//kegg/net.sq"
+kegg_mouse$graph <- loadNetwork.sif(
+    paste(network.base, "sif", sep="."),
+    list.files(dirname(network.base), paste(basename(network.base), "_\\w+.NA", sep=""), full.names=T)
+)
+kegg_mouse$met.ids <- "KEGG"
+kegg_mouse$gene.ids <- "Entrez"

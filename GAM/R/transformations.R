@@ -73,3 +73,33 @@ escape.names <- function(net) {
     to=gsub("'", "_prime_", from, fixed=T)
     return(convert.ids.network(net, from, to))
 }
+
+edgelist <- function(network) {
+    edges <- edges(network)
+    vs <- unlist(edges)
+    us <- rep(names(edges), sapply(edges, length))
+    res <- data.frame(u=us, v=vs, stringsAsFactors=F)
+    return(res)
+}
+
+convert.node.names <- function(network, from, to) {
+    edges <- edgelist(network)
+    m1 <- match(edges$u, from)
+    edges$u[!is.na(m1)] <- to[m1[!is.na(m1)]]
+    m2 <- match(edges$v, from)
+    edges$v[!is.na(m2)] <- to[m2[!is.na(m2)]]
+    edges <- unique(edges)
+    network2 <- graph.edgelist(as.matrix(edges), directed=F)
+    network2 <- simplify(network2, remove.multiple=T)
+    network2 <- igraph.to.graphNEL(network2)
+    
+    nodeDataDefaults(network2) <- nodeDataDefaults(network)
+    
+    old_nodes <- intersect(nodes(network), nodes(network2))
+    
+    for (attr in names(nodeDataDefaults(network))) {
+        nodeData(network2, old_nodes, attr) <- nodeData(network, old_nodes, attr)
+    }
+    
+    network2   
+}

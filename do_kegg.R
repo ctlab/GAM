@@ -1,181 +1,110 @@
 #!/usr/bin/env Rscript
 
 set.seed(42)
-state1="MandLPSandIFNg"
-state2="MandIL4"
-outdir=paste("./kegg_", state1, "-", state2, sep="")
+library("GAM")
 
+# Loading network
+data("kegg.mouse.network")
+
+# Loading dataset for mouse macrophages cells
+data("mouse.macrophages")
+
+# The dataset consists of gene expression data,
+str(mouse.macrophages$gene.exprs)
+
+# conditions vector for gene,
+str(mouse.macrophages$gene.conditions.vector)
+
+# metabolite mass-spectrometry data,
+str(mouse.macrophages$met.exprs)
+
+# conditions vector for metabolites,
+str(mouse.macrophages$met.conditions.vector)
+
+# gene and metabolite differential expression results
+str(mouse.macrophages$gene.de)
+str(mouse.macrophages$met.de)
+
+# between states
+mouse.macrophages$state1
+mouse.macrophages$state2
+
+# Results will be put into directory.
+outdir=paste0("./kegg_mouse_", mouse.macrophages$state1, "-", mouse.macrophages$state2)
+outdir
+
+# If heinz.py is available and working we can set its path.
+heinz.py <- "./heinz.py"; 
+# And number of modules we'd like to find.
+heinz.nModules <- 2
+
+# If there is no heinz.py, heuristic search will be run instead.
+heinz.py <- NULL
+
+# Pair of vectors of corresponding FDR values for metabolites and genes.
+# Vectors have to be of the same length!
 met.fdrs=c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5)
-rxn.fdrs=c(1e-9, 1e-7, 1e-7, 1e-5, 1e-5)
+gene.fdrs=c(1e-9, 1e-7, 1e-7, 1e-5, 1e-5)
 
+# Getting list of most significant modules base both on gene and metabolite data
+modules <- find_modules(network=kegg.mouse.network,
+                        met.de=mouse.macrophages$met.de,
+                        gene.de=mouse.macrophages$gene.de,
+                        met.ids=mouse.macrophages$met.ids, 
+                        gene.ids=mouse.macrophages$gene.ids,
+                        met.fdrs=met.fdrs,
+                        gene.fdrs=gene.fdrs,                         
+                        heinz.py=heinz.py, 
+                        heinz.nModules=heinz.nModules
+                        )
 
-
-network.base="./networks//kegg/net.sq"
-
-gene.network.ids="entrezgene"
-network.ensembl.dataset="mmusculus_gene_ensembl"
-
-gene.exprs.file <- "./data_new_good/Gene.exp.tsv"
-gene.conditions.file <- "./data_new_good/Gene.conditions.csv"
-gene.data.ids="refseq_mrna"
-
-met.exprs.file <- "./data_new_good/MetDataR2.csv"
-met.conditions.file <- "./data_new_good/Met.conditions.csv"
-
-#nModules=1; heinz.py=NULL
-nModules=2; heinz.py="./heinz.py"
-
-hmdb2kegg <- read.csv("./misc/hmdb2kegg.tsv", header=T, colClasses="character", sep="\t")
-
-#detach('package:GAM', unload=T)
-library(GAM)
-
-enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="character")
-rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
-rxn2gene = merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
-
-reflink <- read.csv("./misc/reflink.txt", sep="\t", header=T, colClasses="character")
-
-
-gene.exprs.sep=","; if (grepl("tsv$", gene.exprs.file)) { gene.exprs.sep <- "\t" }
-gene.exprs <- read.csv(file=gene.exprs.file, head=TRUE, row.names=1, sep=gene.exprs.sep)
-gene.conditions <- read.csv(file=gene.conditions.file, head=TRUE)
-gene.conditions.vector <- gene.conditions$condition[match(colnames(gene.exprs), gene.conditions$sample)]
-
-met.exprs.sep=","; if (grepl("tsv$", met.exprs.file)) { met.exprs.sep <- "\t" }
-met.exprs <- read.csv(file=met.exprs.file, head=TRUE, row.names=1, sep=met.exprs.sep)
-met.conditions <- read.csv(file=met.conditions.file, head=TRUE)
-met.conditions.vector <- met.conditions$condition[match(colnames(met.exprs), met.conditions$sample)]
-
-gene.de <- diff.expr(
-    exprs=gene.exprs, conditions.vector=gene.conditions.vector,
-    state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=T, top=10000)
-
-met.de <- diff.expr(
-    exprs=met.exprs, conditions.vector=met.conditions.vector,
-    state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=F, top=Inf)
-
-
-gene.de <- convert.pval(gene.de, from=reflink$mrnaAcc, to=reflink$locusLinkId)
-gene.de$origin <- NULL
-
-
-met.de <- convert.pval(met.de, from=hmdb2kegg$HMDB, to=hmdb2kegg$KEGG)
-
-enz.de <- convert.pval(gene.de, from=enz2gene$gene, to=enz2gene$enz)
-rxn.de <- convert.pval(enz.de, from=rxn2enz$enz, to=rxn2enz$rxn)
-
-
-library(BioNet)
-network <- loadNetwork.sif(
-    paste(network.base, "sif", sep="."),
-    list.files(dirname(network.base), paste(basename(network.base), "_\\w+.NA", sep=""), full.names=T)
-)
-
-
-
-edgelist <- function(network) {
-    edges <- edges(network)
-    vs <- unlist(edges)
-    us <- rep(names(edges), sapply(edges, length))
-    res <- data.frame(u=us, v=vs, stringsAsFactors=F)
-    return(res)
-}
-
-convert.node.names <- function(network, from, to) {
-    edges <- edgelist(network)
-    m1 <- match(edges$u, from)
-    edges$u[!is.na(m1)] <- to[m1[!is.na(m1)]]
-    m2 <- match(edges$v, from)
-    edges$v[!is.na(m2)] <- to[m2[!is.na(m2)]]
-    edges <- unique(edges)
-    network2 <- graph.edgelist(as.matrix(edges), directed=F)
-    network2 <- simplify(network2, remove.multiple=T)
-    network2 <- igraph.to.graphNEL(network2)
-    
-    nodeDataDefaults(network2) <- nodeDataDefaults(network)
-    
-    old_nodes <- intersect(nodes(network), nodes(network2))
-    
-    for (attr in names(nodeDataDefaults(network))) {
-        nodeData(network2, old_nodes, attr) <- nodeData(network, old_nodes, attr)
-    }
-    
-    network2   
-}
-
-network <- convert.node.names(network, rxn.de$ID, rxn.de$origin)
-rxn.de.orig <- rxn.de
-rxn.de$ID <- rxn.de$origin
-
-
-rxn.de <- rxn.de[rxn.de$ID %in% nodes(network), ]
-nodeData(network, rxn.de$ID, "shortName") <- reflink$name[match(rxn.de$origin, reflink$locusLinkId)]
-
-
-dir.create(outdir)
-
-modules <- find_modules(met.de=met.de, rxn.de=rxn.de,
-                        network=network, 
-                        met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
-                        nModules=nModules, heinz.py=heinz.py,
-                        score.separately=T)
+# Saving pdf- and sif- files for found modules
 for (module in modules) {
     save_module(module$graph, 
                 paste0(outdir, "/module.", 
                        "mf=", module$met.fdr,
-                       ".rf=", module$rxn.fdr,
+                       ".rf=", module$gene.fdr,
                        if (is.null(module$n)) "" else paste0("#", module$n)
                 )
     )
 }
 
+# FDRs for gene-only and metabolite-only analysis
+fdrs=c(1e-9, 1e-7, 1e-5, 1e-3)
 
-modules <- find_modules(met.de=met.de, rxn.de=rxn.de,
-                        network=network, 
-                        met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
-                        nModules=nModules, heinz.py=heinz.py,
-                        score.separately=F)
-for (module in modules) {
+# Finding metabolite modules. Just leaving gene data out of arguments.
+modules.mets <- find_modules(network=kegg.mouse.network,
+                        met.de=mouse.macrophages$met.de,                        
+                        met.ids=mouse.macrophages$met.ids,                         
+                        fdrs=fdrs,
+                        heinz.py=heinz.py, 
+                        heinz.nModules=heinz.nModules
+)
+
+# Saving them.
+for (module in modules.mets) {
     save_module(module$graph, 
-                paste0(outdir, "/module.nogroup.", 
-                       "mf=", module$met.fdr,
-                       ".rf=", module$rxn.fdr,
+                paste0(outdir, "/module.mets.", 
+                       "fdr=", module$met.fdr,
                        if (is.null(module$n)) "" else paste0("#", module$n)
                 )
     )
 }
 
-met.fdrs=c(1e-9, 1e-7, 1e-5, 1e-3)
-rxn.fdrs=c(1e-9, 1e-7, 1e-5, 1e-3)
+# Finding gene modules. Vice versa, leaving metabolite data out of arguments.
+modules.genes <- find_modules(network=kegg.mouse.network,                        
+                        gene.de=mouse.macrophages$gene.de,                        
+                        gene.ids=mouse.macrophages$gene.ids,
+                        fdrs=fdrs,                                 
+                        heinz.py=heinz.py, 
+                        heinz.nModules=heinz.nModules
+)
 
-modules.nogenes <- find_modules(met.de=met.de, rxn.de=met.de,
-                        network=network, 
-                        met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
-                        nModules=nModules, heinz.py=heinz.py,
-                        score.separately=T)
-for (module in modules.nogenes) {
+# Saving them.
+for (module in modules.genes) {
     save_module(module$graph, 
-                paste0(outdir, "/module.nogenes.", 
-                       "mf=", module$met.fdr,
-                       ".rf=", module$rxn.fdr,
-                       if (is.null(module$n)) "" else paste0("#", module$n)
-                )
-    )
-}
-
-modules.nomets <- find_modules(met.de=rxn.de, rxn.de=rxn.de,
-                                network=network, 
-                                met.fdrs=met.fdrs, rxn.fdrs=rxn.fdrs, 
-                                nModules=nModules, heinz.py=heinz.py,
-                                score.separately=T)
-for (module in modules.nomets) {
-    save_module(module$graph, 
-                paste0(outdir, "/module.nomets.", 
-                       "mf=", module$met.fdr,
-                       ".rf=", module$rxn.fdr,
+                paste0(outdir, "/module.genes.", 
+                       "fdr=", module$gene.fdr,                       
                        if (is.null(module$n)) "" else paste0("#", module$n)
                 )
     )
