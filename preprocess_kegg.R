@@ -33,16 +33,16 @@ get_met.degree <- function(net) {
 }
 
 met.degree <- get_met.degree(net)
-write.csv(met.degree, "met.degree.1.csv")
+write.table(met.degree, "met.degree.1.tsv", col.names=T, row.names=T, quote=T, sep="\t")
 
 net <- net[net$rxn %in% rxns2keep,]
 
 met.degree <- get_met.degree(net)
-write.csv(met.degree, "met.degree.2.csv")
+write.table(met.degree, "met.degree.2.tsv", col.names=T, row.names=T, quote=T, sep="\t")
 
 net <- net[!(net$met.x %in% mets2mask) & !(net$met.y %in% mets2mask),]
 met.degree <- get_met.degree(net)
-write.csv(met.degree, "met.degree.3.csv")
+write.table(met.degree, "met.degree.3.tsv", col.names=T, row.names=T, quote=T, sep="\t")
 
 rxn2met <- get_rxn2met(net)
 met2rxn <- rxn2met[,c("met", "rxn")]
@@ -66,23 +66,32 @@ long_names.rxn <- rxn2name$name
 names(long_names.rxn) <- rxn2name$rxn
 
 long_names <- data.frame(longName = na.omit(c(long_names.met, long_names.rxn)), stringsAsFactors=F)
-write.table(long_names, "./networks//kegg/net.sq_LongName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
+write.table(long_names, "./networks//kegg/net.sq_longName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
 # remove quotes from first line!
 
 short_names <- long_names
 colnames(short_names) <- "shortName"
 short_names$shortName <- gsub(";.*$", "", short_names$shortName)
-write.table(short_names, "./networks//kegg/net.sq_ShortName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
+write.table(short_names, "./networks//kegg/net.sq_shortName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
 # remove quotes from first line!
 
-kegg_mouse <- newEmptyObject()
-kegg_mouse$enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="character")
-kegg_mouse$rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
-kegg_mouse$rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
+mets <- unique(c(net$met.x, net$met.y))
+rxns <- unique(net$rxn)
+node_types=data.frame(nodeType=rep(c("met", "rxn"), c(length(mets), length(rxns))))
+rownames(node_types) <- c(mets, rxns)
+write.table(node_types, "./networks//kegg/net.sq_nodeType.NA", row.names=T, quote=T, col.names=T, sep=" = ")
+# remove quotes from first line!
+
+kegg.mouse.network <- newEmptyObject()
+kegg.mouse.network$enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="character")
+kegg.mouse.network$rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
+kegg.mouse.network$rxn2gene <- merge(kegg.mouse.network$rxn2enz, kegg.mouse.network$enz2gene)[, c("rxn", "gene")]
 network.base <- "./networks//kegg/net.sq"
-kegg_mouse$graph <- loadNetwork.sif(
+kegg.mouse.network$graph <- loadNetwork.sif(
     paste(network.base, "sif", sep="."),
     list.files(dirname(network.base), paste(basename(network.base), "_\\w+.NA", sep=""), full.names=T)
 )
-kegg_mouse$met.ids <- "KEGG"
-kegg_mouse$gene.ids <- "Entrez"
+kegg.mouse.network$met.ids <- "KEGG"
+kegg.mouse.network$gene.ids <- "Entrez"
+
+save(kegg.mouse.network, file="./GAM//data/kegg.mouse.network.rda")

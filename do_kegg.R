@@ -39,13 +39,13 @@ heinz.py <- "./heinz.py";
 heinz.nModules <- 2
 
 # If there is no heinz.py, heuristic search will be run instead.
-heinz.py <- NULL
+#heinz.py <- NULL
 
 # Pair of vectors of corresponding FDR values for metabolites and genes.
 # Vectors have to be of the same length!
 met.fdrs=c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5)
 gene.fdrs=c(1e-9, 1e-7, 1e-7, 1e-5, 1e-5)
-
+ 
 # Getting list of most significant modules base both on gene and metabolite data
 modules <- find_modules(network=kegg.mouse.network,
                         met.de=mouse.macrophages$met.de,
@@ -91,7 +91,7 @@ for (module in modules.mets) {
     )
 }
 
-# Finding gene modules. Vice versa, leaving metabolite data out of arguments.
+# # Finding gene modules. Vice versa, leaving metabolite data out of arguments.
 modules.genes <- find_modules(network=kegg.mouse.network,                        
                         gene.de=mouse.macrophages$gene.de,                        
                         gene.ids=mouse.macrophages$gene.ids,
@@ -109,3 +109,4 @@ for (module in modules.genes) {
                 )
     )
 }
+

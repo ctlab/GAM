@@ -2,11 +2,18 @@ plotModuleWithAttr <- function(module, attr, ...) {
     if (!(attr %in% names(nodeDataDefaults(module)))) {
         return()        
     }
+    # Hack for coloring
+    
+    de <- unlist(nodeData(module, nodes(module), "norm.diff.expr"))
+    de <- de * 10
+    de[de < 0] <- de[de < 0] - 1
+    de[de > 0] <- de[de > 0] + 1
+    
     attr.labels = na.omit(unlist(nodeData(module, nodes(module), attr=attr)))
     node.labels = nodes(module)
     names(node.labels) <-node.labels
     all.labels = c(attr.labels, node.labels[!names(node.labels) %in% names(attr.labels)])
-    plotModule(module, layout=layout.kamada.kawai, labels=all.labels[node.labels], ...)        
+    plotModule(module, diff.expr=de, layout=layout.kamada.kawai, labels=all.labels[node.labels], ...)        
 }
 
 save_module <- function(module, outputFilePrefix) {
@@ -31,6 +38,12 @@ save_module <- function(module, outputFilePrefix) {
     #saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type="XGMML")
 }
 
+fix_inf <- function(dm) {    
+    dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
+    dm[dm == Inf] <- max(dm[dm != Inf]) + 1
+    dm
+}
+
 # :ToDo: extract function
 find_modules <- function(network, 
                          met.de=NULL, gene.de=NULL, rxn.de=NULL,
@@ -47,6 +60,7 @@ find_modules <- function(network,
     }
     
     if (!is.null(gene.de)) {
+        gene.de$logFC <- fix_inf(gene.de$logFC)
         if (!is.null(gene.ids)) {
             data("gene.id.map")
             gene.de <- convert.pval(gene.de, 
@@ -59,6 +73,7 @@ find_modules <- function(network,
     }
     
     if (!is.null(met.de)) {
+        met.de$logFC <- fix_inf(met.de$logFC)
         print("Processing metabolite p-values...")
         if (!is.null(met.ids)) {
             data("met.id.map")
@@ -77,6 +92,7 @@ find_modules <- function(network,
     
     
     if (!is.null(rxn.de)) {
+        rxn.de$logFC <- fix_inf(rxn.de$logFC)
         print("Processing reaction p-values...")
         if ("origin" %in% colnames(rxn.de)) {
             graph <- convert.node.names(graph, rxn.de$ID, rxn.de$origin)
@@ -87,6 +103,7 @@ find_modules <- function(network,
             rxn.de <- rxn.de[rxn.de$ID %in% nodes(graph), ]
             nodeData(graph, rxn.de$ID, "shortName") <- 
                 gene.id.map$name[match(rxn.de$origin, gene.id.map[,network$gene.ids])]
+            nodeData(graph, rxn.de$ID, "nodeType") <- "gene"                
             rxn.de$origin <- NULL
         }
         
@@ -103,15 +120,12 @@ find_modules <- function(network,
 
     print("Processing all p-values together")    
     subnet <- subNetwork(all.de$ID, graph)
-        
+    
+    # :ToDo: change Inf value for genes and metabolites
     dm <- all.de[, "logFC"]
-    dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
-    dm[dm == Inf] <- max(dm[dm != Inf]) + 1
+
     
-    # Hack for coloring
-    dm[dm < 0] <- dm[dm < 0] - 1
-    dm[dm > 0] <- dm[dm > 0] + 1
-    
+     
     names(dm) <- all.de$ID
     nodeDataDefaults(subnet, "diff.expr") <- 0
     nodeData(subnet, nodes(subnet), "diff.expr") <- dm[nodes(subnet)]
@@ -155,9 +169,36 @@ find_modules <- function(network,
         nodeDataDefaults(subnet, "score") <- -Inf
         nodeData(subnet, nodes(subnet), "score") <- scores
         
-        append_module <- function(res, graph, n=NULL) {
+        append_module <- function(res, module.graph, n=NULL) {
+            
+            module.nodes <- nodes(module.graph)
+            module.nodes.met <- module.nodes[module.nodes %in% met.de$ID]
+            module.nodes.rxn <- module.nodes[module.nodes %in% rxn.de$ID]
+            
+            if (length(module.nodes.met) > 0) {
+                module.met.de <- dm[module.nodes.met]
+                names(module.met.de) <- module.nodes.met
+                module.met.norm.de <- module.met.de / max(abs(module.met.de))
+            } else {
+                module.met.norm.de <- NULL
+            }
+            
+            if (length(module.nodes.rxn) > 0) {
+                module.rxn.de <- dm[module.nodes.rxn]
+                names(module.rxn.de) <- module.nodes.rxn
+                module.rxn.norm.de <- module.rxn.de / max(abs(module.rxn.de))
+            } else {
+                module.rxn.norm.de <- NULL
+            }
+            
+            module.norm.de <- c(module.met.norm.de, module.rxn.norm.de)
+            module.norm.de <- module.norm.de[nodes(module.graph)]
+            
+            nodeDataDefaults(module.graph, "norm.diff.expr") <- NA
+            nodeData(module.graph, nodes(module.graph), "norm.diff.expr") <- unname(module.norm.de)
+            
             module=newEmptyObject()
-            module$graph = graph
+            module$graph = module.graph               
             module$met.fdr = met.fdr
             module$gene.fdr = gene.fdr
             module$n = n            
@@ -185,15 +226,15 @@ find_modules <- function(network,
             
             
             for (i in 0:(heinz.nModules-1)) {
-                graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+                module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
                                        network = subnet)
-                res <- append_module(res, graph, i+1)
+                res <- append_module(res, module.graph, i+1)
                 
             }
             
         } else {
-            graph <- runFastHeinz(subnet, scores)
-            res <- append_module(res, graph)
+            module.graph <- runFastHeinz(subnet, scores)
+            res <- append_module(res, module.graph)
         }
     }
     return(res)
