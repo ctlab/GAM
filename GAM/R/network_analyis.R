@@ -38,102 +38,128 @@ save_module <- function(module, outputFilePrefix) {
     #saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type="XGMML")
 }
 
-fix_inf <- function(dm) {    
-    dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
-    dm[dm == Inf] <- max(dm[dm != Inf]) + 1
-    dm
+add_norm.diff.expr <- function(module.graph) {
+    nodeDataDefaults(module.graph, "norm.diff.expr") <- NA
+    module.nodes <- nodes(module.graph)
+    node.types <- unique(na.omit(unlist(nodeData(module.graph, module.nodes, "nodeType"))))
+        
+    for (node.type in node.types) {
+        module.type.nodes <- module.nodes[which(unlist(nodeData(module.graph, module.nodes, "nodeType")) == node.type)]
+        module.type.de <- unlist(nodeData(module.graph, module.type.nodes, "diff.expr"))        
+        module.type.norm.de <- module.type.de / max(abs(module.type.de))        
+        nodeData(module.graph, module.type.nodes, "norm.diff.expr") <- unname(module.type.norm.de)
+    }
+    
+    module.graph
+}
+
+make_experiment_set <- function(network, 
+                met.de=NULL, gene.de=NULL, rxn.de=NULL,
+                met.ids=NULL, gene.ids=NULL
+                ) {
+    es <- newEmptyObject()
+    es$network <- network
+    es$met.de <- met.de
+    es$gene.de <- gene.de
+    es$rxn.de <- rxn.de 
+    
+    
+    es$graph <- es$network$graph
+    
+    if (!is.null(es$gene.de)) {
+        print("Processing gene p-values...")
+        es$gene.de$logFC <- fix_inf(es$gene.de$logFC)
+        if (!is.null(gene.ids)) {
+            data("gene.id.map")
+            es$gene.de <- convert.pval(es$gene.de, 
+                                    from=gene.id.map[,gene.ids], 
+                                    to=gene.id.map[,es$network$gene.ids])
+        }    
+        es$gene.de$origin <- NULL
+        print("Converting gene p-values to reactions...")
+        es$rxn.de <- convert.pval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+    }
+    
+    if (!is.null(es$met.de)) {
+        print("Processing metabolite p-values...")
+        es$met.de$logFC <- fix_inf(es$met.de$logFC)        
+        if (!is.null(met.ids)) {
+            data("met.id.map")
+            es$met.de <- convert.pval(es$met.de, 
+                                   from=met.id.map[,met.ids], 
+                                   to=met.id.map[,es$network$met.ids])
+        }
+        es$met.de$origin <- NULL
+        
+        es$met.pval <- es$met.de$pval
+        names(es$met.pval) <- es$met.de$ID
+        es$fb.met <- fitBumModel(es$met.pval, plot = TRUE)
+    } else {
+        es$met.pval <- NULL
+    }
+    
+    
+    if (!is.null(es$rxn.de)) {
+        print("Processing reaction p-values...")
+        es$rxn.de$logFC <- fix_inf(es$rxn.de$logFC)        
+        if ("origin" %in% colnames(es$rxn.de)) {
+            print("Collapsing reactions by common most significant enzymes")
+            #rxn.de.origin.split <- es$rxn.de$origin
+            rxn.de.origin.split <- split.mapping.by.connectivity(es$graph, es$rxn.de$ID, es$rxn.de$origin)
+            
+            es$graph <- convert.node.names(es$graph, es$rxn.de$ID, rxn.de.origin.split)
+            
+            
+            es$rxn.de.orig <- es$rxn.de
+            es$rxn.de$ID <- rxn.de.origin.split
+            
+            es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% nodes(es$graph), ]
+            nodeData(es$graph, es$rxn.de$ID, "shortName") <- 
+                gene.id.map$name[match(es$rxn.de$origin, gene.id.map[,es$network$gene.ids])]
+            nodeData(es$graph, es$rxn.de$ID, "nodeType") <- "rxns"                
+            es$rxn.de$origin <- NULL
+        }
+        
+        es$rxn.pval <- es$rxn.de$pval
+        names(es$rxn.pval) <- es$rxn.de$ID
+        
+        es$fb.rxn <- fitBumModel(es$rxn.pval, plot = TRUE)
+    } else {
+        es$rxn.pval <- NULL
+    }
+    
+    es$all.de <- rbind(es$met.de, es$rxn.de)
+    es$all.pval <- c(es$rxn.pval, es$met.pval)
+    
+    print("Processing all p-values together")    
+    es$subnet <- subNetwork(es$all.de$ID, es$graph)
+    
+    # :ToDo: change Inf value for genes and metabolites
+    dm <- es$all.de[, "logFC"]   
+    
+    
+    names(dm) <- es$all.de$ID
+    nodeDataDefaults(es$subnet, "diff.expr") <- 0
+    nodeData(es$subnet, nodes(es$subnet), "diff.expr") <- dm[nodes(es$subnet)]
+    
+    
+    es$fb.all <- fitBumModel(es$all.pval, plot = TRUE)
+    return(es)
 }
 
 # :ToDo: extract function
-find_modules <- function(network, 
-                         met.de=NULL, gene.de=NULL, rxn.de=NULL,
-                         met.ids=NULL, gene.ids=NULL,
-                         fdrs=NULL, met.fdrs=NULL, gene.fdrs=NULL,                         
+find_modules <- function(es,                         
+                         fdrs=NULL, met.fdrs=NULL, gene.fdrs=NULL,
                          score.separately=F,
                          heinz.py=NULL, heinz.nModules=1,
                          heinz.tolerance=10,
                          heinz.subopt_diff=100) {
-    graph <- network$graph    
+    
+    res <- list()    
     if (!is.null(fdrs)) {
         met.fdrs <- fdrs
         gene.fdrs <- fdrs
     }
-    
-    if (!is.null(gene.de)) {
-        gene.de$logFC <- fix_inf(gene.de$logFC)
-        if (!is.null(gene.ids)) {
-            data("gene.id.map")
-            gene.de <- convert.pval(gene.de, 
-                                    from=gene.id.map[,gene.ids], 
-                                    to=gene.id.map[,network$gene.ids])
-        }    
-        gene.de$origin <- NULL
-        print("Converting gene p-values to reactions...")
-        rxn.de <- convert.pval(gene.de, from=network$rxn2gene$gene, to=network$rxn2gene$rxn)
-    }
-    
-    if (!is.null(met.de)) {
-        met.de$logFC <- fix_inf(met.de$logFC)
-        print("Processing metabolite p-values...")
-        if (!is.null(met.ids)) {
-            data("met.id.map")
-            met.de <- convert.pval(met.de, 
-                                   from=met.id.map[,met.ids], 
-                                   to=met.id.map[,network$met.ids])
-        }
-        met.de$origin <- NULL
-        
-        met.pval <- met.de$pval
-        names(met.pval) <- met.de$ID
-        fb.met <- fitBumModel(met.pval, plot = TRUE)
-    } else {
-        met.pval <- NULL
-    }
-    
-    
-    if (!is.null(rxn.de)) {
-        rxn.de$logFC <- fix_inf(rxn.de$logFC)
-        print("Processing reaction p-values...")
-        if ("origin" %in% colnames(rxn.de)) {
-            graph <- convert.node.names(graph, rxn.de$ID, rxn.de$origin)
-            
-            rxn.de.orig <- rxn.de
-            rxn.de$ID <- rxn.de$origin
-            
-            rxn.de <- rxn.de[rxn.de$ID %in% nodes(graph), ]
-            nodeData(graph, rxn.de$ID, "shortName") <- 
-                gene.id.map$name[match(rxn.de$origin, gene.id.map[,network$gene.ids])]
-            nodeData(graph, rxn.de$ID, "nodeType") <- "gene"                
-            rxn.de$origin <- NULL
-        }
-        
-        rxn.pval <- rxn.de$pval
-        names(rxn.pval) <- rxn.de$ID
-        
-        fb.rxn <- fitBumModel(rxn.pval, plot = TRUE)
-    } else {
-        rxn.pval <- NULL
-    }
-    
-    all.de <- rbind(met.de, rxn.de)
-    all.pval <- c(rxn.pval, met.pval)
-
-    print("Processing all p-values together")    
-    subnet <- subNetwork(all.de$ID, graph)
-    
-    # :ToDo: change Inf value for genes and metabolites
-    dm <- all.de[, "logFC"]
-
-    
-     
-    names(dm) <- all.de$ID
-    nodeDataDefaults(subnet, "diff.expr") <- 0
-    nodeData(subnet, nodes(subnet), "diff.expr") <- dm[nodes(subnet)]
-    
-    
-    fb.all <- fitBumModel(all.pval, plot = TRUE)
-    
-    res <- list()    
     
     L <- max(length(met.fdrs), length(gene.fdrs))
     for (j in 1:L) {    
@@ -145,9 +171,9 @@ find_modules <- function(network,
             met.fdr <- met.fdrs[j]    
             print(paste("met.fdr =", met.fdr))
             if (score.separately) {
-                met.scores <- scoreFunction(fb.met, met.fdr)             
+                met.scores <- scoreFunction(es$fb.met, met.fdr)             
             } else {
-                met.scores <- scoreFunction(fb.all, met.fdr)[names(met.pval)]                
+                met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
             }
         }
         
@@ -157,48 +183,22 @@ find_modules <- function(network,
             gene.fdr <- gene.fdrs[j] 
             print(paste("gene.fdr =", gene.fdr))
             if (score.separately) {             
-                rxn.scores <- scoreFunction(fb.rxn, gene.fdr)
+                rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
             } else {                
-                rxn.scores <- scoreFunction(fb.all, gene.fdr)[names(rxn.pval)]
+                rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
             }
         }
         
         all.scores <- c(met.scores, rxn.scores)        
-        scores <- all.scores[nodes(subnet)]
+        scores <- all.scores[nodes(es$subnet)]
         
-        nodeDataDefaults(subnet, "score") <- -Inf
-        nodeData(subnet, nodes(subnet), "score") <- scores
+        nodeDataDefaults(es$subnet, "score") <- -Inf
+        nodeData(es$subnet, nodes(es$subnet), "score") <- scores
         
         append_module <- function(res, module.graph, n=NULL) {
             
-            module.nodes <- nodes(module.graph)
-            module.nodes.met <- module.nodes[module.nodes %in% met.de$ID]
-            module.nodes.rxn <- module.nodes[module.nodes %in% rxn.de$ID]
-            
-            if (length(module.nodes.met) > 0) {
-                module.met.de <- dm[module.nodes.met]
-                names(module.met.de) <- module.nodes.met
-                module.met.norm.de <- module.met.de / max(abs(module.met.de))
-            } else {
-                module.met.norm.de <- NULL
-            }
-            
-            if (length(module.nodes.rxn) > 0) {
-                module.rxn.de <- dm[module.nodes.rxn]
-                names(module.rxn.de) <- module.nodes.rxn
-                module.rxn.norm.de <- module.rxn.de / max(abs(module.rxn.de))
-            } else {
-                module.rxn.norm.de <- NULL
-            }
-            
-            module.norm.de <- c(module.met.norm.de, module.rxn.norm.de)
-            module.norm.de <- module.norm.de[nodes(module.graph)]
-            
-            nodeDataDefaults(module.graph, "norm.diff.expr") <- NA
-            nodeData(module.graph, nodes(module.graph), "norm.diff.expr") <- unname(module.norm.de)
-            
             module=newEmptyObject()
-            module$graph = module.graph               
+            module$graph = add_norm.diff.expr(module.graph)
             module$met.fdr = met.fdr
             module$gene.fdr = gene.fdr
             module$n = n            
@@ -210,8 +210,8 @@ find_modules <- function(network,
             tmpdir <- tempdir()        
             edges_file <- paste(tmpdir, "edges.txt", sep="/")
             nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
-            writeHeinzEdges(subnet, file=edges_file)
-            writeHeinzNodes(subnet, file=nodes_file, use.score=T)
+            writeHeinzEdges(es$subnet, file=edges_file)
+            writeHeinzNodes(es$subnet, file=nodes_file, use.score=T)
             
             
             system2(heinz.py,
@@ -222,18 +222,18 @@ find_modules <- function(network,
                       "-s", heinz.nModules,
                       "--tolerance", heinz.tolerance,
                       "--subopt_diff", heinz.subopt_diff,
-                      "-v")); date()
+                      "-v"));
             
             
             for (i in 0:(heinz.nModules-1)) {
                 module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                       network = subnet)
+                                       network = es$subnet)
                 res <- append_module(res, module.graph, i+1)
                 
             }
             
         } else {
-            module.graph <- runFastHeinz(subnet, scores)
+            module.graph <- runFastHeinz(es$subnet, scores)
             res <- append_module(res, module.graph)
         }
     }

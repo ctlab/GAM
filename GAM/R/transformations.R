@@ -103,3 +103,48 @@ convert.node.names <- function(network, from, to) {
     
     network2   
 }
+
+split.mapping.by.connectivity <- function(graph, from, to) {
+    names(to) <- from
+    
+    es <- edges(graph)
+    to.new <- to
+    to.new[] <- NA
+    
+    comp_names <- unique(to)
+    comp_counts <- rep(0, length(comp_names))
+    names(comp_counts) <- comp_names
+    
+    comp_sizes <- rep(0, length(comp_names))
+    names(comp_sizes) <- comp_names
+    
+    dfs <- function(node, mark.allow, new.name) {    
+        if (is.na(to[node]) || (to[node] != mark.allow)) {
+            return(0)
+        }
+        
+        if (!is.na(to.new[node])) {
+            return(0)
+        }
+        to.new[node] <<- new.name
+        
+        res <- 1
+        for (v in es[[node]]) {
+            res <- res + dfs(v, mark.allow, new.name)
+        }
+        res
+    }
+    
+    for (node in from) {
+        if (!is.na(to.new[node])) {
+            next
+        }
+        comp_n <- comp_counts[to[node]] + 1
+        comp_counts[to[node]] <- comp_n
+        comp_name <- paste(to[node], comp_n, sep=".")
+        comp_size <- dfs(node, to[node], comp_name)    
+        comp_sizes[comp_name] <- comp_size
+    }
+    
+    to.new
+}

@@ -59,6 +59,13 @@ normalize_expressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     return(exprs)
 }
 
+
+fix_inf <- function(dm) {    
+    dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
+    dm[dm == Inf] <- max(dm[dm != Inf]) + 1
+    dm
+}
+
 diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
     expression_matrix<-as.matrix(exprs)
     
