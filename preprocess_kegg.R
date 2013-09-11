@@ -5,8 +5,6 @@ rxn2name <- read.table("./networks//kegg/rxn2name.tsv", header=T, colClasses="ch
 met2name <- read.table("./networks//kegg/met2name.tsv", header=T, colClasses="character")
 
 
-#rxns2keep <- read.table("./networks//kegg/rxns2keep.lst", colClasses="character")[,1]
-
 mets2mask <- read.table("./networks//kegg/mets2mask.lst", colClasses="character")[,1]
 
 
@@ -62,9 +60,6 @@ net.sq <- graph.edgelist(as.matrix(net.sq), directed=F)
 net.sq <- simplify(net.sq, remove.multiple=T)
 net.sq <- igraph.to.graphNEL(net.sq)
 
-
-
-
 long_names.met <- met2name$name
 names(long_names.met) <- met2name$met
 long_names.rxn <- rxn2name$name
@@ -88,12 +83,19 @@ nodeData(net.sq, attr="nodeType") <- node_types[nodes(net.sq)]
 
 saveNetwork(net.sq, file="./networks/kegg/net.sq", type="sif")
 
+
+met2name$name <- gsub(";.*$", "", met2name$name)
+rxn2name$name <- gsub(";.*$", "", rxn2name$name)
+
 kegg.mouse.network <- newEmptyObject()
 kegg.mouse.network$enz2gene <- enz2gene
 kegg.mouse.network$rxn2enz <- rxn2enz
 kegg.mouse.network$rxn2gene <- rxn2gene
-kegg.mouse.network$graph <- net.sq
+kegg.mouse.network$graph.raw <- net
+kegg.mouse.network$graph.sq <- net.sq
 kegg.mouse.network$met.ids <- "KEGG"
 kegg.mouse.network$gene.ids <- "Entrez"
-
+kegg.mouse.network$met2name <- met2name
+kegg.mouse.network$rxn2name <- rxn2name
 save(kegg.mouse.network, file="./GAM//data/kegg.mouse.network.rda")
+

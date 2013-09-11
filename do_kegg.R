@@ -41,7 +41,7 @@ heinz.nModules <- 3
 # If there is no heinz.py, heuristic search will be run instead.
 #heinz.py <- NULL
 
-es.M1.M2 <- make_experiment_set(network=kegg.mouse.network,
+es.M1.M2.raw <- make_experiment_set.raw(network=kegg.mouse.network,
                                 met.de=mouse.macrophages$met.de,
                                 gene.de=mouse.macrophages$gene.de,
                                 met.ids=mouse.macrophages$met.ids, 
@@ -54,17 +54,18 @@ gene.fdrs <- c(1e-9, 1e-7, 1e-7, 1e-5, 1e-7, 1e-6, 1e-5, 1e-3, 1e-3, 1e-2)
 
 
 
-met.fdrs=c(1e-3)
+met.fdrs=c(1e-2)
 gene.fdrs=c(1e-3)
 met.fdrs=c(1e-5)
 gene.fdrs=c(1e-5)
 
 # Getting list of most significant modules base both on gene and metabolite data
-modules <- find_modules(es.M1.M2,
+modules <- find_modules.raw(es.M1.M2.raw,
                         met.fdrs=met.fdrs,
                         gene.fdrs=gene.fdrs,                         
                         heinz.py=heinz.py, 
-                        heinz.nModules=1
+                        heinz.nModules=3,
+                        score.separately=T
                         )
 
 
@@ -72,7 +73,7 @@ set.seed(42)
 # Saving pdf- and sif- files for found modules
 for (module in modules) {
     save_module(module$graph, 
-                paste0(outdir, "/module.", 
+                paste0(outdir, "/module.raw.", 
                        "mf=", module$met.fdr,
                        ".rf=", module$gene.fdr,
                        if (is.null(module$n)) "" else paste0("#", module$n)
