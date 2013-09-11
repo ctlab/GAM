@@ -41,27 +41,30 @@ heinz.nModules <- 3
 # If there is no heinz.py, heuristic search will be run instead.
 #heinz.py <- NULL
 
-# Pair of vectors of corresponding FDR values for metabolites and genes.
-# Vectors have to be of the same length!
-met.fdrs  <- c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5, 1e-5, 1e-5, 1e-5, 1e-3, 1e-3)
-gene.fdrs <- c(1e-9, 1e-7, 1e-7, 1e-5, 1e-7, 1e-6, 1e-5, 1e-3, 1e-3, 1e-2)
-
-met.fdrs=c(1e-5)
-gene.fdrs=c(1e-5)
-
-
 es.M1.M2 <- make_experiment_set(network=kegg.mouse.network,
                                 met.de=mouse.macrophages$met.de,
                                 gene.de=mouse.macrophages$gene.de,
                                 met.ids=mouse.macrophages$met.ids, 
                                 gene.ids=mouse.macrophages$gene.ids)
 
+# Pair of vectors of corresponding FDR values for metabolites and genes.
+# Vectors have to be of the same length!
+met.fdrs  <- c(1e-9, 1e-9, 1e-7, 1e-7, 1e-5, 1e-5, 1e-5, 1e-5, 1e-3, 1e-3)
+gene.fdrs <- c(1e-9, 1e-7, 1e-7, 1e-5, 1e-7, 1e-6, 1e-5, 1e-3, 1e-3, 1e-2)
+
+
+
+met.fdrs=c(1e-3)
+gene.fdrs=c(1e-3)
+met.fdrs=c(1e-5)
+gene.fdrs=c(1e-5)
+
 # Getting list of most significant modules base both on gene and metabolite data
 modules <- find_modules(es.M1.M2,
                         met.fdrs=met.fdrs,
                         gene.fdrs=gene.fdrs,                         
                         heinz.py=heinz.py, 
-                        heinz.nModules=heinz.nModules
+                        heinz.nModules=1
                         )
 
 
@@ -76,6 +79,7 @@ for (module in modules) {
                 )
     )
 }
+exit(0)
 
 state0 <- "Ctrl"
 

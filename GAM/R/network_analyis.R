@@ -1,4 +1,4 @@
-plotModuleWithAttr <- function(module, attr, ...) {
+plotModuleWithAttr <- function(module, attr="shortName", layout=layout.kamada.kawai, ...) {
     if (!(attr %in% names(nodeDataDefaults(module)))) {
         return()        
     }
@@ -13,7 +13,7 @@ plotModuleWithAttr <- function(module, attr, ...) {
     node.labels = nodes(module)
     names(node.labels) <-node.labels
     all.labels = c(attr.labels, node.labels[!names(node.labels) %in% names(attr.labels)])
-    plotModule(module, diff.expr=de, layout=layout.kamada.kawai, labels=all.labels[node.labels], ...)        
+    plotModule(module, diff.expr=de, layout=layout, labels=all.labels[node.labels], ...)        
 }
 
 save_module <- function(module, outputFilePrefix) {
@@ -54,9 +54,10 @@ add_norm.diff.expr <- function(module.graph) {
 }
 
 make_experiment_set <- function(network, 
-                met.de=NULL, gene.de=NULL, rxn.de=NULL,
-                met.ids=NULL, gene.ids=NULL
-                ) {
+                                met.de=NULL, gene.de=NULL, rxn.de=NULL,
+                                met.ids=NULL, gene.ids=NULL,
+                                collapse.reactions=F
+) {
     es <- newEmptyObject()
     es$network <- network
     es$met.de <- met.de
@@ -101,19 +102,21 @@ make_experiment_set <- function(network,
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
-        es$rxn.de$logFC <- fix_inf(es$rxn.de$logFC)        
+        es$rxn.de$logFC <- fix_inf(es$rxn.de$logFC)                        
         if ("origin" %in% colnames(es$rxn.de)) {
-            print("Collapsing reactions by common most significant enzymes")
-            #rxn.de.origin.split <- es$rxn.de$origin
-            rxn.de.origin.split <- split.mapping.by.connectivity(es$graph, es$rxn.de$ID, es$rxn.de$origin)
+            if (collaps.reactions) {
+                print("Collapsing reactions by common most significant enzymes")
+                #rxn.de.origin.split <- es$rxn.de$origin
+                es$rxn.de.origin.split <- split.mapping.by.connectivity(es$graph, es$rxn.de$ID, es$rxn.de$origin)
+                
+                es$graph <- convert.node.names(es$graph, es$rxn.de$ID, es$rxn.de.origin.split)
+                
+                
+                es$rxn.de.orig <- es$rxn.de
+                es$rxn.de$ID <- es$rxn.de.origin.split            
+            }
             
-            es$graph <- convert.node.names(es$graph, es$rxn.de$ID, rxn.de.origin.split)
-            
-            
-            es$rxn.de.orig <- es$rxn.de
-            es$rxn.de$ID <- rxn.de.origin.split
-            
-            es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% nodes(es$graph), ]
+            es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% nodes(es$graph), ]            
             nodeData(es$graph, es$rxn.de$ID, "shortName") <- 
                 gene.id.map$name[match(es$rxn.de$origin, gene.id.map[,es$network$gene.ids])]
             nodeData(es$graph, es$rxn.de$ID, "nodeType") <- "rxns"                
@@ -127,7 +130,8 @@ make_experiment_set <- function(network,
     } else {
         es$rxn.pval <- NULL
     }
-    
+    es$met.de$origin <- NULL
+    es$rxn.de$origin <- NULL
     es$all.de <- rbind(es$met.de, es$rxn.de)
     es$all.pval <- c(es$rxn.pval, es$met.pval)
     
@@ -167,7 +171,7 @@ find_modules <- function(es,
         
         met.scores <- NULL
         met.fdr <- NULL
-        if (!is.null(met.de)) {            
+        if (!is.null(es$met.de)) {            
             met.fdr <- met.fdrs[j]    
             print(paste("met.fdr =", met.fdr))
             if (score.separately) {
@@ -179,7 +183,7 @@ find_modules <- function(es,
         
         rxn.scores <- NULL
         gene.fdr <- NULL
-        if (!is.null(rxn.de)) {            
+        if (!is.null(es$rxn.de)) {            
             gene.fdr <- gene.fdrs[j] 
             print(paste("gene.fdr =", gene.fdr))
             if (score.separately) {             

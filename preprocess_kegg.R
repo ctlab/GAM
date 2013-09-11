@@ -53,44 +53,46 @@ write.table(rxn2rxn, "./networks//kegg/rxn2rxn.masked.tsv", row.names=F, quote=F
 
 
 
-net.sq.1 <- cbind(u=net$met.x, e="m2m", v=net$met.y)
-net.sq.2 <- cbind(u=rxn2met$rxn, e="r2m", v=rxn2met$met)
-net.sq.3 <- cbind(u=rxn2rxn$rxn.x, e="r2r", v=rxn2rxn$rxn.y)
+net.sq.1 <- cbind(u=net$met.x, v=net$met.y)
+net.sq.2 <- cbind(u=rxn2met$rxn, v=rxn2met$met)
+net.sq.3 <- cbind(u=rxn2rxn$rxn.x, v=rxn2rxn$rxn.y)
 net.sq <- rbind(net.sq.1, net.sq.2, net.sq.3)
 
-write.table(net.sq, "./networks//kegg/net.sq.sif", row.names=F, quote=F, col.names=F)
+net.sq <- graph.edgelist(as.matrix(net.sq), directed=F)
+net.sq <- simplify(net.sq, remove.multiple=T)
+net.sq <- igraph.to.graphNEL(net.sq)
+
+
+
 
 long_names.met <- met2name$name
 names(long_names.met) <- met2name$met
 long_names.rxn <- rxn2name$name
 names(long_names.rxn) <- rxn2name$rxn
-
-long_names <- data.frame(longName = na.omit(c(long_names.met, long_names.rxn)), stringsAsFactors=F)
-write.table(long_names, "./networks//kegg/net.sq_longName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
-# remove quotes from first line!
+long_names <- c(long_names.met, long_names.rxn)
+nodeDataDefaults(net.sq, "longName") <- NA
+nodeData(net.sq, attr="longName") <- long_names[nodes(net.sq)]
 
 short_names <- long_names
-colnames(short_names) <- "shortName"
-short_names$shortName <- gsub(";.*$", "", short_names$shortName)
-write.table(short_names, "./networks//kegg/net.sq_shortName.NA", row.names=T, quote=T, col.names=T, sep=" = ")
-# remove quotes from first line!
+short_names <- gsub(";.*$", "", short_names)
+nodeDataDefaults(net.sq, "shortName") <- NA
+nodeData(net.sq, attr="shortName") <- short_names[nodes(net.sq)]
+
 
 mets <- unique(c(net$met.x, net$met.y))
 rxns <- unique(net$rxn)
-node_types=data.frame(nodeType=rep(c("met", "rxn"), c(length(mets), length(rxns))))
-rownames(node_types) <- c(mets, rxns)
-write.table(node_types, "./networks//kegg/net.sq_nodeType.NA", row.names=T, quote=T, col.names=T, sep=" = ")
-# remove quotes from first line!
+node_types=rep(c("met", "rxn"), c(length(mets), length(rxns)))
+names(node_types) <- c(mets, rxns)
+nodeDataDefaults(net.sq, "nodeType") <- NA
+nodeData(net.sq, attr="nodeType") <- node_types[nodes(net.sq)]
+
+saveNetwork(net.sq, file="./networks/kegg/net.sq", type="sif")
 
 kegg.mouse.network <- newEmptyObject()
-kegg.mouse.network$enz2gene <- read.table("./networks//kegg/enz2gene.tsv", header=T, colClasses="character")
-kegg.mouse.network$rxn2enz <- read.table("./networks//kegg/rxn2enz.tsv", header=T, colClasses="character")
-kegg.mouse.network$rxn2gene <- merge(kegg.mouse.network$rxn2enz, kegg.mouse.network$enz2gene)[, c("rxn", "gene")]
-network.base <- "./networks//kegg/net.sq"
-kegg.mouse.network$graph <- loadNetwork.sif(
-    paste(network.base, "sif", sep="."),
-    list.files(dirname(network.base), paste(basename(network.base), "_\\w+.NA", sep=""), full.names=T)
-)
+kegg.mouse.network$enz2gene <- enz2gene
+kegg.mouse.network$rxn2enz <- rxn2enz
+kegg.mouse.network$rxn2gene <- rxn2gene
+kegg.mouse.network$graph <- net.sq
 kegg.mouse.network$met.ids <- "KEGG"
 kegg.mouse.network$gene.ids <- "Entrez"
 
