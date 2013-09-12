@@ -1,4 +1,4 @@
-plotModuleWithAttr <- function(module, attr="shortName", layout=layout.kamada.kawai, ...) {
+plotModuleWithAttr <- function(module, attr="label", layout=layout.kamada.kawai, ...) {
     if (!(attr %in% names(nodeDataDefaults(module)))) {
         return()        
     }
@@ -36,7 +36,7 @@ save_module <- function(module, outputFilePrefix) {
         
     pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
     
-    plotModuleWithAttr(module, "shortName", vertex.size=2)
+    plotModuleWithAttr(module, "label", vertex.size=2)
         
     dev.off()
     
@@ -65,6 +65,78 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 }
 
 
+# :ToDo: change name (and function)
+.process_pval_and_met_de <- function(es, met.ids, gene.ids) {
+    if (!is.null(es$gene.de)) {
+        print("Processing gene p-values...")
+        es$gene.de$logFC <- fix_inf(es$gene.de$logFC)
+        if (!is.null(gene.ids)) {
+            data("gene.id.map")
+            es$gene.de <- convert.pval(es$gene.de, 
+                                       from=gene.id.map[,gene.ids], 
+                                       to=gene.id.map[,es$network$gene.ids])
+        }    
+        es$gene.de$origin <- NULL
+        print("Converting gene p-values to reactions...")
+        es$rxn.de <- convert.pval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+        
+    }
+    
+    if (!is.null(es$met.de)) {
+        print("Processing metabolite p-values...")
+        es$met.de$logFC <- fix_inf(es$met.de$logFC)        
+        if (!is.null(met.ids)) {
+            data("met.id.map")
+            es$met.de <- convert.pval(es$met.de, 
+                                      from=met.id.map[,met.ids], 
+                                      to=met.id.map[,es$network$met.ids])
+        }
+        
+        es$met.pval <- es$met.de$pval
+        names(es$met.pval) <- es$met.de$ID
+        es$fb.met <- fitBumModel(es$met.pval, plot = TRUE)
+    } else {
+        es$met.pval <- NULL
+    }
+    
+    return(es)
+}
+
+graphNEL.from.tables <- function(node.table, edge.table, node.col=1, edge.cols=c(1,2), directed=T, ignore.solitary.nodes=T) {    
+    if (is.character(node.col)) {
+        node.col <- match(node.col, colnames(node.table))
+    }
+    if (is.character(edge.cols)) {
+        edge.cols <- match(edge.cols, colnames(edge.table))
+    }
+    
+    net1 <- graph.edgelist(as.matrix(edge.table[,edge.cols]), directed=directed)
+    net1 <- simplify(net1, remove.multiple=T)
+    net1 <- igraph.to.graphNEL(net1)
+    
+    if (ignore.solitary.nodes) {        
+        node.table <- node.table[node.table[,node.col] %in% nodes(net1),]
+    }
+    
+    for (node_attr in colnames(node.table)[-node.col]) {
+        if (node_attr == "name") {
+            next
+        }
+        nodeDataDefaults(net1, node_attr) <- NA
+        nodeData(net1, n=node.table[,node.col], attr=node_attr) <- node.table[,node_attr]
+    }
+    
+    for (edge_attr in colnames(edge.table)[-edge.cols]) {
+        if (edge_attr == "name") {
+            next
+        }
+        edgeDataDefaults(net1, edge_attr) <- NA
+        edgeData(net1, from=edge.table[,edge.cols[1]], to=edge.table[,edge.cols[2]], attr=edge_attr) <- 
+            edge.table[,edge_attr]        
+    }
+    return(net1)
+}
+
 make_experiment_set <- function(network, 
                                 met.de=NULL, gene.de=NULL, rxn.de=NULL,
                                 met.ids=NULL, gene.ids=NULL                                
@@ -78,37 +150,8 @@ make_experiment_set <- function(network,
     
     es$graph.raw <- es$network$graph.raw
     
-    if (!is.null(es$gene.de)) {
-        print("Processing gene p-values...")
-        es$gene.de$logFC <- fix_inf(es$gene.de$logFC)
-        if (!is.null(gene.ids)) {
-            data("gene.id.map")
-            es$gene.de <- convert.pval(es$gene.de, 
-                                       from=gene.id.map[,gene.ids], 
-                                       to=gene.id.map[,es$network$gene.ids])
-        }    
-        es$gene.de$origin <- NULL
-        print("Converting gene p-values to reactions...")
-        es$rxn.de <- convert.pval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
-    }
     
-    if (!is.null(es$met.de)) {
-        print("Processing metabolite p-values...")
-        es$met.de$logFC <- fix_inf(es$met.de$logFC)        
-        if (!is.null(met.ids)) {
-            data("met.id.map")
-            es$met.de <- convert.pval(es$met.de, 
-                                      from=met.id.map[,met.ids], 
-                                      to=met.id.map[,es$network$met.ids])
-        }
-                
-        es$met.pval <- es$met.de$pval
-        names(es$met.pval) <- es$met.de$ID
-        es$fb.met <- fitBumModel(es$met.pval, plot = TRUE)
-    } else {
-        es$met.pval <- NULL
-    }
-    
+    es <- .process_pval_and_met_de(es, met.ids=met.ids, gene.ids=gene.ids)
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
@@ -150,37 +193,23 @@ make_experiment_set <- function(network,
     net.edges.ext <- merge(net.edges.pval, net.edges.ext)
     net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]
     net.edges.ext <- merge(net.edges.ext, es$network$rxn2name, all.x=T)
-    net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]
+    net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
+    net.edges.ext$logPval <- log(net.edges.ext$pval)
     es$net.edges.ext <- net.edges.ext
     
+    met.de.ext <- merge(es$met.de, es$network$met2name, by.x="ID", by.y="met")
+    met.de.ext$logPval <- log(met.de.ext$pval)
+    
+    net1 <- graphNEL.from.tables(node.table=met.de.ext, edge.table=net.edges.ext,
+                                 node.col="ID", edge.cols=c("met.x", "met.y"),
+                                 directed=F, ignore.solitary.nodes=T)
 
 
-    net1 <- graph.edgelist(as.matrix(net.edges.ext[,c("met.x", "met.y")]), directed=F)
-    net1 <- simplify(net1, remove.multiple=T)
-    net1 <- igraph.to.graphNEL(net1)
-    
-    nodeDataDefaults(net1, "shortName") <- NA
-    nodeData(net1, attr="shortName") <- es$network$met2name$name[match(nodes(net1), es$network$met2name$met)]
-    edgeDataDefaults(net1, "shortName") <- NA
-    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="shortName") <- net.edges.ext$name
-    
-    es$met.de <- es$met.de[es$met.de$ID %in% nodes(net1),]
-    nodeDataDefaults(net1, "pval") <- NA
-    nodeData(net1, es$met.de$ID, attr="pval") <- es$met.de$pval
-    edgeDataDefaults(net1, "pval") <- NA
-    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="pval") <- net.edges.ext$pval
-    
-    nodeDataDefaults(net1, "logPval") <- NA
-    nodeData(net1, es$met.de$ID, attr="logPval") <- log(es$met.de$pval)
-    edgeDataDefaults(net1, "logPval") <- NA
-    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="logPval") <- log(net.edges.ext$pval)
 
-    es$met.de <- es$met.de[es$met.de$ID %in% nodes(net1),]
-    nodeDataDefaults(net1, "logFC") <- 0
-    nodeData(net1, es$met.de$ID, attr="logFC") <- es$met.de$logFC
-    edgeDataDefaults(net1, "logFC") <- NA
-    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="logFC") <- net.edges.ext$logFC
-    
+    nodeDataDefaults(net1, "label") <- NA
+    nodeData(net1, attr="label") <- es$network$met2name$name[match(nodes(net1), es$network$met2name$met)]
+    edgeDataDefaults(net1, "label") <- NA
+    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="label") <- net.edges.ext$name
     
     es$subnet <- net1
     
@@ -276,38 +305,7 @@ make_experiment_set.sq <- function(network,
     
     es$graph <- es$network$graph.sq
     
-    if (!is.null(es$gene.de)) {
-        print("Processing gene p-values...")
-        es$gene.de$logFC <- fix_inf(es$gene.de$logFC)
-        if (!is.null(gene.ids)) {
-            data("gene.id.map")
-            es$gene.de <- convert.pval(es$gene.de, 
-                                    from=gene.id.map[,gene.ids], 
-                                    to=gene.id.map[,es$network$gene.ids])
-        }    
-        es$gene.de$origin <- NULL
-        print("Converting gene p-values to reactions...")
-        es$rxn.de <- convert.pval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
-    }
-    
-    if (!is.null(es$met.de)) {
-        print("Processing metabolite p-values...")
-        es$met.de$logFC <- fix_inf(es$met.de$logFC)        
-        if (!is.null(met.ids)) {
-            data("met.id.map")
-            es$met.de <- convert.pval(es$met.de, 
-                                   from=met.id.map[,met.ids], 
-                                   to=met.id.map[,es$network$met.ids])
-        }
-        es$met.de$origin <- NULL
-        
-        es$met.pval <- es$met.de$pval
-        names(es$met.pval) <- es$met.de$ID
-        es$fb.met <- fitBumModel(es$met.pval, plot = TRUE)
-    } else {
-        es$met.pval <- NULL
-    }
-    
+    es <- .process_pval_and_met_de(es, met.ids=met.ids, gene.ids=gene.ids)
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
