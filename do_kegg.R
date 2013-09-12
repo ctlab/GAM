@@ -36,12 +36,12 @@ outdir
 # If heinz.py is available and working we can set its path.
 heinz.py <- "./heinz.py"; 
 # And number of modules we'd like to find.
-heinz.nModules <- 3
+heinz.nModules <- 1
 
 # If there is no heinz.py, heuristic search will be run instead.
 #heinz.py <- NULL
 
-es.M1.M2.raw <- make_experiment_set.raw(network=kegg.mouse.network,
+es.M1.M2.raw <- make_experiment_set(network=kegg.mouse.network,
                                 met.de=mouse.macrophages$met.de,
                                 gene.de=mouse.macrophages$gene.de,
                                 met.ids=mouse.macrophages$met.ids, 
@@ -54,32 +54,47 @@ gene.fdrs <- c(1e-9, 1e-7, 1e-7, 1e-5, 1e-7, 1e-6, 1e-5, 1e-3, 1e-3, 1e-2)
 
 
 
+
+met.fdrs=c(1e-3, 1e-3)
+gene.fdrs=c(1e-4, 1e-5)
+
+met.fdrs=c(1e-2, 1e-2)
+gene.fdrs=c(1e-4, 1e-2)
+absent.met.scores=c(-10, -12)
+
+
 met.fdrs=c(1e-2)
-gene.fdrs=c(1e-3)
-met.fdrs=c(1e-5)
-gene.fdrs=c(1e-5)
+gene.fdrs=c(5e-2)
+absent.met.scores=c(-15)
 
-# Getting list of most significant modules base both on gene and metabolite data
-modules <- find_modules.raw(es.M1.M2.raw,
-                        met.fdrs=met.fdrs,
-                        gene.fdrs=gene.fdrs,                         
-                        heinz.py=heinz.py, 
-                        heinz.nModules=3,
-                        score.separately=T
-                        )
+L <- min(length(met.fdrs), length(gene.fdrs), length(absent.met.scores))
 
-
-set.seed(42)
-# Saving pdf- and sif- files for found modules
-for (module in modules) {
-    save_module(module$graph, 
-                paste0(outdir, "/module.raw.", 
-                       "mf=", module$met.fdr,
-                       ".rf=", module$gene.fdr,
-                       if (is.null(module$n)) "" else paste0("#", module$n)
-                )
+for (i in 1:L) {
+    # Getting list of most significant modules base both on gene and metabolite data
+    modules <- find_modules(es.M1.M2.raw,
+                            met.fdr=met.fdrs[i],
+                            gene.fdr=gene.fdrs[i],
+                            absent.met.score=absent.met.scores[i],
+                            heinz.py=heinz.py,                                
+                            heinz.nModules=1,
+                            score.separately=T
     )
-}
+    
+    
+    set.seed(42)
+    # Saving pdf- and sif- files for found modules
+    for (n in 1:length(modules)) {        
+        module <- modules[[n]]
+        save_module(module,
+                    paste0(outdir, "/module", 
+                           ".mf=", met.fdrs[i],
+                           ".rf=", gene.fdrs[i],
+                           ".ms=", absent.met.scores[i],
+                           "#", n)
+                    
+        )
+    }
+}   
 exit(0)
 
 state0 <- "Ctrl"

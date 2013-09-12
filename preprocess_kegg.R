@@ -4,11 +4,17 @@ net <- read.table("./networks//kegg/net.sif", header=T, colClasses="character")
 rxn2name <- read.table("./networks//kegg/rxn2name.tsv", header=T, colClasses="character")
 met2name <- read.table("./networks//kegg/met2name.tsv", header=T, colClasses="character")
 
-
 mets2mask <- read.table("./networks//kegg/mets2mask.lst", colClasses="character")[,1]
 
 
+net <- rbind(net, c("C00417", "RXIRG1", "C00490"))
+rxn2enz <- rbind(rxn2enz, c("RXIRG1", "Irg1"))
+enz2gene <- rbind(enz2gene, c("Irg1", "16365"))
+
+
 rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
+
+
 rxns2keep <- unique(rxn2gene$rxn)
 write.table(rxns2keep, "./networks//kegg/rxns2keep.lst", row.names=F, col.names=F, quote=F)
 

@@ -89,7 +89,9 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
         cds <- estimateSizeFactors(cds)
         cds <- estimateDispersions(cds)
         res <- nbinomTest(cds, state1, state2)
-        res <- res[order(res$baseMean, decreasing=T)[1:top],]
+        res <- res[res$baseMean > 5,]
+        res <- res[order(res$baseMean, decreasing=T),]        
+        res <- res[1:top,]
         res <- res[order(res$pval),]
         res <- na.omit(res)
         res <- res[, c("id", "pval", "log2FoldChange")]

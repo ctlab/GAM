@@ -15,10 +15,13 @@ met.exprs <- read.csv(file=met.exprs.file, head=TRUE, row.names=1, sep=met.exprs
 met.conditions <- read.csv(file=met.conditions.file, head=TRUE)
 met.conditions.vector <- met.conditions$condition[match(colnames(met.exprs), met.conditions$sample)]
 
+state1 <- "MandLPSandIFNg"
+state2 <- "MandIL4"
+
 gene.de <- diff.expr(
     exprs=gene.exprs, conditions.vector=gene.conditions.vector,
     state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=T, top=10000)
+    log2=F, quantile=F, use.deseq=T, top=20000)
 
 met.de <- diff.expr(
     exprs=met.exprs, conditions.vector=met.conditions.vector,

@@ -59,7 +59,13 @@ add_norm.diff.expr <- function(module.graph) {
     module.graph
 }
 
-make_experiment_set.raw <- function(network, 
+scoreValue <- function (fb, pval, fdr = 0.01) 
+{
+    return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
+}
+
+
+make_experiment_set <- function(network, 
                                 met.de=NULL, gene.de=NULL, rxn.de=NULL,
                                 met.ids=NULL, gene.ids=NULL                                
 ) {
@@ -116,6 +122,11 @@ make_experiment_set.raw <- function(network,
             es$network$rxn2name$name[match(es$rxn.de$ID[matched], es$network$rxn2name$rxn)] <-
                 gene.id.map$name[match(es$rxn.de$origin[matched], gene.id.map[,es$network$gene.ids])]            
             
+            es$network$rxn2name <- rbind(es$network$rxn2name, 
+                                         cbind(rxn=es$rxn.de$ID[!matched],
+                                               name=gene.id.map$name[match(es$rxn.de$origin[!matched], gene.id.map[,es$network$gene.ids])]
+                                               ))
+            
         }
         
         es$rxn.pval <- es$rxn.de$pval
@@ -138,7 +149,7 @@ make_experiment_set.raw <- function(network,
     net.edges.pval <- (aggregate(pval ~ met.x * met.y, data=net.edges.ext, min))
     net.edges.ext <- merge(net.edges.pval, net.edges.ext)
     net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]
-    net.edges.ext <- merge(net.edges.ext, es$network$rxn2name)
+    net.edges.ext <- merge(net.edges.ext, es$network$rxn2name, all.x=T)
     net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]
     es$net.edges.ext <- net.edges.ext
     
@@ -158,6 +169,11 @@ make_experiment_set.raw <- function(network,
     nodeData(net1, es$met.de$ID, attr="pval") <- es$met.de$pval
     edgeDataDefaults(net1, "pval") <- NA
     edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="pval") <- net.edges.ext$pval
+    
+    nodeDataDefaults(net1, "logPval") <- NA
+    nodeData(net1, es$met.de$ID, attr="logPval") <- log(es$met.de$pval)
+    edgeDataDefaults(net1, "logPval") <- NA
+    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="logPval") <- log(net.edges.ext$pval)
 
     es$met.de <- es$met.de[es$met.de$ID %in% nodes(net1),]
     nodeDataDefaults(net1, "logFC") <- 0
@@ -178,105 +194,75 @@ make_experiment_set.raw <- function(network,
     return(es)
 }
 
+append_module <- function(res, module.graph) {        
+    res[[length(res)+1]] <- module.graph
+    res
+}
 
-find_modules.raw <- function(es,                         
-                         fdrs=NULL, met.fdrs=NULL, gene.fdrs=NULL,
+
+find_modules <- function(es,                         
+                         fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
+                         absent.met.score=NULL,
                          score.separately=F,
-                         heinz.py=NULL, heinz.nModules=1,
+                         heinz.py, heinz.nModules=1,
                          heinz.tolerance=10,
                          heinz.subopt_diff=100) {
     
-    res <- list()    
-    if (!is.null(fdrs)) {
-        met.fdrs <- fdrs
-        gene.fdrs <- fdrs
+    if (!is.null(fdr)) {
+        met.fdr <- fdr
+        gene.fdr <- fdr
     }
     
-    L <- max(length(met.fdrs), length(gene.fdrs))
-    for (j in 1:L) {    
-        print(paste("Searching for", j, "out of", L, "module groups"))
-        
-        met.scores <- NULL
-        met.fdr <- NULL
-        if (!is.null(es$met.de)) {            
-            met.fdr <- met.fdrs[j]    
-            print(paste("met.fdr =", met.fdr))
-            if (score.separately) {
-                met.scores <- scoreFunction(es$fb.met, met.fdr)             
-            } else {
-                met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
-            }
-        }
-        met.scores <- met.scores[names(met.scores) %in% nodes(es$subnet)]
-        
-        rxn.scores <- NULL
-        gene.fdr <- NULL
-        if (!is.null(es$rxn.de)) {            
-            gene.fdr <- gene.fdrs[j] 
-            print(paste("gene.fdr =", gene.fdr))
-            if (score.separately) {             
-                rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
-            } else {                
-                rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
-            }
-        }
-        
-        
-        # :ToDo: check if default value is correct
-        nodeDataDefaults(es$subnet, "score") <- mean(met.scores[met.scores < 0])
-        nodeData(es$subnet, names(met.scores), "score") <- met.scores
-        
-        edgeDataDefaults(es$subnet, "score") <- NA
-        edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
-            rxn.scores[es$net.edges.ext$rxn]
-        
-        append_module <- function(res, module.graph, n=NULL) {
             
-            module=newEmptyObject()
-            module$graph = module.graph
-            module$met.fdr = met.fdr
-            module$gene.fdr = gene.fdr
-            module$n = n            
-            res[[length(res)+1]] <- module
-            res
-        }    
-        
-        if (!is.null(heinz.py)) {
-            tmpdir <- tempdir()        
-            edges_file <- paste(tmpdir, "edges.txt", sep="/")
-            nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
-            writeHeinzEdges(es$subnet, file=edges_file, use.score=T)
-            writeHeinzNodes(es$subnet, file=nodes_file, use.score=T)
-            
-            
-            system2(heinz.py,
-                    c("-n", nodes_file,
-                      "-e", edges_file,
-                      "-N", "True",
-                      "-E", "True",
-                      "-s", heinz.nModules,
-                      "--tolerance", heinz.tolerance,
-                      "--subopt_diff", heinz.subopt_diff,
-                      "-v"));
-            
-            
-            for (i in 0:(heinz.nModules-1)) {
-                module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                              network = es$subnet)
-                res <- append_module(res, module.graph, i+1)
-                
-            }
-            
+    met.scores <- NULL    
+    if (!is.null(es$met.de)) {            
+        if (score.separately) {
+            met.scores <- scoreFunction(es$fb.met, met.fdr)             
         } else {
-            module.graph <- runFastHeinz(es$subnet, scores)
-            res <- append_module(res, module.graph)
+            met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
         }
     }
+    
+    
+    rxn.scores <- NULL
+    if (!is.null(es$rxn.de)) {                    
+        if (score.separately) {             
+            rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
+        } else {                
+            rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
+        }
+    }
+    
+    
+        
+    if (is.null(absent.met.score)) {
+        absent.met.score <- mean(met.scores[met.scores < 0])
+        print(paste0("absent.met.score <- ", absenet.met.score))
+    }
+    
+    nodeDataDefaults(es$subnet, "score") <- absent.met.score
+    met.scores <- met.scores[names(met.scores) %in% nodes(es$subnet)]
+    nodeData(es$subnet, names(met.scores), "score") <- met.scores
+    
+    edgeDataDefaults(es$subnet, "score") <- NA
+    edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
+        rxn.scores[es$net.edges.ext$rxn]
+    
+    
+    res <- run_heinz(
+        subnet=es$subnet, 
+        heinz.py=heinz.py, 
+        score.edges=T, 
+        score.nodes=T,
+        heinz.nModules=heinz.nModules, 
+        heinz.tolerance=heinz.tolerance,
+        heinz.subopt_diff=heinz.subopt_diff)        
+        
     return(res)
 }
 
 
-make_experiment_set <- function(network, 
+make_experiment_set.sq <- function(network, 
                                 met.de=NULL, gene.de=NULL, rxn.de=NULL,
                                 met.ids=NULL, gene.ids=NULL,
                                 collapse.reactions=F
@@ -374,94 +360,97 @@ make_experiment_set <- function(network,
     return(es)
 }
 
-find_modules <- function(es,                         
-                         fdrs=NULL, met.fdrs=NULL, gene.fdrs=NULL,
-                         score.separately=F,
-                         heinz.py=NULL, heinz.nModules=1,
-                         heinz.tolerance=10,
-                         heinz.subopt_diff=100) {
+run_heinz <- function(subnet,
+                      heinz.py, 
+                      score.edges=F,
+                      score.nodes=T,                      
+                      heinz.nModules=1, 
+                      heinz.tolerance=10,
+                      heinz.subopt_diff=100) {
+    tmpdir <- tempdir()        
+    edges_file <- paste(tmpdir, "edges.txt", sep="/")
+    nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
     
-    res <- list()    
-    if (!is.null(fdrs)) {
-        met.fdrs <- fdrs
-        gene.fdrs <- fdrs
+    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
+    writeHeinzNodes(subnet, file=nodes_file, use.score=score.nodes)
+    
+    
+    system2(heinz.py,
+            c("-n", nodes_file,
+              "-e", edges_file,
+              "-N", if (score.nodes) "True" else "False",
+              "-E", if (score.edges) "True" else "False",              
+              "-s", heinz.nModules,
+              "--tolerance", heinz.tolerance,
+              "--subopt_diff", heinz.subopt_diff,
+              "-v"));
+    
+    
+    res <- list()
+    for (i in 0:(heinz.nModules-1)) {
+        module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+                                      network = subnet)
+        res <- append_module(res, module.graph)
+        
+    }
+    return(res)
+}
+
+find_modules.sq <- function(es,                         
+                            fdr=NULL,
+                            met.fdr=NULL, gene.fdr=NULL,
+                            score.separately=F,
+                            heinz.py=NULL, heinz.nModules=1,
+                            heinz.tolerance=10,
+                            heinz.subopt_diff=100) {
+    
+    if (!is.null(fdr)) {
+        met.fdr <- fdr
+        gene.fdr <- fdr
     }
     
-    L <- max(length(met.fdrs), length(gene.fdrs))
-    for (j in 1:L) {    
-        print(paste("Searching for", j, "out of", L, "module groups"))
+    met.scores <- NULL
+    if (!is.null(es$met.de)) {            
         
-        met.scores <- NULL
-        met.fdr <- NULL
-        if (!is.null(es$met.de)) {            
-            met.fdr <- met.fdrs[j]    
-            print(paste("met.fdr =", met.fdr))
-            if (score.separately) {
-                met.scores <- scoreFunction(es$fb.met, met.fdr)             
-            } else {
-                met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
-            }
-        }
-        
-        rxn.scores <- NULL
-        gene.fdr <- NULL
-        if (!is.null(es$rxn.de)) {            
-            gene.fdr <- gene.fdrs[j] 
-            print(paste("gene.fdr =", gene.fdr))
-            if (score.separately) {             
-                rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
-            } else {                
-                rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
-            }
-        }
-        
-        all.scores <- c(met.scores, rxn.scores)        
-        scores <- all.scores[nodes(es$subnet)]
-        
-        nodeDataDefaults(es$subnet, "score") <- -Inf
-        nodeData(es$subnet, nodes(es$subnet), "score") <- scores
-        
-        append_module <- function(res, module.graph, n=NULL) {
-            
-            module=newEmptyObject()
-            module$graph = add_norm.diff.expr(module.graph)
-            module$met.fdr = met.fdr
-            module$gene.fdr = gene.fdr
-            module$n = n            
-            res[[length(res)+1]] <- module
-            res
-        }    
-        
-        if (!is.null(heinz.py)) {
-            tmpdir <- tempdir()        
-            edges_file <- paste(tmpdir, "edges.txt", sep="/")
-            nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
-            writeHeinzEdges(es$subnet, file=edges_file)
-            writeHeinzNodes(es$subnet, file=nodes_file, use.score=T)
-            
-            
-            system2(heinz.py,
-                    c("-n", nodes_file,
-                      "-e", edges_file,
-                      "-N", "True",
-                      "-E", "False",
-                      "-s", heinz.nModules,
-                      "--tolerance", heinz.tolerance,
-                      "--subopt_diff", heinz.subopt_diff,
-                      "-v"));
-            
-            
-            for (i in 0:(heinz.nModules-1)) {
-                module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                       network = es$subnet)
-                res <- append_module(res, module.graph, i+1)
-                
-            }
-            
+        print(paste("met.fdr =", met.fdr))
+        if (score.separately) {
+            met.scores <- scoreFunction(es$fb.met, met.fdr)             
         } else {
-            module.graph <- runFastHeinz(es$subnet, scores)
-            res <- append_module(res, module.graph)
+            met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
         }
     }
+    
+    rxn.scores <- NULL
+    if (!is.null(es$rxn.de)) {            
+        print(paste("gene.fdr =", gene.fdr))
+        if (score.separately) {             
+            rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
+        } else {                
+            rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
+        }
+    }
+    
+    all.scores <- c(met.scores, rxn.scores)        
+    scores <- all.scores[nodes(es$subnet)]
+    
+    nodeDataDefaults(es$subnet, "score") <- -Inf
+    nodeData(es$subnet, nodes(es$subnet), "score") <- scores
+    
+    if (!is.null(heinz.py)) {
+        res <- run_heinz(
+            subnet=es$subnet, 
+            heinz.py=heinz.py, 
+            score.edges=F, 
+            score.nodes=T,
+            heinz.nModules=heinz.nModules, 
+            heinz.tolerance=heinz.tolerance,
+            heinz.subopt_diff=heinz.subopt_diff)        
+    } else {
+        res <- runFastHeinz(es$subnet, scores)
+        
+    }
+    res <- lapply(res, add_norm.diff.expr)
+    
+    
     return(res)
 }
