@@ -1,4 +1,4 @@
-network_from_sif <- function(file.basename) {
+networkFromSif <- function(file.basename) {
     print("Loading network...")
     network <- newEmptyObject()
     class(network) <- "network"
@@ -20,7 +20,7 @@ network_from_sif <- function(file.basename) {
     return(network)
 }
 
-network_to_sif <- function(network, file.basename) {
+networkToSif <- function(network, file.basename) {
     write.table(network$edges[,c("u", "e", "v")], paste(file.basename, "sif", sep="."),
                 col.names=F, row.names=F, quote=F, sep="\t")
     for (m in colnames(network$meta)) {
@@ -33,6 +33,7 @@ network_to_sif <- function(network, file.basename) {
         }
     }
 }
-network_to_tab <- function(edges, file.name) {
+
+networkToTab <- function(edges, file.name) {
     write.table(edges[,c("u", "v")], file.name, col.names=F, row.names=F, quote=F, sep="\t")
 }

@@ -1,28 +1,49 @@
-plotModuleWithAttr <- function(module, attr="label", layout=layout.kamada.kawai, ...) {
-    if (!(attr %in% names(nodeDataDefaults(module)))) {
+#' @import BioNet igraph0
+NULL
+
+#' Plot module with attribute as a node label
+#' @param module Module to plot
+#' @param attr Attribute to use as a label
+#' @param layout Layout to use
+#' @export
+plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, ...) {
+    if (!(attr.label %in% names(nodeDataDefaults(module)))) {
         return()        
     }
     # Hack for coloring
     
-    if ("norm.logFC" %in% nodeDataDefaults(module)) {
-        de <- unlist(nodeData(module, nodes(module), "norm.logFC"))
+    if ("logFC.norm" %in% names(nodeDataDefaults(module))) {
+        de <- unlist(nodeData(module, attr="logFC.norm"))
         de <- de * 10
     } else {
-        de <- unlist(nodeData(module, nodes(module), "logFC"))    
+        de <- unlist(nodeData(module, attr="logFC"))    
     }
     de[is.na(de)] <- 0
     
     de[de < 0] <- de[de < 0] - 1
     de[de > 0] <- de[de > 0] + 1
     
-    attr.labels = na.omit(unlist(nodeData(module, nodes(module), attr=attr)))
+    attr.labels = na.omit(unlist(nodeData(module, nodes(module), attr=attr.label)))
     node.labels = nodes(module)
     names(node.labels) <-node.labels
     all.labels = c(attr.labels, node.labels[!names(node.labels) %in% names(attr.labels)])
     plotModule(module, diff.expr=de, layout=layout, labels=all.labels[node.labels], ...)        
 }
 
-save_module <- function(module, outputFilePrefix) {
+
+saveModuleToPdf <- function(module, outputFilePrefix) {
+    pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
+    plotNetwork(module, attr.label="label", vertex.size=2)
+    dev.off()
+}
+
+#' Save module to different formats
+#' @param module Module to save
+#' @param outputFilePrefix Path to save to (without extension)
+#' @param types Vector of file types, "pdf" or one of the supported by BioNet::saveNetwork function
+#' @export
+saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
+    # :ToDO: fix saving to XGMML (NAs, escaping, trivial modules)
     outdir <- dirname(outputFilePrefix)
     
     if (!file.exists(outdir)) {
@@ -33,61 +54,78 @@ save_module <- function(module, outputFilePrefix) {
     #module <- subNetwork(nodes(module), network=subnet)
     module    
 
-        
-    pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
     
-    plotModuleWithAttr(module, "label", vertex.size=2)
+    for (type in types) {
+        if (type == "pdf") {
+            saveModuleToPdf(module, outputFilePrefix)
+        } else {
+            saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type=type)
+        }
         
-    dev.off()
-    
-    saveNetwork(module,name=outputFilePrefix,file=outputFilePrefix,type="sif")
-    #saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type="XGMML")
-}
-
-add_norm.diff.expr <- function(module.graph) {
-    nodeDataDefaults(module.graph, "norm.logFC") <- NA
-    module.nodes <- nodes(module.graph)
-    node.types <- unique(na.omit(unlist(nodeData(module.graph, module.nodes, "nodeType"))))
-        
-    for (node.type in node.types) {
-        module.type.nodes <- module.nodes[which(unlist(nodeData(module.graph, module.nodes, "nodeType")) == node.type)]
-        module.type.de <- unlist(nodeData(module.graph, module.type.nodes, "logFC"))        
-        module.type.norm.de <- module.type.de / max(abs(module.type.de))        
-        nodeData(module.graph, module.type.nodes, "norm.logFC") <- unname(module.type.norm.de)
     }
     
-    module.graph
+    
 }
 
+#' Add node attribute with normalized log-foldchange inside node groups
+#' @param module Module to add attribut to
+#' @param logFC.attr Attribute with node log-foldchange
+#' @param logFC.norm.attr Name of a new attribute
+#' @param group.by Attribute by which node grouping shoud happen
+#' @return Modified module with normalized log-foldchange node attribute
+#' @export
+addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm", group.by="nodeType") {
+    nodeDataDefaults(module, logFC.norm.attr) <- NA
+    module.nodes <- nodes(module)
+    node.types <- unique(na.omit(unlist(nodeData(module, module.nodes, group.by))))
+        
+    for (node.type in node.types) {
+        module.type.nodes <- module.nodes[which(unlist(nodeData(module, module.nodes, group.by)) == node.type)]
+        module.type.de <- unlist(nodeData(module, module.type.nodes, logFC.attr))        
+        module.type.norm.de <- module.type.de / max(abs(na.omit(module.type.de)))
+        nodeData(module, module.type.nodes, logFC.norm.attr) <- unname(module.type.norm.de)
+    }
+    
+    module
+}
+
+#' Scores p-value by fitted BUM-model
+#' This is a helper function based on BioNet::scoreFunction()
 scoreValue <- function (fb, pval, fdr = 0.01) 
 {
     return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
 }
 
 
-# :ToDo: change name (and function)
-.process_pval_and_met_de <- function(es, met.ids, gene.ids) {
+#' Preprocess experiment set's differential expression data for genes and metabolites
+#' Convert metabolite and gene IDs to be the same as in network. Computes
+#' reaction differential expression data.
+#' @param es Experiment set with DE data
+#' @param met.ids Type of IDs used in metabolite DE data (@see met.id.map for possible values)
+#' @param gene.ids Type of IDs used in gene DE data (@see gene.id.map for possible values)
+# :ToDo: this function is ugly, refactor
+preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
     if (!is.null(es$gene.de)) {
         print("Processing gene p-values...")
-        es$gene.de$logFC <- fix_inf(es$gene.de$logFC)
+        es$gene.de$logFC <- fixInf(es$gene.de$logFC)
         if (!is.null(gene.ids)) {
             data("gene.id.map")
-            es$gene.de <- convert.pval(es$gene.de, 
+            es$gene.de <- convertPval(es$gene.de, 
                                        from=gene.id.map[,gene.ids], 
                                        to=gene.id.map[,es$network$gene.ids])
         }    
         es$gene.de$origin <- NULL
         print("Converting gene p-values to reactions...")
-        es$rxn.de <- convert.pval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+        es$rxn.de <- convertPval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
         
     }
     
     if (!is.null(es$met.de)) {
         print("Processing metabolite p-values...")
-        es$met.de$logFC <- fix_inf(es$met.de$logFC)        
+        es$met.de$logFC <- fixInf(es$met.de$logFC)        
         if (!is.null(met.ids)) {
             data("met.id.map")
-            es$met.de <- convert.pval(es$met.de, 
+            es$met.de <- convertPval(es$met.de, 
                                       from=met.id.map[,met.ids], 
                                       to=met.id.map[,es$network$met.ids])
         }
@@ -102,44 +140,11 @@ scoreValue <- function (fb, pval, fdr = 0.01)
     return(es)
 }
 
-graphNEL.from.tables <- function(node.table, edge.table, node.col=1, edge.cols=c(1,2), directed=T, ignore.solitary.nodes=T) {    
-    if (is.character(node.col)) {
-        node.col <- match(node.col, colnames(node.table))
-    }
-    if (is.character(edge.cols)) {
-        edge.cols <- match(edge.cols, colnames(edge.table))
-    }
-    
-    net1 <- graph.edgelist(as.matrix(edge.table[,edge.cols]), directed=directed)
-    net1 <- simplify(net1, remove.multiple=T)
-    net1 <- igraph.to.graphNEL(net1)
-    
-    if (ignore.solitary.nodes) {        
-        node.table <- node.table[node.table[,node.col] %in% nodes(net1),]
-    }
-    
-    for (node_attr in colnames(node.table)[-node.col]) {
-        if (node_attr == "name") {
-            next
-        }
-        nodeDataDefaults(net1, node_attr) <- NA
-        nodeData(net1, n=node.table[,node.col], attr=node_attr) <- node.table[,node_attr]
-    }
-    
-    for (edge_attr in colnames(edge.table)[-edge.cols]) {
-        if (edge_attr == "name") {
-            next
-        }
-        edgeDataDefaults(net1, edge_attr) <- NA
-        edgeData(net1, from=edge.table[,edge.cols[1]], to=edge.table[,edge.cols[2]], attr=edge_attr) <- 
-            edge.table[,edge_attr]        
-    }
-    return(net1)
-}
-
-make_experiment_set <- function(network, 
-                                met.de=NULL, gene.de=NULL, rxn.de=NULL,
-                                met.ids=NULL, gene.ids=NULL                                
+#' @export
+makeExperimentSet <- function(network, 
+                              met.de=NULL, gene.de=NULL, rxn.de=NULL,
+                              met.ids=NULL, gene.ids=NULL,
+                              reactions.as.edges=F
 ) {
     es <- newEmptyObject()
     es$network <- network
@@ -149,13 +154,14 @@ make_experiment_set <- function(network,
     
     
     es$graph.raw <- es$network$graph.raw
+    es$reactions.as.edges <- reactions.as.edges
     
     
-    es <- .process_pval_and_met_de(es, met.ids=met.ids, gene.ids=gene.ids)
+    es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids)
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
-        es$rxn.de$logFC <- fix_inf(es$rxn.de$logFC)                        
+        es$rxn.de$logFC <- fixInf(es$rxn.de$logFC)                        
         if ("origin" %in% colnames(es$rxn.de)) {
             
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
@@ -180,38 +186,62 @@ make_experiment_set <- function(network,
         es$rxn.pval <- NULL
     }
         
-    print("Processing all p-values together")    
+    print("Building network")    
     
-    net.edges.ext <- merge(es$graph.raw, es$rxn.de, by.x="rxn", by.y="ID")
-    edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
-    net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
-        net.edges.ext[edges2rev, c("met.y", "met.x")]
-    
-    
-    
-    net.edges.pval <- (aggregate(pval ~ met.x * met.y, data=net.edges.ext, min))
-    net.edges.ext <- merge(net.edges.pval, net.edges.ext)
-    net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]
-    net.edges.ext <- merge(net.edges.ext, es$network$rxn2name, all.x=T)
-    net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
-    net.edges.ext$logPval <- log(net.edges.ext$pval)
-    es$net.edges.ext <- net.edges.ext
-    
-    met.de.ext <- merge(es$met.de, es$network$met2name, by.x="ID", by.y="met")
+    met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=F)
+    met.de.ext <- merge(met.de.ext, es$met.de, all.x=T) # all.x=T — we keep mets if there is no MS data
+    met.de.ext <- merge(met.de.ext, es$network$met2name, by.x="ID", by.y="met", all.x=T)
     met.de.ext$logPval <- log(met.de.ext$pval)
+    es$met.de.ext <- met.de.ext
     
-    net1 <- graphNEL.from.tables(node.table=met.de.ext, edge.table=net.edges.ext,
-                                 node.col="ID", edge.cols=c("met.x", "met.y"),
-                                 directed=F, ignore.solitary.nodes=T)
-
-
-
-    nodeDataDefaults(net1, "label") <- NA
-    nodeData(net1, attr="label") <- es$network$met2name$name[match(nodes(net1), es$network$met2name$met)]
-    edgeDataDefaults(net1, "label") <- NA
-    edgeData(net1, from=net.edges.ext$met.x, to=net.edges.ext$met.y, attr="label") <- net.edges.ext$name
     
-    es$subnet <- net1
+    rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=F)
+    rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=F) # we drop reaction if it's not expressed
+    rxn.de.ext <- merge(rxn.de.ext, es$network$rxn2name, by.x="ID", by.y="rxn", all.x=T)
+    rxn.de.ext$logPval <- log(rxn.de.ext$pval)
+    es$rxn.de.ext <- rxn.de.ext
+    
+    es$graph.raw <- es$graph.raw[es$graph.raw$rxn %in% rxn.de.ext$ID,]
+    es$graph.raw <- es$graph.raw[es$graph.raw$met.x %in% met.de.ext$ID,]
+    es$graph.raw <- es$graph.raw[es$graph.raw$met.y %in% met.de.ext$ID,]
+    
+    
+    if (reactions.as.edges) {    
+        net.edges.ext <- merge(es$graph.raw, rxn.de.ext, by.x="rxn", by.y="ID")
+        edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
+        net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
+            net.edges.ext[edges2rev, c("met.y", "met.x")]        
+        
+        
+        net.edges.pval <- (aggregate(pval ~ met.x * met.y, data=net.edges.ext, min))
+        net.edges.ext <- merge(net.edges.pval, net.edges.ext)
+        net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
+        net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
+        
+        es$net.edges.ext <- net.edges.ext
+        
+        
+        net1 <- graphNEL.from.tables(node.table=met.de.ext, edge.table=net.edges.ext,
+                                     node.col="ID", edge.cols=c("met.x", "met.y"),
+                                     directed=F, ignore.solitary.nodes=T)
+        
+        es$subnet <- net1
+    } else {    
+        
+        edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
+                       rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
+        
+        net1 <- graphNEL.from.tables(node.table=list(met=met.de.ext, rxn=rxn.de.ext), edge.table=edges,
+                                     node.col="ID",
+                                     directed=F, ignore.solitary.nodes=T)
+        
+        es$subnet <- net1
+    }
+    
+    
+
+    
+    
     
     
     es$met.de$origin <- NULL
@@ -223,16 +253,17 @@ make_experiment_set <- function(network,
     return(es)
 }
 
-append_module <- function(res, module.graph) {        
+appendModule <- function(res, module.graph) {        
     res[[length(res)+1]] <- module.graph
     res
 }
 
 
-find_modules <- function(es,                         
+#' @export
+findModules <- function(es,                         
                          fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
                          absent.met.score=NULL,
-                         score.separately=F,
+                         score.separately=T,
                          heinz.py, heinz.nModules=1,
                          heinz.tolerance=10,
                          heinz.subopt_diff=100) {
@@ -244,7 +275,7 @@ find_modules <- function(es,
     
             
     met.scores <- NULL    
-    if (!is.null(es$met.de)) {            
+    if (!is.null(es$met.de) && !is.null(met.fdr)) {            
         if (score.separately) {
             met.scores <- scoreFunction(es$fb.met, met.fdr)             
         } else {
@@ -254,7 +285,7 @@ find_modules <- function(es,
     
     
     rxn.scores <- NULL
-    if (!is.null(es$rxn.de)) {                    
+    if (!is.null(es$rxn.de) && !is.null(gene.fdr)) {
         if (score.separately) {             
             rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
         } else {                
@@ -264,25 +295,34 @@ find_modules <- function(es,
     
     
         
-    if (is.null(absent.met.score)) {
-        absent.met.score <- mean(met.scores[met.scores < 0])
-        print(paste0("absent.met.score <- ", absenet.met.score))
+    if (!is.null(met.scores)) {
+        if (is.null(absent.met.score)) {
+            absent.met.score <- mean(met.scores[met.scores < 0])
+            print(paste0("absent.met.score <- ", absenet.met.score))
+        }
+        
+        nodeDataDefaults(es$subnet, "score") <- absent.met.score
+        met.scores <- met.scores[names(met.scores) %in% nodes(es$subnet)]
+        nodeData(es$subnet, names(met.scores), "score") <- met.scores
     }
     
-    nodeDataDefaults(es$subnet, "score") <- absent.met.score
-    met.scores <- met.scores[names(met.scores) %in% nodes(es$subnet)]
-    nodeData(es$subnet, names(met.scores), "score") <- met.scores
+    if (!is.null(rxn.scores)) {
+        if (es$reactions.as.edges) {
+            edgeDataDefaults(es$subnet, "score") <- NA
+            edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
+                rxn.scores[es$net.edges.ext$rxn]
+        } else {
+            rxn.scores <- rxn.scores[names(rxn.scores) %in% nodes(es$subnet)]
+            nodeData(es$subnet, names(rxn.scores), "score") <- rxn.scores
+        }
+    }
     
-    edgeDataDefaults(es$subnet, "score") <- NA
-    edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
-        rxn.scores[es$net.edges.ext$rxn]
     
-    
-    res <- run_heinz(
+    res <- runHeinz(
         subnet=es$subnet, 
         heinz.py=heinz.py, 
-        score.edges=T, 
-        score.nodes=T,
+        score.edges="score" %in% names(edgeDataDefaults(es$subnet)),
+        score.nodes="score" %in% names(nodeDataDefaults(es$subnet)),
         heinz.nModules=heinz.nModules, 
         heinz.tolerance=heinz.tolerance,
         heinz.subopt_diff=heinz.subopt_diff)        
@@ -291,7 +331,51 @@ find_modules <- function(es,
 }
 
 
-make_experiment_set.sq <- function(network, 
+
+runHeinz <- function(subnet,
+                      heinz.py, 
+                      score.edges=F,
+                      score.nodes=T,                      
+                      heinz.nModules=1, 
+                      heinz.tolerance=10,
+                      heinz.subopt_diff=100) {
+    tmpdir <- tempdir()        
+    tmpdir <- "/tmp"
+    edges_file <- paste(tmpdir, "edges.txt", sep="/")
+    nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
+    
+    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
+    
+    if (!score.nodes) {
+        # Hack to make writeHeinzeNodes working
+        nodeDataDefaults(subnet, "score")  <- 0
+        nodeData(subnet, attr="score") <- 0
+    }
+    writeHeinzNodes(subnet, file=nodes_file, use.score=T)
+    
+    
+    system2(heinz.py,
+            c("-n", nodes_file,
+              "-e", edges_file,
+              "-N", if (score.nodes) "True" else "False",
+              "-E", if (score.edges) "True" else "False",              
+              "-s", heinz.nModules,
+              "--tolerance", heinz.tolerance,
+              "--subopt_diff", heinz.subopt_diff,
+              "-v"));
+    
+    
+    res <- list()
+    for (i in 0:(heinz.nModules-1)) {
+        module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+                                      network = subnet)
+        res <- appendModule(res, module.graph)
+        
+    }
+    return(res)
+}
+
+makeExperimentSetSq <- function(network, 
                                 met.de=NULL, gene.de=NULL, rxn.de=NULL,
                                 met.ids=NULL, gene.ids=NULL,
                                 collapse.reactions=F
@@ -305,11 +389,11 @@ make_experiment_set.sq <- function(network,
     
     es$graph <- es$network$graph.sq
     
-    es <- .process_pval_and_met_de(es, met.ids=met.ids, gene.ids=gene.ids)
+    es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids)
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
-        es$rxn.de$logFC <- fix_inf(es$rxn.de$logFC)                        
+        es$rxn.de$logFC <- fixInf(es$rxn.de$logFC)                        
         if ("origin" %in% colnames(es$rxn.de)) {
             if (collaps.reactions) {
                 print("Collapsing reactions by common most significant enzymes")
@@ -358,43 +442,7 @@ make_experiment_set.sq <- function(network,
     return(es)
 }
 
-run_heinz <- function(subnet,
-                      heinz.py, 
-                      score.edges=F,
-                      score.nodes=T,                      
-                      heinz.nModules=1, 
-                      heinz.tolerance=10,
-                      heinz.subopt_diff=100) {
-    tmpdir <- tempdir()        
-    edges_file <- paste(tmpdir, "edges.txt", sep="/")
-    nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
-    
-    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
-    writeHeinzNodes(subnet, file=nodes_file, use.score=score.nodes)
-    
-    
-    system2(heinz.py,
-            c("-n", nodes_file,
-              "-e", edges_file,
-              "-N", if (score.nodes) "True" else "False",
-              "-E", if (score.edges) "True" else "False",              
-              "-s", heinz.nModules,
-              "--tolerance", heinz.tolerance,
-              "--subopt_diff", heinz.subopt_diff,
-              "-v"));
-    
-    
-    res <- list()
-    for (i in 0:(heinz.nModules-1)) {
-        module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                      network = subnet)
-        res <- append_module(res, module.graph)
-        
-    }
-    return(res)
-}
-
-find_modules.sq <- function(es,                         
+findModulesSq <- function(es,                         
                             fdr=NULL,
                             met.fdr=NULL, gene.fdr=NULL,
                             score.separately=F,
@@ -435,7 +483,7 @@ find_modules.sq <- function(es,
     nodeData(es$subnet, nodes(es$subnet), "score") <- scores
     
     if (!is.null(heinz.py)) {
-        res <- run_heinz(
+        res <- runHeinz(
             subnet=es$subnet, 
             heinz.py=heinz.py, 
             score.edges=F, 
@@ -447,7 +495,7 @@ find_modules.sq <- function(es,
         res <- runFastHeinz(es$subnet, scores)
         
     }
-    res <- lapply(res, add_norm.diff.expr)
+    res <- lapply(res, addNormLogFC)
     
     
     return(res)

@@ -1,0 +1,332 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage[utf8]{inputenc}
+\usepackage{color}
+
+\newcommand{\todo}{\colorbox{yellow}}
+
+\begin{document}
+\SweaveOpts{concordance=TRUE}
+
+\title{Genomic and metabolomic integrated analysis tutorial}
+\author{Alexey Sergushichev}
+\maketitle
+
+\begin{abstract}
+This is a small tutorial that describes how having metabolic mass-spectrometry
+data and genomic expression data for two conditions on can find the most
+significant changed module in the metabolite reactions network.
+\end{abstract}
+
+\section{Quick start}
+
+This section shows basics of the GAM package using genomic and metabolic data
+for mouse macrophages under different treatments. Package includes both these data
+and already constructed mouse network.
+
+<<loading>>=
+library("GAM")
+data("mouse.macrophages")
+data("kegg.mouse.network")
+@
+
+The data contains precalculated differential expression values between M1 and M2 
+states:
+<<all.de>>=
+head(mouse.macrophages$gene.de.M1.M2)
+head(mouse.macrophages$met.de.M1.M2)
+@
+
+Mouse network is actually a list of triples $<C1, R, C2>$,
+each of its elements says that compounds (usually metabolites) $C1$
+and $C2$ are on different sides of the reaction $R$.
+<<mouse.net>>=
+head(kegg.mouse.network$graph.raw)
+@
+
+
+Next step is to make an experiment set that contains all the data 
+necessary to find modules. It is done by calling a function
+\texttt{makeExperimentSet} which accepts as arguments network,
+available differential expression data, and type of IDs that is
+used in this data.
+<<makeExperimentSet>>=
+es <- makeExperimentSet(network=kegg.mouse.network,
+                        met.de=mouse.macrophages$met.de.M1.M2,
+                        gene.de=mouse.macrophages$gene.de.M1.M2,
+                        met.ids=mouse.macrophages$met.ids, 
+                        gene.ids=mouse.macrophages$gene.ids)
+@
+
+\todo{Mention fitbum hist and qq-plot}
+
+Result contains gene and metabolite differential expression with
+converted IDs, p-values for reactions and subnetwork with only
+those reactions that have expressed genes for enzymes.
+<<subnet>>=
+head(es$gene.de)
+head(es$met.de)
+head(es$rxn.de)
+es$subnet
+@
+
+
+\todo{Pain goes here}
+<<heinz>>=
+heinz.py <- "heinz.py"
+@
+
+Set FDRs and score for absent metabolites
+<<fdrs>>=
+met.fdr=c(1e-3)
+gene.fdr=c(1e-3)
+absent.met.score=c(-10)
+@
+
+And now we can finally find most significant module in our network.
+<<findModules>>=
+modules <- findModules(es,
+                       met.fdr=met.fdr,
+                       gene.fdr=gene.fdr,
+                       absent.met.score=absent.met.score,
+                       heinz.py=heinz.py,                                
+                       heinz.nModules=1                       
+)
+module <- modules[[1]]
+module
+@
+
+You can plot this module with
+<<label=module1plot,include=FALSE>>=
+plotNetwork(module)
+@
+
+\begin{figure}
+\begin{center}
+<<label=module1,fig=TRUE,echo=FALSE>>=
+<<module1plot>>
+@
+\end{center}
+\caption(Most significant module for M1 vs M2)
+\label{module.M1.M2.n1}
+\end{figure}
+
+%     
+%     
+%     
+%     # Saving pdf- and sif- files for found modules
+%     for (n in 1:length(modules)) {        
+%         set.seed(42)
+%         module <- modules[[n]]
+%         
+%         for (attr in c("pval", "logFC", "logPval")) {            
+%             edges <- edgelist(module)            
+%             with.origin <- !is.na(edgeData(module, from=edges$u, to=edges$v, attr="origin"))
+%             
+%             new_attr <- paste0(attr, ".M0.M1")
+%             nodeDataDefaults(module, new_attr) <- NA
+%             nodeData(module, attr=new_attr) <-
+%                 met.de.M0.M1[match(nodes(module), met.de.M0.M1$ID), attr]
+% 
+%             edgeDataDefaults(module, new_attr) <- NA
+%             edgeData(module, from=edges$u[with.origin], to=edges$v[with.origin], attr=new_attr) <- 
+%                 gene.de.M0.M1[match(
+%                     unlist(edgeData(
+%                         module, 
+%                         from=edges$u[with.origin],
+%                         to=edges$v[with.origin],
+%                         attr="origin")), 
+%                     gene.de.M0.M1$ID), attr]    
+%             
+%             new_attr <- paste0(attr, ".M0.M2")
+%             nodeDataDefaults(module, new_attr) <- NA
+%             nodeData(module, attr=new_attr) <-
+%                 met.de.M0.M2[match(nodes(module), met.de.M0.M2$ID), attr]
+%             
+%             edgeDataDefaults(module, new_attr) <- NA
+%             edgeData(module, from=edges$u[with.origin], to=edges$v[with.origin], attr=new_attr) <- 
+%                 gene.de.M0.M2[match(
+%                     unlist(edgeData(
+%                         module, 
+%                         from=edges$u[with.origin],
+%                         to=edges$v[with.origin],
+%                         attr="origin")), 
+%                     gene.de.M0.M2$ID), attr]    
+%         }
+%         
+%         saveModule(module,
+%                     paste0(outdir, "/module", 
+%                            ".mf=", met.fdrs[i],
+%                            ".rf=", gene.fdrs[i],
+%                            ".ms=", absent.met.scores[i],
+%                            "#", n),
+%                     types=c("pdf", "XGMML")
+%                     )
+%         
+%         
+%     }
+% }   
+% # Results will be put into directory.
+% outdir=paste0("./zkegg_mouse_", mouse.macrophages$state1, "-", mouse.macrophages$state2)
+% outdir
+% 
+% exit(0)
+% 
+% set.seed(42)
+% for (module in modules) {    
+%     nodeData(module$graph, attr="diff.expr") <-
+%         all.de.M0.M1$logFC[match(nodes(module$graph), all.de.M0.M1$ID)]
+%     unmatched <- nodes(module$graph)[(!nodes(module$graph) %in% all.de.M0.M1$ID)]
+%     nodeData(module$graph, unmatched, attr="diff.expr") <- rep(0, length(unmatched))
+%     module$graph <- addNormLogFC(module$graph)
+%     save_module(module$graph, 
+%                 paste0(outdir, "/module.M0.M1", 
+%                        "mf=", module$met.fdr,
+%                        ".rf=", module$gene.fdr,
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }
+% 
+% set.seed(42)
+% for (module in modules) {    
+%     nodeData(module$graph, attr="diff.expr") <-
+%         all.de.M0.M2$logFC[match(nodes(module$graph), all.de.M0.M2$ID)]
+%     unmatched <- nodes(module$graph)[(!nodes(module$graph) %in% all.de.M0.M2$ID)]
+%     nodeData(module$graph, unmatched, attr="diff.expr") <- rep(0, length(unmatched))
+%     module$graph <- addNormLogFC(module$graph)
+%     save_module(module$graph, 
+%                 paste0(outdir, "/module.M0.M2", 
+%                        "mf=", module$met.fdr,
+%                        ".rf=", module$gene.fdr,
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }
+% outdir.M0.M1="./kegg_mouse_M0-M1"
+% modules.M0.M1 <- findModules(network=kegg.mouse.network,
+%                         met.de.M0.M1,
+%                         gene.de.M0.M1,                        
+%                         met.fdrs=met.fdrs,
+%                         gene.fdrs=gene.fdrs,                         
+%                         heinz.py=heinz.py, 
+%                         heinz.nModules=heinz.nModules)
+% for (module in modules.M0.M1) {
+%     save_module(module$graph, 
+%                 paste0(outdir.M0.M1, "/module.", 
+%                        "mf=", module$met.fdr,
+%                        ".rf=", module$gene.fdr,
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }
+% 
+% outdir.M0.M2="./kegg_mouse_M0-M2"
+% modules.M0.M2 <- findModules(network=kegg.mouse.network,
+%                               met.de.M0.M2,
+%                               gene.de.M0.M2,                        
+%                               met.fdrs=met.fdrs,
+%                               gene.fdrs=gene.fdrs,                         
+%                               heinz.py=heinz.py, 
+%                               heinz.nModules=heinz.nModules)
+% for (module in modules.M0.M2) {
+%     save_module(module$graph, 
+%                 paste0(outdir.M0.M2, "/module.", 
+%                        "mf=", module$met.fdr,
+%                        ".rf=", module$gene.fdr,
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }                        
+% 
+% 
+% met.fdrs=1e-9
+% gene.fdrs=1e-9
+% 
+% for (subopt_diff in c(0:5) * 20) {
+%     print(subopt_diff)
+%     modules <- findModules(network=kegg.mouse.network,
+%                             met.de=mouse.macrophages$met.de,
+%                             gene.de=mouse.macrophages$gene.de,
+%                             met.ids=mouse.macrophages$met.ids, 
+%                             gene.ids=mouse.macrophages$gene.ids,
+%                             met.fdrs=met.fdrs,
+%                             gene.fdrs=gene.fdrs,                         
+%                             heinz.py=heinz.py, 
+%                             heinz.nModules=3,
+%                             heinz.subopt_diff=subopt_diff                            
+%     )
+%     
+%     
+%     
+%     # Saving pdf- and sif- files for found modules
+%     for (module in modules) {
+%         save_module(module$graph, 
+%                     paste0(outdir, "/module.", 
+%                            "sd=", subopt_diff,
+%                            ".mf=", module$met.fdr,
+%                            ".rf=", module$gene.fdr,
+%                            if (is.null(module$n)) "" else paste0("#", module$n)
+%                     )
+%         )
+%     }
+%     
+% }
+% 
+% exit(0)
+% # FDRs for gene-only and metabolite-only analysis
+% fdrs=c(1e-9, 1e-7, 1e-5, 1e-3, 1e-2)
+% 
+% # Finding metabolite modules. Just leaving gene data out of arguments.
+% modules.mets <- findModules(network=kegg.mouse.network,
+%                         met.de=mouse.macrophages$met.de,                        
+%                         met.ids=mouse.macrophages$met.ids,                         
+%                         fdrs=fdrs,
+%                         heinz.py=heinz.py, 
+%                         heinz.nModules=heinz.nModules
+% )
+% 
+% # Saving them.
+% for (module in modules.mets) {
+%     save_module(module$graph, 
+%                 paste0(outdir, "/module.mets.", 
+%                        "fdr=", module$met.fdr,
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }
+% 
+% # # Finding gene modules. Vice versa, leaving metabolite data out of arguments.
+% modules.genes <- findModules(network=kegg.mouse.network,                        
+%                         gene.de=mouse.macrophages$gene.de,                        
+%                         gene.ids=mouse.macrophages$gene.ids,
+%                         fdrs=fdrs,                                 
+%                         heinz.py=heinz.py, 
+%                         heinz.nModules=heinz.nModules
+% )
+% 
+% # Saving them.
+% for (module in modules.genes) {
+%     save_module(module$graph, 
+%                 paste0(outdir, "/module.genes.", 
+%                        "fdr=", module$gene.fdr,                       
+%                        if (is.null(module$n)) "" else paste0("#", module$n)
+%                 )
+%     )
+% }
+\section{Computing differential expression}
+
+% # The dataset consists of gene expression data,
+% str(mouse.macrophages$gene.exprs)
+% 
+% # conditions vector for gene,
+% str(mouse.macrophages$gene.conditions.vector)
+% 
+% # metabolite mass-spectrometry data,
+% str(mouse.macrophages$met.exprs)
+% 
+% # conditions vector for metabolites,
+% str(mouse.macrophages$met.conditions.vector)
+\section{Constructing network}
+\end{document}

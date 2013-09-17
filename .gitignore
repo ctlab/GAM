@@ -1,3 +1,14 @@
 .Rproj.user
 .Rhistory
 .RData
+*.csv
+*.tsv
+*.NA
+*.EA
+*.pdf
+*.tar.gz
+*.png
+*.jpg
+*.swp
+*.sif
+*.lst

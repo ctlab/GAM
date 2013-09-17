@@ -1,6 +1,8 @@
-#!/usr/bin/env Rscript
+#' @import DESeq limma
+NULL
 
-convert.pval.biomart <- function(pval, from, to, mart) {
+#' @export
+convertPvalBiomart <- function(pval, from, to, mart) {
     map <- getBM(attributes=c(from, to), filters=from, values=pval$ID, mart=mart)
     colnames(map) <- c("from", "to")
     map$to <- as.character(map$to)
@@ -8,7 +10,8 @@ convert.pval.biomart <- function(pval, from, to, mart) {
     convert.pval(pval, map$from, map$to)
 }
 
-convert.pval <- function(pval, from, to) {
+#' @export
+convertPval <- function(pval, from, to) {
     map <- data.frame(from=from, to=to, stringsAsFactors=F)
     pval.ext <- merge(map, pval, by.x = "from", by.y = "ID")
     origin.field = if ("origin" %in% colnames(pval)) "origin" else "from"
@@ -31,7 +34,8 @@ convert.pval <- function(pval, from, to) {
     res <- res[order(res$pval),]    
 }
 
-normalize_expressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
+#' @export
+normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     if (zero.rm) {
         # removing unexpressed genes
         keep <- apply(exprs, 1, max) > 0
@@ -59,14 +63,15 @@ normalize_expressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     return(exprs)
 }
 
-
-fix_inf <- function(dm) {    
+#' @export
+fixInf <- function(dm) {    
     dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
     dm[dm == Inf] <- max(dm[dm != Inf]) + 1
     dm
 }
 
-diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
+#' @export
+diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
     expression_matrix<-as.matrix(exprs)
     
     
@@ -97,7 +102,7 @@ diff.expr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=
         res <- res[, c("id", "pval", "log2FoldChange")]
         colnames(res) <- c("ID", "pval", "logFC")
     } else {
-        log_expression_matrix<-normalize_expressions(expression_matrix, zero.rm=T, log2=log2, quantile=quantile)
+        log_expression_matrix<-normalizeExpressions(expression_matrix, zero.rm=T, log2=log2, quantile=quantile)
         group_names<-classes_vector
         
         names(group_names)<-group_names

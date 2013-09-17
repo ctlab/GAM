@@ -8,9 +8,9 @@ with open(reactions_file) as f:
 
 descriptions = text.split("///\n")
 
-organism = "MMU"
+organisms = ["MMU", "HSA"]
 
-e2g = ["enz\tgene"]
+e2g = ["enz\tgene\torganism"]
 
 for description in descriptions:
     if description == "":
@@ -40,14 +40,16 @@ for description in descriptions:
         d["GENES"] = ""
 
     genes = d["GENES"].split("\n")
-    genes = filter(lambda s: s.startswith(organism), genes)
-    assert len(genes) <= 1
-    if len(genes) == 0:
-        continue
-    genes = genes[0]
-    genes = genes[len("%s: " % organism):].split(" ")
-    genes_entrez = map(lambda s: re.sub("(.*)\\(.*\\)", "\\1", s), genes)
-    e2g.extend(["%s\t%s" % (enz_id, gene) for gene in genes_entrez])
+    for organism_genes in genes:
+        if len(organism_genes) == 0:
+            continue
+
+        (organism, organism_genes) = organism_genes.split(":", 1)
+        if not organism in organisms:
+            continue
+        organism_genes = organism_genes.split(" ")
+        genes_entrez = map(lambda s: re.sub("(.*)\\(.*\\)", "\\1", s), organism_genes)
+        e2g.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
 
 
 with open("enz2gene.tsv", "w") as f:

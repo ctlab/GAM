@@ -22,8 +22,8 @@ str(mouse.macrophages$met.exprs)
 str(mouse.macrophages$met.conditions.vector)
 
 # gene and metabolite differential expression results
-str(mouse.macrophages$gene.de)
-str(mouse.macrophages$met.de)
+str(mouse.macrophages$gene.de.M1.M2)
+str(mouse.macrophages$met.de.M1.M2)
 
 # between states
 mouse.macrophages$state1
@@ -38,12 +38,31 @@ heinz.py <- "./heinz.py";
 # And number of modules we'd like to find.
 heinz.nModules <- 1
 
+
+data(gene.id.map)
+data(met.id.map)
+gene.de.M0.M1 <- convertPval(mouse.macrophages$gene.de.M0.M1, from=gene.id.map$RefSeq, to=gene.id.map$Entrez)
+gene.de.M0.M1$logFC <- fixInf(gene.de.M0.M1$logFC)
+gene.de.M0.M1$logPval <- log(gene.de.M0.M1$pval)
+
+met.de.M0.M1 <- convertPval(mouse.macrophages$met.de.M0.M1, from=met.id.map$HMDB, to=met.id.map$KEGG)
+met.de.M0.M1$logPval <- log(met.de.M0.M1$pval)
+
+
+gene.de.M0.M2 <- convertPval(mouse.macrophages$gene.de.M0.M2, from=gene.id.map$RefSeq, to=gene.id.map$Entrez)
+gene.de.M0.M2$logFC <- fixInf(gene.de.M0.M2$logFC)
+gene.de.M0.M2$logPval <- log(gene.de.M0.M2$pval)
+
+met.de.M0.M2 <- convertPval(mouse.macrophages$met.de.M0.M2, from=met.id.map$HMDB, to=met.id.map$KEGG)
+met.de.M0.M2$logPval <- log(met.de.M0.M2$pval)
+
+
 # If there is no heinz.py, heuristic search will be run instead.
 #heinz.py <- NULL
 
-es.M1.M2.raw <- make_experiment_set(network=kegg.mouse.network,
-                                met.de=mouse.macrophages$met.de,
-                                gene.de=mouse.macrophages$gene.de,
+es.M1.M2.raw <- makeExperimentSet(network=kegg.mouse.network,
+                                met.de=mouse.macrophages$met.de.M1.M2,
+                                gene.de=mouse.macrophages$gene.de.M1.M2,
                                 met.ids=mouse.macrophages$met.ids, 
                                 gene.ids=mouse.macrophages$gene.ids)
 
@@ -63,15 +82,20 @@ gene.fdrs=c(1e-4, 1e-2)
 absent.met.scores=c(-10, -12)
 
 
-met.fdrs=c(1e-2)
-gene.fdrs=c(5e-2)
-absent.met.scores=c(-15)
+met.fdrs=c(1e-2, 1e-3)
+gene.fdrs=c(5e-2, 1e-3)
+absent.met.scores=c(-17, -10)
 
+met.fdrs=c(1e-5)
+gene.fdrs=c(1e-5)
+absent.met.scores=c(-10)
 L <- min(length(met.fdrs), length(gene.fdrs), length(absent.met.scores))
+
+
 
 for (i in 1:L) {
     # Getting list of most significant modules base both on gene and metabolite data
-    modules <- find_modules(es.M1.M2.raw,
+    modules <- findModules(es.M1.M2.raw,
                             met.fdr=met.fdrs[i],
                             gene.fdr=gene.fdrs[i],
                             absent.met.score=absent.met.scores[i],
@@ -81,52 +105,118 @@ for (i in 1:L) {
     )
     
     
-    set.seed(42)
+    
     # Saving pdf- and sif- files for found modules
     for (n in 1:length(modules)) {        
+        set.seed(42)
         module <- modules[[n]]
-        save_module(module,
+        
+        for (attr in c("pval", "logFC", "logPval")) {            
+            edges <- edgelist(module)            
+            with.origin <- !is.na(edgeData(module, from=edges$u, to=edges$v, attr="origin"))
+            
+            new_attr <- paste0(attr, ".M0.M1")
+            nodeDataDefaults(module, new_attr) <- NA
+            nodeData(module, attr=new_attr) <-
+                met.de.M0.M1[match(nodes(module), met.de.M0.M1$ID), attr]
+
+            edgeDataDefaults(module, new_attr) <- NA
+            edgeData(module, from=edges$u[with.origin], to=edges$v[with.origin], attr=new_attr) <- 
+                gene.de.M0.M1[match(
+                    unlist(edgeData(
+                        module, 
+                        from=edges$u[with.origin],
+                        to=edges$v[with.origin],
+                        attr="origin")), 
+                    gene.de.M0.M1$ID), attr]    
+            
+            new_attr <- paste0(attr, ".M0.M2")
+            nodeDataDefaults(module, new_attr) <- NA
+            nodeData(module, attr=new_attr) <-
+                met.de.M0.M2[match(nodes(module), met.de.M0.M2$ID), attr]
+            
+            edgeDataDefaults(module, new_attr) <- NA
+            edgeData(module, from=edges$u[with.origin], to=edges$v[with.origin], attr=new_attr) <- 
+                gene.de.M0.M2[match(
+                    unlist(edgeData(
+                        module, 
+                        from=edges$u[with.origin],
+                        to=edges$v[with.origin],
+                        attr="origin")), 
+                    gene.de.M0.M2$ID), attr]    
+        }
+        
+        saveModule(module,
                     paste0(outdir, "/module", 
                            ".mf=", met.fdrs[i],
                            ".rf=", gene.fdrs[i],
                            ".ms=", absent.met.scores[i],
-                           "#", n)
-                    
-        )
+                           "#", n),
+                    types=c("pdf", "XGMML")
+                    )
+        
+        
     }
 }   
 exit(0)
 
-state0 <- "Ctrl"
+state1 <- "MandIL4"
+state2 <- "MandHLi"
 
-gene.de.M0.M1 <- diff.expr(
-    exprs=mouse.macrophages$gene.exprs, conditions.vector=mouse.macrophages$gene.conditions.vector,
-    state1=state0, state2=mouse.macrophages$state1, 
-    log2=F, quantile=F, use.deseq=T, top=10000)
-gene.de.M0.M1 <- convert.pval(gene.de.M0.M1, from=gene.id.map$RefSeq, to=gene.id.map$Entrez)
-gene.de.M0.M1$logFC <- fix_inf(gene.de.M0.M1$logFC)
+gene.de <- diffExpr(
+    exprs=gene.exprs, conditions.vector=gene.conditions.vector,
+    state1=state1, state2=state2, 
+    log2=F, quantile=F, use.deseq=T, top=20000)
 
-met.de.M0.M1 <- diff.expr(
-    exprs=mouse.macrophages$met.exprs, conditions.vector=mouse.macrophages$met.conditions.vector,
-    state1=state0, state2=mouse.macrophages$state1, 
+met.de <- diffExpr(
+    exprs=met.exprs, conditions.vector=met.conditions.vector,
+    state1=state1, state2=state2, 
     log2=F, quantile=F, use.deseq=F, top=Inf)
-met.de.M0.M1 <- convert.pval(met.de.M0.M1, from=met.id.map$HMDB, to=met.id.map$KEGG)
-all.de.M0.M1 <- rbind(gene.de.M0.M1, met.de.M0.M1)
+
+es <- makeExperimentSet(network=kegg.mouse.network,
+                                  met.de=met.de,
+                                  gene.de=gene.de,
+                                  met.ids=mouse.macrophages$met.ids, 
+                                  gene.ids=mouse.macrophages$gene.ids)
+
+met.fdrs=c(1e-3)
+gene.fdrs=c(1e-3)
+absent.met.scores=c(-10)
+L <- min(length(met.fdrs), length(gene.fdrs), length(absent.met.scores))
 
 
-gene.de.M0.M2 <- diff.expr(
-    exprs=mouse.macrophages$gene.exprs, conditions.vector=mouse.macrophages$gene.conditions.vector,
-    state1=state0, state2=mouse.macrophages$state2, 
-    log2=F, quantile=F, use.deseq=T, top=10000)
-gene.de.M0.M2 <- convert.pval(gene.de.M0.M2, from=gene.id.map$RefSeq, to=gene.id.map$Entrez)
-gene.de.M0.M2$logFC <- fix_inf(gene.de.M0.M2$logFC)
 
-met.de.M0.M2 <- diff.expr(
-    exprs=mouse.macrophages$met.exprs, conditions.vector=mouse.macrophages$met.conditions.vector,
-    state1=state0, state2=mouse.macrophages$state2, 
-    log2=F, quantile=F, use.deseq=F, top=Inf)
-met.de.M0.M2 <- convert.pval(met.de.M0.M2, from=met.id.map$HMDB, to=met.id.map$KEGG)
-all.de.M0.M2 <- rbind(gene.de.M0.M2, met.de.M0.M2)
+for (i in 1:L) {
+    # Getting list of most significant modules base both on gene and metabolite data
+    modules <- findModules(es,
+                            met.fdr=met.fdrs[i],
+                            gene.fdr=gene.fdrs[i],
+                            absent.met.score=absent.met.scores[i],
+                            heinz.py=heinz.py,                                
+                            heinz.nModules=1,
+                            score.separately=T
+    )
+    
+    
+    
+    # Saving pdf- and sif- files for found modules
+    for (n in 1:length(modules)) {        
+        set.seed(42)
+        module <- modules[[n]]
+        
+        saveModule(module,
+                    paste0(outdir, "/module.IL4.HLi", 
+                           ".mf=", met.fdrs[i],
+                           ".rf=", gene.fdrs[i],
+                           ".ms=", absent.met.scores[i],
+                           "#", n),
+                    types=c("pdf", "XGMML")
+                    )
+        
+        
+    }
+}   
+
 
 set.seed(42)
 for (module in modules) {    
@@ -134,7 +224,7 @@ for (module in modules) {
         all.de.M0.M1$logFC[match(nodes(module$graph), all.de.M0.M1$ID)]
     unmatched <- nodes(module$graph)[(!nodes(module$graph) %in% all.de.M0.M1$ID)]
     nodeData(module$graph, unmatched, attr="diff.expr") <- rep(0, length(unmatched))
-    module$graph <- add_norm.diff.expr(module$graph)
+    module$graph <- addNormLogFC(module$graph)
     save_module(module$graph, 
                 paste0(outdir, "/module.M0.M1", 
                        "mf=", module$met.fdr,
@@ -150,7 +240,7 @@ for (module in modules) {
         all.de.M0.M2$logFC[match(nodes(module$graph), all.de.M0.M2$ID)]
     unmatched <- nodes(module$graph)[(!nodes(module$graph) %in% all.de.M0.M2$ID)]
     nodeData(module$graph, unmatched, attr="diff.expr") <- rep(0, length(unmatched))
-    module$graph <- add_norm.diff.expr(module$graph)
+    module$graph <- addNormLogFC(module$graph)
     save_module(module$graph, 
                 paste0(outdir, "/module.M0.M2", 
                        "mf=", module$met.fdr,
@@ -160,7 +250,7 @@ for (module in modules) {
     )
 }
 outdir.M0.M1="./kegg_mouse_M0-M1"
-modules.M0.M1 <- find_modules(network=kegg.mouse.network,
+modules.M0.M1 <- findModules(network=kegg.mouse.network,
                         met.de.M0.M1,
                         gene.de.M0.M1,                        
                         met.fdrs=met.fdrs,
@@ -178,7 +268,7 @@ for (module in modules.M0.M1) {
 }
 
 outdir.M0.M2="./kegg_mouse_M0-M2"
-modules.M0.M2 <- find_modules(network=kegg.mouse.network,
+modules.M0.M2 <- findModules(network=kegg.mouse.network,
                               met.de.M0.M2,
                               gene.de.M0.M2,                        
                               met.fdrs=met.fdrs,
@@ -201,7 +291,7 @@ gene.fdrs=1e-9
 
 for (subopt_diff in c(0:5) * 20) {
     print(subopt_diff)
-    modules <- find_modules(network=kegg.mouse.network,
+    modules <- findModules(network=kegg.mouse.network,
                             met.de=mouse.macrophages$met.de,
                             gene.de=mouse.macrophages$gene.de,
                             met.ids=mouse.macrophages$met.ids, 
@@ -234,7 +324,7 @@ exit(0)
 fdrs=c(1e-9, 1e-7, 1e-5, 1e-3, 1e-2)
 
 # Finding metabolite modules. Just leaving gene data out of arguments.
-modules.mets <- find_modules(network=kegg.mouse.network,
+modules.mets <- findModules(network=kegg.mouse.network,
                         met.de=mouse.macrophages$met.de,                        
                         met.ids=mouse.macrophages$met.ids,                         
                         fdrs=fdrs,
@@ -253,7 +343,7 @@ for (module in modules.mets) {
 }
 
 # # Finding gene modules. Vice versa, leaving metabolite data out of arguments.
-modules.genes <- find_modules(network=kegg.mouse.network,                        
+modules.genes <- findModules(network=kegg.mouse.network,                        
                         gene.de=mouse.macrophages$gene.de,                        
                         gene.ids=mouse.macrophages$gene.ids,
                         fdrs=fdrs,                                 
