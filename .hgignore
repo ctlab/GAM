@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+.*.tar.gz
+modules
+data
+networks
+heinztmp
+GAM.Rcheck/
+GAM/man
