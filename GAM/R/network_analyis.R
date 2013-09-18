@@ -523,6 +523,7 @@ findModulesSq <- function(es,
 }
 
 removeSimpleReactions <- function(module, es) {
+    stopifnot(!es$reactions.as.edges)
     rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
     rxn.edges <- edges(module, rxn.nodes)
     bm.rxns <- names(rxn.edges)[sapply(rxn.edges, length) == 2]
@@ -555,6 +556,42 @@ removeSimpleReactions <- function(module, es) {
         
     }
     return(res)
+}
+
+addProductsForLeafRxns <- function(module, es) {
+    stopifnot(!es$reactions.as.edges)
+    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
+    rxn.edges <- edges(module, rxn.nodes)
+    leaf.rxns <- names(rxn.edges)[sapply(rxn.edges, length) == 1]
+    original.rxns <- unlist(nodeData(module, leaf.rxns, attr="rxns"))
     
+    res <- module
+    
+    for (new.rxn in leaf.rxns) {
+        is.reaction <- F
+        c1 <- rxn.edges[[new.rxn]][[1]]
+        
+        c2s <- c()
+        
+        for (old.rxn in names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])) {
+            c2s <- c(c2s, es$network$graph.raw$met.y[
+                        (es$network$graph.raw$met.x == c1) & 
+                        (es$network$graph.raw$rxn == old.rxn)])
+            
+            c2s <- c(c2s, es$network$graph.raw$met.x[
+                        (es$network$graph.raw$met.y == c1) & 
+                        (es$network$graph.raw$rxn == old.rxn)])
+
+        }
+        
+        c2s <- unique(c2s)
+        
+        for (c2 in c2s) {
+            res <- addNode(c2, res)
+            res <- addEdge(new.rxn, c2, res)
+        }
+    }
+    res <- addNodeAttributes(res, list(met=es$met.de.ext))
+    return(res)
 }
 

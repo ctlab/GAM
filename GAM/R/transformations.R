@@ -151,25 +151,11 @@ split.mapping.by.connectivity <- function(graph, from, to) {
 }
 
 
-graphNEL.from.tables <- function(node.table=list(), edge.table,
-                                 node.col=1, edge.cols=c(1,2),
-                                 directed=T, ignore.solitary.nodes=T, 
-                                 name.as.label=T) {    
-    
-    if (is.character(edge.cols)) {
-        edge.cols <- match(edge.cols, colnames(edge.table))
-    }
-    
-    net1 <- graph.edgelist(as.matrix(edge.table[,edge.cols]), directed=directed)
-    net1 <- simplify(net1, remove.multiple=T)
-    net1 <- igraph.to.graphNEL(net1)
-    
-    
-    
+addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.label=T) {
     if (class(node.table) != "list") {
         node.table <- list(node.table)        
     }
-    
+
     for (i in seq(length.out=length(node.table))) {
         nt <- node.table[[i]]
         nodeType <- names(node.table)[i]
@@ -180,20 +166,37 @@ graphNEL.from.tables <- function(node.table=list(), edge.table,
             node.col.cur <- node.col
         }
         
-        nt <- nt[nt[,node.col.cur] %in% nodes(net1),]        
+        nt <- nt[nt[,node.col.cur] %in% nodes(graph),]        
         
         for (node.attr in colnames(nt)[-node.col.cur]) {
             new.attr <- if (node.attr == "name" && name.as.label) "label" else node.attr
             
-            nodeDataDefaults(net1, new.attr) <- NA
-            nodeData(net1, n=nt[,node.col], attr=new.attr) <- nt[,node.attr]
+            nodeDataDefaults(graph, new.attr) <- NA
+            nodeData(graph, n=nt[,node.col], attr=new.attr) <- nt[,node.attr]
         }        
         if (!is.null(nodeType) && nodeType != "") {
-            nodeDataDefaults(net1, "nodeType") <- NA
-            nodeData(net1, n=nt[,node.col], attr="nodeType") <- nodeType
+            nodeDataDefaults(graph, "nodeType") <- NA
+            nodeData(graph, n=nt[,node.col], attr="nodeType") <- nodeType
         }
     }
+    return(graph)
     
+}
+
+graphNEL.from.tables <- function(node.table=list(), edge.table,
+                                 node.col=1, edge.cols=c(1,2),
+                                 directed=T,
+                                 name.as.label=T) {    
+    
+    if (is.character(edge.cols)) {
+        edge.cols <- match(edge.cols, colnames(edge.table))
+    }
+    
+    net1 <- graph.edgelist(as.matrix(edge.table[,edge.cols]), directed=directed)
+    net1 <- simplify(net1, remove.multiple=T)
+    net1 <- igraph.to.graphNEL(net1)
+    
+    net1 <- addNodeAttributes(net1, node.table, node.col, name.as.label)
     
     
     for (edge.attr in colnames(edge.table)[-edge.cols]) {        
