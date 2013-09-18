@@ -166,7 +166,7 @@ graphNEL.from.tables <- function(node.table=list(), edge.table,
     
     
     
-    if (!is.list(node.table)) {
+    if (class(node.table) != "list") {
         node.table <- list(node.table)        
     }
     
@@ -188,7 +188,7 @@ graphNEL.from.tables <- function(node.table=list(), edge.table,
             nodeDataDefaults(net1, new.attr) <- NA
             nodeData(net1, n=nt[,node.col], attr=new.attr) <- nt[,node.attr]
         }        
-        if (nodeType != "") {
+        if (!is.null(nodeType) && nodeType != "") {
             nodeDataDefaults(net1, "nodeType") <- NA
             nodeData(net1, n=nt[,node.col], attr="nodeType") <- nodeType
         }

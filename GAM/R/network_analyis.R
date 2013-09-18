@@ -145,7 +145,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
-                              reactions.as.edges=F,
+                              reactions.as.edges=T,
                               collapse.reactions=F) {
     es <- newEmptyObject()
     es$network <- network
@@ -222,7 +222,7 @@ makeExperimentSet <- function(network,
         es$net.edges.ext <- net.edges.ext
         
         
-        net1 <- graphNEL.from.tables(node.table=met.de.ext, edge.table=net.edges.ext,
+        net1 <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
                                      directed=F, ignore.solitary.nodes=T)
         
@@ -241,8 +241,13 @@ makeExperimentSet <- function(network,
             #rxn.de.origin.split <- es$rxn.de$origin
             es$rxn.de.origin.split <- split.mapping.by.connectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
             
+            t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
+            from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
+            
             es$rxn.de.ext$ID <- es$rxn.de.origin.split            
             es$rxn.de.ext <- unique(es$rxn.de.ext)
+            es$rxn.de.ext$rxns <- from.table$from[match(es$rxn.de.ext$ID, from.table$to)]
+            
             edges$rxn <- es$rxn.de.origin.split[edges$rxn]
             edges <- unique(edges)
         }
@@ -412,11 +417,15 @@ makeExperimentSetSq <- function(network,
                 #rxn.de.origin.split <- es$rxn.de$origin
                 es$rxn.de.origin.split <- split.mapping.by.connectivity(es$graph, es$rxn.de$ID, es$rxn.de$origin)
                 
+                
                 es$graph <- convert.node.names(es$graph, es$rxn.de$ID, es$rxn.de.origin.split)
                 
                 
                 es$rxn.de.orig <- es$rxn.de
+                
+                
                 es$rxn.de$ID <- es$rxn.de.origin.split            
+                
             }
             
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% nodes(es$graph), ]            
@@ -512,3 +521,40 @@ findModulesSq <- function(es,
     
     return(res)
 }
+
+removeSimpleReactions <- function(module, es) {
+    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
+    rxn.edges <- edges(module, rxn.nodes)
+    bm.rxns <- names(rxn.edges)[sapply(rxn.edges, length) == 2]
+    original.rxns <- unlist(nodeData(module, bm.rxns, attr="rxns"))
+    
+    res <- module
+    
+    for (new.rxn in bm.rxns) {
+        is.reaction <- F
+        c1 <- rxn.edges[[new.rxn]][[1]]
+        c2 <- rxn.edges[[new.rxn]][[2]]
+        
+        for (old.rxn in names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])) {
+            is.reaction <- 
+                is.reaction || 
+                any((es$network$graph.raw$met.x == c1) & 
+                    (es$network$graph.raw$met.y == c2) & 
+                    (es$network$graph.raw$rxn == old.rxn))
+            
+            is.reaction <- 
+                is.reaction || 
+                any((es$network$graph.raw$met.x == c2) & 
+                    (es$network$graph.raw$met.y == c1) & 
+                    (es$network$graph.raw$rxn == old.rxn))
+        }
+        if (is.reaction) {
+            res <- removeNode(new.rxn, res)
+            res <- addEdge(from=c1, to=c2, res)
+        }
+        
+    }
+    return(res)
+    
+}
+
