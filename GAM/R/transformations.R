@@ -151,7 +151,7 @@ split.mapping.by.connectivity <- function(graph, from, to) {
 }
 
 
-graphNEL.from.tables <- function(node.table, edge.table,
+graphNEL.from.tables <- function(node.table=list(), edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=T, ignore.solitary.nodes=T, 
                                  name.as.label=T) {    
@@ -170,7 +170,7 @@ graphNEL.from.tables <- function(node.table, edge.table,
         node.table <- list(node.table)        
     }
     
-    for (i in 1:length(node.table)) {
+    for (i in seq(length.out=length(node.table))) {
         nt <- node.table[[i]]
         nodeType <- names(node.table)[i]
         

@@ -79,8 +79,8 @@ heinz.py <- "heinz.py"
 
 Set FDRs and score for absent metabolites
 <<fdrs>>=
-met.fdr=c(1e-3)
-gene.fdr=c(1e-3)
+met.fdr=c(1e-5)
+gene.fdr=c(1e-5)
 absent.met.score=c(-10)
 @
 

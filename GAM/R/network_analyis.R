@@ -141,11 +141,12 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
 }
 
 #' @export
+#' @importFrom plyr rename
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
-                              reactions.as.edges=F
-) {
+                              reactions.as.edges=F,
+                              collapse.reactions=F) {
     es <- newEmptyObject()
     es$network <- network
     es$met.de <- met.de
@@ -231,7 +232,22 @@ makeExperimentSet <- function(network,
         edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
                        rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
         
-        net1 <- graphNEL.from.tables(node.table=list(met=met.de.ext, rxn=rxn.de.ext), edge.table=edges,
+        if (collapse.reactions) {
+            print("Collapsing reactions by common most significant enzymes")
+            rxn.net <- merge(rename(edges, c("rxn"="rxn.x")), rename(edges, c("rxn" = "rxn.y")))
+            rxn.net <- unique(rxn.net[, c("rxn.x", "rxn.y")])
+            rxn.graph <- graphNEL.from.tables(edge.table=rxn.net, directed=F)
+            
+            #rxn.de.origin.split <- es$rxn.de$origin
+            es$rxn.de.origin.split <- split.mapping.by.connectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
+            
+            es$rxn.de.ext$ID <- es$rxn.de.origin.split            
+            es$rxn.de.ext <- unique(es$rxn.de.ext)
+            edges$rxn <- es$rxn.de.origin.split[edges$rxn]
+            edges <- unique(edges)
+        }
+        
+        net1 <- graphNEL.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
                                      node.col="ID",
                                      directed=F, ignore.solitary.nodes=T)
         
@@ -276,21 +292,17 @@ findModules <- function(es,
             
     met.scores <- NULL    
     if (!is.null(es$met.de) && !is.null(met.fdr)) {            
-        if (score.separately) {
-            met.scores <- scoreFunction(es$fb.met, met.fdr)             
-        } else {
-            met.scores <- scoreFunction(es$fb.all, met.fdr)[names(es$met.pval)]                
-        }
+        fb <- if (score.separately) es$fb.met else es$fb.all
+        met.scores <- scoreValue(fb, na.omit(es$met.de.ext$pval), met.fdr)
+        names(met.scores) <- es$met.de.ext$ID[!is.na(es$met.de.ext$pval)]
     }
     
     
     rxn.scores <- NULL
     if (!is.null(es$rxn.de) && !is.null(gene.fdr)) {
-        if (score.separately) {             
-            rxn.scores <- scoreFunction(es$fb.rxn, gene.fdr)
-        } else {                
-            rxn.scores <- scoreFunction(es$fb.all, gene.fdr)[names(es$rxn.pval)]
-        }
+        fb <- if (score.separately) es$fb.rxn else es$fb.all
+        rxn.scores <- scoreValue(fb, na.omit(es$rxn.de.ext$pval), gene.fdr)
+        names(rxn.scores) <- es$rxn.de.ext$ID[!is.na(es$rxn.de.ext$pval)]
     }
     
     
