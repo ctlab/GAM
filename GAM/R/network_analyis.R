@@ -142,42 +142,6 @@ plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, 
          main = main)
 }
 
-saveModuleToPdf <- function(module, outputFilePrefix) {
-    pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
-    plotNetwork(module, attr.label="label", vertex.size=2)
-    dev.off()
-}
-
-#' Save module to different formats
-#' @param module Module to save
-#' @param outputFilePrefix Path to save to (without extension)
-#' @param types Vector of file types, "pdf" or one of the supported by BioNet::saveNetwork function
-#' @export
-saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
-    # :ToDO: fix saving to XGMML (NAs, escaping, trivial modules)
-    outdir <- dirname(outputFilePrefix)
-    
-    if (!file.exists(outdir)) {
-        dir.create(outdir)
-    }
-    
-    
-    #module <- subNetwork(nodes(module), network=subnet)
-    module    
-
-    
-    for (type in types) {
-        if (type == "pdf") {
-            saveModuleToPdf(module, outputFilePrefix)
-        } else {
-            saveNetwork(module,name=basename(outputFilePrefix),file=outputFilePrefix,type=type)
-        }
-        
-    }
-    
-    
-}
-
 #' Add node attribute with normalized log-foldchange inside node groups
 #' @param module Module to add attribut to
 #' @param logFC.attr Attribute with node log-foldchange
