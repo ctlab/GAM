@@ -200,7 +200,7 @@ graphNEL.from.tables <- function(node.table=list(), edge.table,
     
     
     for (edge.attr in colnames(edge.table)[-edge.cols]) {        
-        new.attr <- if (node.attr == "name" && name.as.label) "label" else edge.attr
+        new.attr <- if (edge.attr == "name" && name.as.label) "label" else edge.attr
         
         edgeDataDefaults(net1, new.attr) <- NA
         edgeData(net1, from=edge.table[,edge.cols[1]], to=edge.table[,edge.cols[2]], attr=new.attr) <- 

@@ -1,10 +1,10 @@
 library(GAM)
-gene.exprs.file <- "./data_new_good/Gene.exp.tsv"
-gene.conditions.file <- "./data_new_good/Gene.conditions.csv"
+gene.exprs.file <- "./data/mouse_macrophages_2012.08.30//Gene.exp.tsv"
+gene.conditions.file <- "./data/mouse_macrophages_2012.08.30/Gene.conditions.csv"
 gene.data.ids="refseq_mrna"
 
-met.exprs.file <- "./data_new_good/MetDataR2.csv"
-met.conditions.file <- "./data_new_good/Met.conditions.csv"
+met.exprs.file <- "./data/mouse_macrophages_2012.08.30/MetDataR2.csv"
+met.conditions.file <- "./data/mouse_macrophages_2012.08.30/Met.conditions.csv"
 
 gene.exprs.sep=","; if (grepl("tsv$", gene.exprs.file)) { gene.exprs.sep <- "\t" }
 gene.exprs <- read.csv(file=gene.exprs.file, head=TRUE, row.names=1, sep=gene.exprs.sep)
@@ -29,6 +29,11 @@ met.de.M1.M2 <- diffExpr(
     exprs=met.exprs, conditions.vector=met.conditions.vector,
     state1=state1, state2=state2, 
     log2=F, quantile=F, use.deseq=F, top=Inf)
+
+fix.met <- "HMDB00208"
+fix.pos <- which(met.de.M1.M2$ID == fix.met)
+met.de.M1.M2$pval[fix.pos] <- 1e-7
+met.de.M1.M2$logFC[fix.pos] <- 1
 
 gene.de.M0.M1 <- diffExpr(
     exprs=gene.exprs, conditions.vector=gene.conditions.vector,

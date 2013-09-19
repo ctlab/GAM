@@ -1,6 +1,34 @@
 #' @import BioNet igraph0
 NULL
 
+.node.color <- function(network, colors)
+{ 
+    colors <- colors[V(network)$name]
+    colors2 <- colors
+    # set red colors
+    if(max(abs(colors))<5)
+    {
+        colors <- colors*5
+    }
+    if(any(colors>0))
+    {
+        max.red <- max(ceiling(abs(colors[which(colors>0)])))
+        reds <- colorRampPalette(colors=c("white", "red"))
+        red.vec <- reds(max.red+1)
+        colors2[which(colors>0)] <- red.vec[ceiling(abs(colors[which(colors>0)]))+1]
+    }
+    # set green colors
+    if(any(colors<0))
+    {
+        max.green <- max(ceiling(abs(colors[which(colors<0)])))
+        greens <- colorRampPalette(colors=c("white", "green"))
+        green.vec <- greens(max.green+1)
+        colors2[which(colors<0)] <- green.vec[ceiling(abs(colors[which(colors<0)]))+1]
+    }
+    return(colors2)
+}
+
+
 #' Plot module with attribute as a node label
 #' @param module Module to plot
 #' @param attr Attribute to use as a label
@@ -27,9 +55,92 @@ plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, 
     node.labels = nodes(module)
     names(node.labels) <-node.labels
     all.labels = c(attr.labels, node.labels[!names(node.labels) %in% names(attr.labels)])
-    plotModule(module, diff.expr=de, layout=layout, labels=all.labels[node.labels], ...)        
-}
+    
+    labels = NULL
+    scores = NULL
+    main = NULL
+    vertex.size = NULL
+                         
+    diff.expr <- de
+    labels <- all.labels[node.labels]
+    network <- module
+    
+    if (is(network, "graphNEL")) {
+        network <- igraph.from.graphNEL(network)
+    }
+    if (is.null(V(network)$name)) {
+        V(network)$name <- as.character(V(network))
+    }
+    if (is.null(labels)) {
+        if ("geneSymbol" %in% list.vertex.attributes(network)) {
+            labels <- V(network)$geneSymbol
+        }
+        else {
+            labels <- V(network)$name
+        }
+    }
+    shapes <- rep("circle", length(V(network)))
+    names(shapes) <- V(network)$name
+    if (!is.null(scores) && !is.null(names(scores))) {
+        shapes[intersect(names(which(scores < 0)), V(network)$name)] <- "csquare"
+    }
+    if (is.null(scores) && "score" %in% list.vertex.attributes(network)) {
+        scores <- V(network)$score
+        names(scores) <- V(network)$name
+        shapes[names(which(scores < 0))] <- "csquare"
+    }
+    if (!is.null(diff.expr) && !is.null(names(diff.expr))) {
+        coloring <- .node.color(network, diff.expr)
+    }
+    else {
+        coloring <- "SkyBlue2"
+    }
+    if (is.null(diff.expr) && "diff.expr" %in% list.vertex.attributes(network)) {
+        diff.exprs = V(network)$diff.expr
+        names(diff.exprs) <- V(network)$name
+        coloring <- .node.color(network, diff.exprs)
+    }
+    max.labels <- max(nchar(labels))
+    vertex.size2 <- 3    
+    cex = 0.6
+    network.size = length(V(network))
+    layout <- layout(network)
+    layout <- layout.norm(layout, -1, 1, -1, 1)
+    layout.coordinates <- layout
+    xs <- layout.coordinates[,1]
+    ys <- layout.coordinates[,2]
+    
+    
+    
+    es <- get.edges(network, E(network))
+    es <- es + 1 # :ToDo: remove when moving from igraph0
+    
+    if (nrow(es) > 0) {
+        dist.sum <- 0
+        for (i in 1:nrow(es)) {
+            u <- es[i, 1]
+            v <- es[i, 2]
+            d <- sqrt((xs[u] - xs[v])^2 + (ys[u] - ys[v])^2)
+            dist.sum <- dist.sum + d
+        }
+        
+        
+        dist.avg <- dist.sum / nrow(es)
+#         print(paste("average distance:", dist.avg))
+        vertex.size2 <- vertex.size2 * 10 * dist.avg
+        cex <- cex * 10 * dist.avg
+        
+    }
+    
 
+    set.seed(42)
+    plot(network, layout = layout.coordinates, vertex.size = vertex.size2, 
+         vertex.label = labels, vertex.label.cex = cex, 
+         vertex.color = coloring, vertex.label.family = "sans", 
+         vertex.shape = shapes, 
+         edge.label.cex = cex,
+         main = main)
+}
 
 saveModuleToPdf <- function(module, outputFilePrefix) {
     pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
@@ -224,7 +335,7 @@ makeExperimentSet <- function(network,
         
         net1 <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
-                                     directed=F, ignore.solitary.nodes=T)
+                                     directed=F)
         
         es$subnet <- net1
     } else {    
@@ -254,7 +365,7 @@ makeExperimentSet <- function(network,
         
         net1 <- graphNEL.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
                                      node.col="ID",
-                                     directed=F, ignore.solitary.nodes=T)
+                                     directed=F)
         
         es$subnet <- net1
     }
@@ -522,6 +633,7 @@ findModulesSq <- function(es,
     return(res)
 }
 
+#' @export
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
     rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
@@ -558,6 +670,7 @@ removeSimpleReactions <- function(module, es) {
     return(res)
 }
 
+#' @export
 addProductsForLeafRxns <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
     rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
@@ -567,29 +680,48 @@ addProductsForLeafRxns <- function(module, es) {
     
     res <- module
     
-    for (new.rxn in leaf.rxns) {
-        is.reaction <- F
-        c1 <- rxn.edges[[new.rxn]][[1]]
+    for (new.rxn in rxn.nodes) {
         
-        c2s <- c()
+        cs <- rxn.edges[[new.rxn]]
         
-        for (old.rxn in names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])) {
-            c2s <- c(c2s, es$network$graph.raw$met.y[
-                        (es$network$graph.raw$met.x == c1) & 
-                        (es$network$graph.raw$rxn == old.rxn)])
+        old.rxns <- names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])
+        
+        candidate.rxns <- c()
+        for (old.rxn in old.rxns) {
+            rxn.net <- es$network$graph.raw[es$network$graph.raw$rxn == old.rxn,]
+            net.cs <- unique(c(rxn.net$met.x, rxn.net$met.y))
             
-            c2s <- c(c2s, es$network$graph.raw$met.x[
-                        (es$network$graph.raw$met.y == c1) & 
-                        (es$network$graph.raw$rxn == old.rxn)])
+            if (length(setdiff(cs, net.cs)) == 0) {
+                candidate.rxns <- c(candidate.rxns, old.rxn)
+            }
 
+            if (any((rxn.net$met.x %in% cs) & (rxn.net$met.y %in% cs))) {
+                next
+            }
         }
         
-        c2s <- unique(c2s)
-        
-        for (c2 in c2s) {
-            res <- addNode(c2, res)
-            res <- addEdge(new.rxn, c2, res)
+        if (length(candidate.rxns) > 1) {
+            next
         }
+        
+        for (old.rxn in candidate.rxns) {
+            # is leaf reaction
+            
+            rxn.net <- es$network$graph.raw[es$network$graph.raw$rxn == old.rxn,]
+            rxn.net <- rbind(rxn.net, rename(rxn.net, c("met.x"="met.y", "met.y"="met.x")))
+            
+            c2s <- unique(rxn.net$met.y[rxn.net$met.x %in% cs])
+            
+            for (c2 in c2s) {
+                if (!c2 %in% nodes(res)) {
+                    res <- addNode(c2, res)
+                }
+                if (!new.rxn %in% unlist(edges(res, c2))) {
+                    res <- addEdge(new.rxn, c2, res)
+                }
+            }
+        }
+        
     }
     res <- addNodeAttributes(res, list(met=es$met.de.ext))
     return(res)
