@@ -45,6 +45,7 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
     dev.off()
 }
 
+#' @import XML
 saveModuleToXgmml <- function(module, name, file) {
     require(XML)
     addNode <- XML::addNode

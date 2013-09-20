@@ -1,11 +1,11 @@
-getRxn2met <- function(net) {
+getRxn2Met <- function(net) {
     rxn2met.x <- data.frame(rxn=net$rxn, met=net$met.x, stringsAsFactors=F)
     rxn2met.y <- data.frame(rxn=net$rxn, met=net$met.y, stringsAsFactors=F)
     return(unique(rbind(rxn2met.x, rxn2met.y)))
 }
 
 getMetDegree <- function(net) {
-    rxn2met <- get_rxn2met(net)
+    rxn2met <- getRxn2Met(net)
     met.degree <- table(rxn2met$met)
     met.degree <- met.degree[order(met.degree, decreasing=T)]
     met.degree <- as.data.frame(met.degree)
@@ -30,11 +30,11 @@ makeKeggNetwork <- function(kegg.db, organism) {
     
     net <- net[net$rxn %in% rxns2keep,]
     
-    net <- net[!(net$met.x %in% mets2mask) & !(net$met.y %in% mets2mask),]
+    net <- net[!(net$met.x %in% kegg.db$mets2mask) & !(net$met.y %in% kegg.db$mets2mask),]
     
     rownames(net) <- NULL
     
-    rxn2met <- get_rxn2met(net)
+    rxn2met <- getRxn2Met(net)
     met2rxn <- rxn2met[,c("met", "rxn")]
     
     rxn2rxn <- unique(merge(rxn2met, met2rxn, by="met")[,c("rxn.x", "rxn.y")])
@@ -75,7 +75,7 @@ makeKeggNetwork <- function(kegg.db, organism) {
     
     kegg.network <- newEmptyObject()
     kegg.network$enz2gene <- enz2gene
-    kegg.network$rxn2enz <- rxn2enz
+    kegg.network$rxn2enz <- kegg.db$rxn2enz
     kegg.network$rxn2gene <- rxn2gene
     kegg.network$graph.raw <- net
     kegg.network$graph.sq <- net.sq

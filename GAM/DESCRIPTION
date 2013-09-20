@@ -6,4 +6,5 @@ Date: 2013-08-31
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: More about what it does (maybe more than one line)
+Imports: BioNet, DESeq, igraph0, limma, plyr
 License: GPL (>=2)

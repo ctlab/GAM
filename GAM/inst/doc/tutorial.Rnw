@@ -7,7 +7,7 @@
 \newcommand{\todo}{\colorbox{yellow}}
 
 \begin{document}
-\SweaveOpts{concordance=TRUE}
+\SweaveOpts{concordance=TRUE,engine=R}
 
 \title{Genomic and metabolomic integrated analysis tutorial}
 \author{Alexey Sergushichev}
