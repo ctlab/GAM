@@ -45,10 +45,9 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
     dev.off()
 }
 
-#' @import XML
+#' @importFrom XML append.xmlNode addAttributes
 saveModuleToXgmml <- function(module, name, file) {
     require(XML)
-    addNode <- XML::addNode
     if(is(network, "graphNEL"))
     {
         network <- igraph.from.graphNEL(network)  
@@ -66,7 +65,6 @@ saveModuleToXgmml <- function(module, name, file) {
     print("...writing to file")
     saveXML(top, file=paste(file, ".xgmml", sep=""), encoding="UTF-8")
     if("package:XML" %in% search()){detach("package:XML")}
-    addNode <- graph::addNode
 }
 # internal method to create the first part of the XGMML-file, description
 .XGMML.destription <- function(name)

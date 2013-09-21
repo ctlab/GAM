@@ -74,6 +74,9 @@ escape.names <- function(net) {
     return(convert.ids.network(net, from, to))
 }
 
+#' Get data.frame with network edges
+#' @param network Network
+#' @return Data.frame with edges
 #' @export
 edgelist <- function(network) {
     edges <- edges(network)

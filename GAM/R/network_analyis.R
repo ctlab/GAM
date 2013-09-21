@@ -29,12 +29,14 @@ NULL
 }
 
 
-#' Plot module with attribute as a node label
+#' Plots network module
 #' @param module Module to plot
-#' @param attr Attribute to use as a label
+#' @param scale Scale factor for vertex sizes and label fonts
+#' @param attr.label Attribute to use as a label
 #' @param layout Layout to use
+#' @param ... Arguments for plot
 #' @export
-plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, ...) {
+plotNetwork <- function(module, scale=1, attr.label="label", layout=layout.kamada.kawai, ...) {
     if (!(attr.label %in% names(nodeDataDefaults(module)))) {
         return()        
     }
@@ -115,6 +117,9 @@ plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, 
     es <- get.edges(network, E(network))
     es <- es + 1 # :ToDo: remove when moving from igraph0
     
+    #print(paste("par:", par("pin")))
+    scale <- scale * min(par("pin")) / 10
+    
     if (nrow(es) > 0) {
         dist.sum <- 0
         for (i in 1:nrow(es)) {
@@ -126,24 +131,30 @@ plotNetwork <- function(module, attr.label="label", layout=layout.kamada.kawai, 
         
         
         dist.avg <- dist.sum / nrow(es)
-#         print(paste("average distance:", dist.avg))
-        vertex.size2 <- vertex.size2 * 10 * dist.avg
-        cex <- cex * 10 * dist.avg
-        
+        #print(paste("average distance:", dist.avg))
+        scale <- scale * dist.avg * 10
     }
     
+    #print(cex)
+    
+    vertex.size2 <- vertex.size2 * scale
+    cex <- cex * scale
 
+    random.state <- .Random.seed
     set.seed(42)
     plot(network, layout = layout.coordinates, vertex.size = vertex.size2, 
          vertex.label = labels, vertex.label.cex = cex, 
-         vertex.color = coloring, vertex.label.family = "sans", 
+         vertex.label.dist = 0 , vertex.label.degree = -pi/2,
+         vertex.color = coloring,
+         vertex.label.family = "sans", 
          vertex.shape = shapes, 
          edge.label.cex = cex,
-         main = main)
+         main = main, ...)
+    .Random.seed  <- random.state
 }
 
 #' Add node attribute with normalized log-foldchange inside node groups
-#' @param module Module to add attribut to
+#' @param module Module to add attribute to
 #' @param logFC.attr Attribute with node log-foldchange
 #' @param logFC.norm.attr Name of a new attribute
 #' @param group.by Attribute by which node grouping shoud happen
@@ -179,7 +190,7 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 #' @param met.ids Type of IDs used in metabolite DE data (@see met.id.map for possible values)
 #' @param gene.ids Type of IDs used in gene DE data (@see gene.id.map for possible values)
 # :ToDo: this function is ugly, refactor
-preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
+preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     if (!is.null(es$gene.de)) {
         print("Processing gene p-values...")
         es$gene.de$logFC <- fixInf(es$gene.de$logFC)
@@ -207,7 +218,11 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
         
         es$met.pval <- es$met.de$pval
         names(es$met.pval) <- es$met.de$ID
-        es$fb.met <- fitBumModel(es$met.pval, plot = TRUE)
+        es$fb.met <- fitBumModel(es$met.pval, plot=F)
+        if (plot) {
+            hist(es$fb.met, main="Histogram of metabolite p-values")
+            plot(es$fb.met, main="QQ-Plot for metabolite BUM-model")
+        }
     } else {
         es$met.pval <- NULL
     }
@@ -215,13 +230,28 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids) {
     return(es)
 }
 
+#' Make preprocessing necessary for findModules function
+#' Converts gene and metabolite ids, makes an actual to work with.
+#' @param network Network object
+#' @param met.de Differential expression data for metabolites
+#' @param gene.de Differential expression data for genes
+#' @param rxn.de Differential expression data for reactions
+#' @param met.ids Type of IDs used in met.de
+#' @param gene.ids Type of IDs used in gene.de
+#' @param reaction.as.edges If TRUE represent reaction as edges betwen metabolites,
+#'                          otherwise represent them as nodes with connections to
+#'                          compounds
+#' @param collapse.reactions If TRUE collapse reaction nodes if they share enzyme
+#'                           and at least one metabolite
+#' @param plot If TRUE plot BUM-models
 #' @export
 #' @importFrom plyr rename
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
                               reactions.as.edges=T,
-                              collapse.reactions=F) {
+                              collapse.reactions=F,
+                              plot=T) {
     es <- newEmptyObject()
     es$network <- network
     es$met.de <- met.de
@@ -233,7 +263,7 @@ makeExperimentSet <- function(network,
     es$reactions.as.edges <- reactions.as.edges
     
     
-    es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids)
+    es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids, plot=plot)
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
@@ -258,7 +288,11 @@ makeExperimentSet <- function(network,
         es$rxn.pval <- es$rxn.de$pval
         names(es$rxn.pval) <- es$rxn.de$ID
         
-        es$fb.rxn <- fitBumModel(es$rxn.pval, plot = TRUE)
+        es$fb.rxn <- fitBumModel(es$rxn.pval, plot=F)
+        if (plot) {
+            hist(es$fb.rxn, main="Histogram of gene p-values")
+            plot(es$fb.rxn, main="QQ-Plot for gene BUM-model")
+        }
     } else {
         es$rxn.pval <- NULL
     }
@@ -335,10 +369,6 @@ makeExperimentSet <- function(network,
         es$subnet <- net1
     }
     
-    zs
-
-    
-    
     
     
     es$met.de$origin <- NULL
@@ -346,7 +376,11 @@ makeExperimentSet <- function(network,
     es$all.de <- rbind(es$met.de, es$rxn.de)
     es$all.pval <- c(es$rxn.pval, es$met.pval)
     
-    es$fb.all <- fitBumModel(es$all.pval, plot = TRUE)
+    es$fb.all <- fitBumModel(es$all.pval, plot=F)
+    if (plot) {
+        hist(es$fb.rxn, main="Histogram of all p-values")
+        plot(es$fb.rxn, main="QQ-Plot for joint BUM-model")
+    }
     return(es)
 }
 
@@ -355,7 +389,19 @@ appendModule <- function(res, module.graph) {
     res
 }
 
-#' @export
+#' Find significant module in the network
+#' @param es Experiment set object
+#' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and gene.fdr aren't used
+#' @param met.fdr FDR for metabolites only
+#' @param gene.fdr FDR for genes/reactions only
+#' @param absent.met.score Score for metabolites absent from data
+#' @param score.separately Score metabolites and reactions separately
+#' @param heinz.py Path to heinz.py executable
+#' @param heinz.nModules Number of modules to search for
+#' @param heinz.tolerance tolerance parameter for heinz
+#' @param heinz.subopt_diff subopt_diff parameter for heinz
+#' @return List of most significant modules
+#' @export 
 findModules <- function(es,                         
                          fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
                          absent.met.score=NULL,
@@ -432,7 +478,6 @@ runHeinz <- function(subnet,
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
     tmpdir <- tempdir()        
-    tmpdir <- "/tmp"
     edges_file <- paste(tmpdir, "edges.txt", sep="/")
     nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
     
@@ -446,7 +491,10 @@ runHeinz <- function(subnet,
     writeHeinzNodes(subnet, file=nodes_file, use.score=T)
     
     
-    system2(heinz.py,
+    wd.bak <- getwd()
+    heinz.dir <- dirname(heinz.py)
+    setwd(heinz.dir)
+    system2(paste0("./", basename(heinz.py)),
             c("-n", nodes_file,
               "-e", edges_file,
               "-N", if (score.nodes) "True" else "False",
@@ -454,7 +502,9 @@ runHeinz <- function(subnet,
               "-s", heinz.nModules,
               "--tolerance", heinz.tolerance,
               "--subopt_diff", heinz.subopt_diff,
-              "-v"));
+              "-v"),
+            env="ILOG_LICENSE_FILE=./access.ilm")
+    setwd(wd.bak)
     
     
     res <- list()
@@ -467,6 +517,14 @@ runHeinz <- function(subnet,
     return(res)
 }
 
+#' Replace simple reaction nodes with edges
+#' For every reaction node that have just two connections
+#' with metabolides on different side of the reaction
+#' node for the reaction is replaced with direct edge
+#' between these two metabolites
+#' @param module Module to modify
+#' @param es Experiment set object
+#' @return Modified module
 #' @export
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -504,6 +562,13 @@ removeSimpleReactions <- function(module, es) {
     return(res)
 }
 
+#' Add products for leaf reactions
+#' For every reaction node that have connections only with
+#' metabolites on one side of the reaction connections are
+#' added to metabolites on the other side of the reaction.
+#' @param module Module to modify
+#' @param es Experiment set object
+#' @return Modified module
 #' @export
 addProductsForLeafRxns <- function(module, es) {
     stopifnot(!es$reactions.as.edges)

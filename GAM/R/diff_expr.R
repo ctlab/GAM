@@ -1,6 +1,11 @@
-#' @import DESeq limma
-NULL
-
+#' Convert IDs in differential expression data using BiomRt database
+#' When there is multiple entries with the same after conversion 
+#' only one with minimal p-value is kept.
+#' @param pval Table to covnert
+#' @param from Mart attribute for original IDs
+#' @param to Mart attribute for result IDs
+#' @param mart Mart to use
+#' @return Table with IDs converted
 #' @export
 convertPvalBiomart <- function(pval, from, to, mart) {
     map <- getBM(attributes=c(from, to), filters=from, values=pval$ID, mart=mart)
@@ -10,12 +15,26 @@ convertPvalBiomart <- function(pval, from, to, mart) {
     convert.pval(pval, map$from, map$to)
 }
 
+#' Convert IDs in differential expression data
+#' When there is multiple entries with the same after conversion 
+#' only one with minimal p-value is kept.
+#' @param pval Table to covnert
+#' @param from Vector of IDs to convert from
+#' @param to Vector of IDs to convert to 
+#' @return Table with IDs converted
+#' @importFrom plyr rename
 #' @export
 convertPval <- function(pval, from, to) {
     map <- data.frame(from=from, to=to, stringsAsFactors=F)
     pval.ext <- merge(map, pval, by.x = "from", by.y = "ID")
-    origin.field = if ("origin" %in% colnames(pval)) "origin" else "from"
     
+    if ("origin" %in% colnames(pval)) {
+        pval.ext$from <- NULL
+    } else {
+        pval.ext <- rename(pval.ext, c("from"="origin"))
+    }
+    
+    res <- rename(pval.ext, c("to"="ID"))
     res <- data.frame(
         ID=pval.ext[,"to"], 
         pval=pval.ext$pval, 
@@ -34,6 +53,11 @@ convertPval <- function(pval, from, to) {
     res <- res[order(res$pval),]    
 }
 
+#' Normalize expression table
+#' @param exprs Table with expressions
+#' @param zero.rm If TRUE removes genes with zero expression in all samples
+#' @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
+#' @param quantile If TRUE applies quantile normalization
 #' @export
 normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     if (zero.rm) {
@@ -63,6 +87,11 @@ normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     return(exprs)
 }
 
+#' Replace infinities with real numbers
+#' This function replaces +Inf with maximal value + 1 and
+#' -Inf with minimal value - 1
+#' @param dm Vector of nummbers
+#' @return Vector of numbers withoud infinities
 #' @export
 fixInf <- function(dm) {    
     dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
@@ -70,6 +99,8 @@ fixInf <- function(dm) {
     dm
 }
 
+#' @import DESeq 
+#' @importFrom limma lmFit
 #' @export
 diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
     expression_matrix<-as.matrix(exprs)

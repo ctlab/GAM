@@ -13,6 +13,10 @@ getMetDegree <- function(net) {
     return(met.degree)
 }
 
+#' Get KEGG network for specified organism
+#' @param object with KEGG mappings
+#' @param organism Organism
+#' @return Network for the organism usable for an analysis
 #' @export
 makeKeggNetwork <- function(kegg.db, organism) {
     enz2gene <- kegg.db$enz2gene[kegg.db$enz2gene$organism == organism, c("enz", "gene")]

@@ -18,6 +18,11 @@ NULL
 #' @name kegg.mouse.network
 NULL
 
+#' Human reactions network based on KEGG
+#' @docType data
+#' @name kegg.human.network
+NULL
+
 #' Table with mapping between metabolite IDs
 #' For now just HMDB, KEGG and KEGG name
 #' @docType data
@@ -29,3 +34,9 @@ NULL
 #' @docType data
 #' @name gene.id.map
 NULL
+
+#' Object with tables from KEGG database
+#' @docType data
+#' @name kegg.db
+NULL
+
