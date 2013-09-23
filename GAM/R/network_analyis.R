@@ -1,4 +1,4 @@
-#' @import BioNet igraph0
+#' @import BioNet 
 NULL
 
 .node.color <- function(network, colors)
@@ -35,6 +35,7 @@ NULL
 #' @param attr.label Attribute to use as a label
 #' @param layout Layout to use
 #' @param ... Arguments for plot
+#' @importFrom igraph0 E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", layout=layout.kamada.kawai, ...) {
     if (!(attr.label %in% names(nodeDataDefaults(module)))) {

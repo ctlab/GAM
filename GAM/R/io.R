@@ -46,7 +46,7 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
 }
 
 #' @importFrom XML append.xmlNode addAttributes
-saveModuleToXgmml <- function(module, name, file) {
+saveModuleToXgmml <- function(network, name, file) {
     require(XML)
     if(is(network, "graphNEL"))
     {
@@ -88,6 +88,7 @@ saveModuleToXgmml <- function(module, name, file) {
 }
 
 # internal method for the addition of nodes to xml
+#' @importFrom igraph0 get.vertex.attribute
 .XGMML.nodes <- function(network)
 {
     # create node-nodes
@@ -134,6 +135,7 @@ saveModuleToXgmml <- function(module, name, file) {
 }
 
 # internal method for the addition of edges to XGMML
+#' @importFrom igraph0 get.edge.attribute get.edgelist list.edge.attributes
 .XGMML.edges <- function(network)
 {
     # create edge-nodes

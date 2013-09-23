@@ -35,12 +35,6 @@ convertPval <- function(pval, from, to) {
     }
     
     res <- rename(pval.ext, c("to"="ID"))
-    res <- data.frame(
-        ID=pval.ext[,"to"], 
-        pval=pval.ext$pval, 
-        logFC=pval.ext$logFC, 
-        origin=pval.ext[,origin.field],
-        stringsAsFactors=F)    
     
     get_min_pval <- function(id) {
         subset <- res[res$ID == id,]
@@ -49,8 +43,10 @@ convertPval <- function(pval, from, to) {
         subset[which.min(subset$pval),]        
     }
     
-    res <- do.call("rbind", lapply(unique(res$ID), get_min_pval))
+    res <- merge(aggregate(pval ~ ID, res, min), res)
+    res <- res[!duplicated(res$ID),]
     res <- res[order(res$pval),]    
+    res
 }
 
 #' Normalize expression table
