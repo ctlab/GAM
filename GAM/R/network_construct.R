@@ -74,6 +74,8 @@ makeKeggNetwork <- function(kegg.db, organism) {
     nodeData(net.sq, attr="nodeType") <- node_types[nodes(net.sq)]
     
     
+    met2name <- kegg.db$met2name
+    rxn2name <- kegg.db$rxn2name
     met2name$name <- gsub(";.*$", "", met2name$name)
     rxn2name$name <- gsub(";.*$", "", rxn2name$name)
     

@@ -363,6 +363,7 @@ makeExperimentSet <- function(network,
             edges <- unique(edges)
         }
         
+        es$edges <- edges
         net1 <- graphNEL.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
                                      node.col="ID",
                                      directed=F)
@@ -535,6 +536,11 @@ removeSimpleReactions <- function(module, es) {
     original.rxns <- unlist(nodeData(module, bm.rxns, attr="rxns"))
     
     res <- module
+    for (attr in names(nodeDataDefaults(res))) {
+        if (!attr %in% edgeDataDefaults(res)) {
+            edgeDataDefaults(res, attr) <- nodeDataDefaults(res, attr)
+        }
+    }
     
     for (new.rxn in bm.rxns) {
         is.reaction <- F
@@ -555,8 +561,19 @@ removeSimpleReactions <- function(module, es) {
                     (es$network$graph.raw$rxn == old.rxn))
         }
         if (is.reaction) {
+            if (!c1 %in% unlist(edges(res, c2)) && !c2 %in% unlist(edges(res, c1))) {
+                res <- addEdge(from=c1, to=c2, res)
+            }
+            # :ToDo: what if there already was an edge
+            if (is.na(edgeData(res, from=c1, to=c2, attr="pval")) || 
+                    unlist(edgeData(res, from=c1, to=c2, attr="pval")) > unlist(nodeData(res, new.rxn, "pval"))) {
+                
+                for (attr in names(nodeDataDefaults(res))) {
+                    edgeData(res, from=c1, to=c2, attr=attr) <- nodeData(res, new.rxn, attr)
+                }
+            }
+            
             res <- removeNode(new.rxn, res)
-            res <- addEdge(from=c1, to=c2, res)
         }
         
     }
@@ -592,8 +609,9 @@ addProductsForLeafRxns <- function(module, es) {
             net.cs <- unique(c(rxn.net$met.x, rxn.net$met.y))
             
             if (length(setdiff(cs, net.cs)) == 0) {
-                candidate.rxns <- c(candidate.rxns, old.rxn)
+                #candidate.rxns <- c(candidate.rxns, old.rxn)
             }
+            candidate.rxns <- c(candidate.rxns, old.rxn)
 
             if (any((rxn.net$met.x %in% cs) & (rxn.net$met.y %in% cs))) {
                 next
@@ -601,16 +619,14 @@ addProductsForLeafRxns <- function(module, es) {
         }
         
         if (length(candidate.rxns) > 1) {
-            next
+            #next
         }
         
         for (old.rxn in candidate.rxns) {
-            # is leaf reaction
-            
             rxn.net <- es$network$graph.raw[es$network$graph.raw$rxn == old.rxn,]
             rxn.net <- rbind(rxn.net, rename(rxn.net, c("met.x"="met.y", "met.y"="met.x")))
             
-            c2s <- unique(rxn.net$met.y[rxn.net$met.x %in% cs])
+            c2s <- unique(c(rxn.net$met.x, rxn.net$met.y))
             
             for (c2 in c2s) {
                 if (!c2 %in% nodes(res)) {
@@ -627,3 +643,16 @@ addProductsForLeafRxns <- function(module, es) {
     return(res)
 }
 
+#' @export
+addInterconnections <- function(module, es, depth=1) {
+    edges <- es$edges
+    met.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "met"]
+    rxn.connections <- es$edges[es$edges$met %in% met.nodes, ]
+    connections.number <- table(rxn.connections$rxn)
+    interconnects <- es$graph.raw$rxn[es$graph.raw$met.x %in% met.nodes & es$graph.raw$met.y %in% met.nodes]
+    interconnects <- unique(es$rxn.de.origin.split[interconnects])
+    
+    new.nodes <- unique(c(nodes(module), interconnects))
+    res <- subNetwork(new.nodes, es$subnet)
+    return(res)
+}
