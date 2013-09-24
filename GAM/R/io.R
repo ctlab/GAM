@@ -45,6 +45,108 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
     dev.off()
 }
 
+saveModuleToHtml <- function(module, outputFilePrefix) {
+    template <- 
+"<!DOCTYPE html>
+<html>
+    <head>
+    <meta name='description' content='[Visual style example]' />
+    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js'></script>
+    <meta charset=utf-8 />
+    <title>Visual style example</title>
+    <script src='http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js'></script>
+    
+    <style id='jsbin-css'>
+    body { 
+    font: 14px helvetica neue, helvetica, arial, sans-serif;
+    }
+    
+    #cy {
+    height: 100%;
+    width: 100%;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+    </style>
+    </head>
+    <body>
+    <div id='cy'></div>
+    <script>
+    $('#cy').cytoscape({
+    layout: {
+    name: 'arbor'
+    },
+    
+    style: cytoscape.stylesheet()
+    .selector('node')
+    .css({
+    'shape': 'data(faveShape)',
+    'width': 'mapData(weight, 40, 80, 20, 60)',
+    'content': 'data(name)',
+    'text-valign': 'center',
+    'text-outline-width': 2,
+    'text-outline-color': 'data(faveColor)',
+    'background-color': 'data(faveColor)',
+    'color': '#fff'
+    })
+    .selector(':selected')
+    .css({
+    'border-width': 3,
+    'border-color': '#333'
+    })
+    .selector('edge')
+    .css({
+    'width': 'mapData(strength, 70, 100, 2, 6)',
+    'target-arrow-shape': 'triangle',
+    'source-arrow-shape': 'circle',
+    'line-color': 'data(faveColor)',
+    'source-arrow-color': 'data(faveColor)',
+    'target-arrow-color': 'data(faveColor)'
+    })
+    .selector('edge.questionable')
+    .css({
+    'line-style': 'dotted',
+    'target-arrow-shape': 'diamond'
+    })
+    .selector('.faded')
+    .css({
+    'opacity': 0.25,
+    'text-opacity': 0
+    }),
+    
+    elements: {
+        %elements%
+    },
+    
+    ready: function(){
+    window.cy = this;
+    
+    // giddy up
+    }
+    });
+    </script>
+    </body>
+    </html>
+"
+    nodeStrings <- c()
+    for (node in nodes(module)) {
+        nodeStrings <- c(nodeStrings, paste0("{ data: { id: '", node, "' } }" ))
+    }
+    edges <- edgelist(module)
+    edgeStrings <- c()
+    for (i in seq(length.out=nrow(edges))) {
+        edgeStrings <- c(edgeStrings, paste0("{ data: { source: '", edges$u[i], "', target: '", edges$v[i], "' } }" ))
+    }
+    
+    graphString <- paste0("nodes: [", paste(nodeStrings, collapse=",\n"), "],\n edges: [", paste(edgeStrings, collapse=",\n"), "]")
+    
+    f <- file(paste0(outputFilePrefix, ".html"))
+    replaced <- gsub("%elements%", graphString, template)
+    writeLines(replaced, f)
+    close(f)
+}
+
 #' @importFrom XML append.xmlNode addAttributes
 saveModuleToXgmml <- function(network, name, file) {
     require(XML)
@@ -111,7 +213,7 @@ saveModuleToXgmml <- function(network, name, file) {
             type <- "string"
             attrib.values <- as.character(attrib.values)
         }
-        node.attribs[i,] =paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", attrib.values, "\"", sep="")
+        node.attribs[i,] <- paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", attrib.values, "\"", sep="")
         node.attribs[i, is.na(attrib.values)] <- NA
     }
     node.attribs.tmp <- matrix(lapply(node.attribs, xmlNode), nrow = length(attrib), ncol = length(V(network)))
@@ -151,27 +253,29 @@ saveModuleToXgmml <- function(network, name, file) {
     edge.attribs <- matrix(data=NA, nrow=length(attrib), ncol=length(E(network)))
     for(i in 1:length(attrib))
     {
-        if(is(get.edge.attribute(network, attrib[i]))[1] == "character")
-        {
+        attrib.values <- get.edge.attribute(network, attrib[i])
+        if(is(attrib.values)[1] == "character") {
             type <- "string"
-        }
-        if(is(get.edge.attribute(network, attrib[i]))[1] == "integer")
-        {
+        } else if(is(attrib.values)[1] == "integer") {
             type <- "integer"
-        }
-        if(is(get.edge.attribute(network, attrib[i]))[1] == "numeric")
-        {
+        } else if(is(attrib.values)[1] == "numeric") {
             type <- "real"
+        } else {
+            type <- "string"
+            attrib.values <- as.character(attrib.values)
         }
-        edge.attribs[i,]  <- paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", get.edge.attribute(network, attrib[i]), "\"", sep="")
+        edge.attribs[i,] <- paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", attrib.values, "\"", sep="")
+        edge.attribs[i, is.na(attrib.values)] <- NA
     }
-    edge.attribs <- matrix(lapply(edge.attribs, xmlNode), nrow=length(attrib), ncol=length(E(network)))
+    edge.attribs.tmp <- matrix(lapply(edge.attribs, xmlNode), nrow = length(attrib), ncol = length(E(network)))
+    edge.attribs.tmp[is.na(edge.attribs)] <- NA
+    edge.attribs <- edge.attribs.tmp
     
     # append edge attributes
     for(i in 1:length(E(network)))
     {
         edges[[i]] <- addAttributes(edges[[i]], label=edgelist.names[i], source=edgelist.ids[i,1], target=edgelist.ids[i,2])
-        edges[[i]] <- append.xmlNode(edges[[i]], c(edge.attribs[,i]))
+        edges[[i]] <- append.xmlNode(edges[[i]], edge.attribs[,i][!is.na(edge.attribs[,i])])
     }
     
     return(edges)
