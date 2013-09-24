@@ -104,6 +104,94 @@ saveModule(module,
 
      
      
+ 
+Computing differential expression
+--------------------------------------------------
+
+The package have functions to ease computing differential expression using DESeq or limma packages.
+
+```{r cache=TRUE, error=FALSE}
+str(as.matrix(mouse.macrophages$gene.exprs))
+str(mouse.macrophages$gene.conditions.vector)
+
+str(as.matrix(mouse.macrophages$met.exprs))
+str(mouse.macrophages$met.conditions.vector)
+
+state1 <- "MandLPSandIFNg"
+state2 <- "MandIL4"
+
+gene.de.M1.M2 <- diffExpr(
+    exprs=mouse.macrophages$gene.exprs, conditions.vector=mouse.macrophages$gene.conditions.vector,
+    state1=state1, state2=state2, use.deseq=T, top=20000)
+
+head(gene.de.M1.M2)
+
+met.de.M1.M2 <- diffExpr(
+    exprs=mouse.macrophages$met.exprs, conditions.vector=mouse.macrophages$met.conditions.vector,
+    state1=state1, state2=state2, 
+    log2=F, quantile=F, use.deseq=F, top=Inf)
+
+head(met.de.M1.M2)
+```
+
+Constructing network
+-------------------------------------------------
+
+Network construction heavily uses KEGG database. `GAM` package goes with
+neccessary parts of KEGG in `kegg.db` object:
+
+```{r}
+data(kegg.db)
+names(kegg.db)
+```
+
+It includes mapping from reaction to its enzymes and mapping from enzym to its coding genes
+(now just for mouse and human):
+```{r}
+head(kegg.db$rxn2enz)
+head(kegg.db$enz2gene)
+```
+
+Connections between metabolites on different sides of reactions:
+```{r}
+head(kegg.db$net)
+```
+
+Names for reactions and metabolites. In analysis names of reaction genes are
+usually used as reaction labels, not reaction names.
+```{r}
+head(kegg.db$rxn2name)
+head(kegg.db$met2name)
+```
+
+Metabolites and reactions to mask. Masked metabolites are non-organic molecules, 
+some generic molecules and some others. Masked reactions are reactions that 
+are parts of multi-step reactions.
+```{r}
+head(kegg.db$mets2mask)
+head(kegg.db$rxns2mask)
+```
+
+Some of metabolites, e.g. anomeric ones, can be collaps into one node.
+```{r}
+head(kegg.db$mets2collapse)
+```
+
+From all this data one can make a network for a specific organism with
+`makeKeggNetwork` function:
+```{r cache=TRUE}
+kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
+```
+
+All of these data can be modified for specific needs. For example,
+one can add reaction converting cis-Aconitate to Itaconate which
+was not present in KEGG as for September 2013:
+```{r cache=TRUE}
+kegg.db$net <- rbind(kegg.db$net, c("C00417", "RXIRG1", "C00490"))
+kegg.db$rxn2enz <- rbind(kegg.db$rxn2enz, c("RXIRG1", "Irg1"))
+kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
+kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
+```
      
 Adding attributes to modules
 ----------------------------------------
@@ -178,24 +266,3 @@ for (attr in c("pval", "logFC")) {
 nodeData(module)[[1]]
 edgeData(module)[[1]]
 ```
- 
-Computing differential expression
---------------------------------------------------
-
-
-```{r}
-# The dataset consists of gene expression data,
-str(mouse.macrophages$gene.exprs)
-
-# conditions vector for gene,
-str(mouse.macrophages$gene.conditions.vector)
-
-# metabolite mass-spectrometry data,
-str(mouse.macrophages$met.exprs)
-
-#conditions vector for metabolites,
-str(mouse.macrophages$met.conditions.vector)
-```
-
-Constructing network
--------------------------------------------------

@@ -96,7 +96,7 @@ fixInf <- function(dm) {
 }
 
 #' @import DESeq 
-#' @importFrom limma lmFit
+#' @importFrom limma lmFit makeContrasts contrasts.fit eBayes topTable
 #' @export
 diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
     expression_matrix<-as.matrix(exprs)
