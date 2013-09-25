@@ -480,6 +480,7 @@ runHeinz <- function(subnet,
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
     tmpdir <- tempdir()        
+    tmpdir <- "/tmp"
     edges_file <- paste(tmpdir, "edges.txt", sep="/")
     nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
     
@@ -644,15 +645,34 @@ addProductsForLeafRxns <- function(module, es) {
 }
 
 #' @export
-addInterconnections <- function(module, es, depth=1) {
-    edges <- es$edges
+addInterconnections <- function(module, es) {
     met.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "met"]
-    rxn.connections <- es$edges[es$edges$met %in% met.nodes, ]
-    connections.number <- table(rxn.connections$rxn)
     interconnects <- es$graph.raw$rxn[es$graph.raw$met.x %in% met.nodes & es$graph.raw$met.y %in% met.nodes]
     interconnects <- unique(es$rxn.de.origin.split[interconnects])
     
     new.nodes <- unique(c(nodes(module), interconnects))
     res <- subNetwork(new.nodes, es$subnet)
+    return(res)
+}
+
+#' @export
+expandReactionNodeAttributesToEdges <- function(module) {
+    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
+    
+    res <- module
+    for (attr in names(nodeDataDefaults(res))) {
+        if (!attr %in% edgeDataDefaults(res)) {
+            edgeDataDefaults(res, attr) <- nodeDataDefaults(res, attr)
+        }
+    }
+    
+    for (rxn.node in rxn.nodes) {
+        for (met.node in unlist(edges(res, rxn.node))) {
+            for (attr in names(nodeDataDefaults(res))) {
+                edgeData(res, from=rxn.node, to=met.node, attr=attr) <-
+                    nodeData(res, rxn.node, attr)
+            }
+        }
+    }
     return(res)
 }
