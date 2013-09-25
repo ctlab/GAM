@@ -676,3 +676,16 @@ expandReactionNodeAttributesToEdges <- function(module) {
     }
     return(res)
 }
+
+#' @export
+removeHangingNodes <- function(module) {
+    absent.data.nodes <- nodes(module)[is.na(unlist(nodeData(module, attr="pval")))]
+    edges <- edgelist(module)
+    absent.data.edges <- edges[edges$u %in% absent.data.nodes,]
+    absent.nodes.degree <- table(absent.data.edges$u)
+    hanging.nodes <- names(absent.nodes.degree)[absent.nodes.degree == 1]
+    res <- subNetwork(setdiff(nodes(module), hanging.nodes), module)
+    
+    return(res)
+    
+}
