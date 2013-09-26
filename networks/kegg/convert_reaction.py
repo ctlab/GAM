@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import re
 
-reactions_file = "./reaction"
-
-with open(reactions_file) as f:
+with open("./reaction") as f:
     text = "".join(f.readlines())
 
 def get_compound(s):

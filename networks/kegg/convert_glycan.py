@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import re
 
-reactions_file = "./glycan"
-
-with open(reactions_file) as f:
+with open("./glycan") as f:
     text = "".join(f.readlines())
 
 descriptions = text.split("///\n")

@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import re
 
-reactions_file = "./compound"
-
-with open(reactions_file) as f:
+with open("./compound") as f:
     text = "".join(f.readlines())
 
 descriptions = text.split("///\n")
@@ -38,7 +36,12 @@ for description in descriptions:
 
 
     if "NAME" in d:
-        m2name.append('%s\t"%s"' % (met_id, d["NAME"].replace("\n", " ")))
+        escaped_name = d["NAME"].replace("\n", " ") \
+                                .replace('"', '\\"') \
+                                .replace("<","") \
+                                .replace(">","")
+
+        m2name.append('%s\t"%s"' % (met_id, escaped_name))
         if "FORMULA" in d:
             for name in d["NAME"].split("\n"):
                 if name.endswith(";"):
@@ -46,7 +49,9 @@ for description in descriptions:
 
                 name_full = name
 
-                if name.startswith("beta-"):
+                if name == "beta-Tyrosine":
+                    pass
+                elif name.startswith("beta-"):
                     name = name[len("beta-"):]
                 elif name.startswith("alpha-"):
                     name = name[len("alpha-"):]
@@ -55,9 +60,6 @@ for description in descriptions:
 
 
                 name = "%s: %s" % (d["FORMULA"], name)
-
-                if d["FORMULA"] == "C6H13O9P":
-                    print name, met_id, name_full
 
                 if not name in anomers:
                     anomers[name] = []
@@ -77,5 +79,5 @@ with open("mets2collapse.tsv", "w") as f:
             f.write('"%s"\t"%s"\t%s\t%s\n' % (name, name_full, met_id, base_id))
 
 
-#with open("met2name.tsv", "w") as f:
-#    f.write("%s\n" % "\n".join(m2name))
+with open("cpd2name.tsv", "w") as f:
+    f.write("%s\n" % "\n".join(m2name))

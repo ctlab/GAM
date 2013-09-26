@@ -1,4 +1,4 @@
-
+#!/usr/bin/env Rscript
 reflink <- read.csv("./misc/reflink.txt", sep="\t", header=T, colClasses="character")
 
 gene.id.map <- reflink[, c("mrnaAcc", "locusLinkId", "name")]

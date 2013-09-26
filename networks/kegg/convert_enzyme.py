@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 import re
 
-reactions_file = "./enzyme"
-
-with open(reactions_file) as f:
+with open("./enzyme") as f:
     text = "".join(f.readlines())
 
 descriptions = text.split("///\n")
