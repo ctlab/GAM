@@ -45,6 +45,7 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
     dev.off()
 }
 
+
 saveModuleToHtml <- function(module, outputFilePrefix) {
     template <- 
 "<!DOCTYPE html>
@@ -145,6 +146,44 @@ saveModuleToHtml <- function(module, outputFilePrefix) {
     replaced <- gsub("%elements%", graphString, template)
     writeLines(replaced, f)
     close(f)
+}
+
+saveModuleToDot<- function(module, name, outputFilePrefix) {
+    o <- c()
+    o <- c(o, paste0('graph "', name, '" {'))
+    o <- c(o, "node [ fixedsize = true ]")
+    
+    for (node in nodes(module)) {
+        nd <- nodeData(module, node)[[1]]
+        label <- nd$label
+        shape <- if (nd$nodeType == "met") "circle" else "square"
+        node.size <- 0.2 + -nd$logPval / 200
+        font.size <- 10 - nd$logPval / 8
+        o <- c(o, paste0(
+            node, ' [ ',
+            'label = "', label, '" ',
+            'shape = "', shape, '" ',
+            'width= "', node.size, '" ',
+            'fontsize= "', font.size, '" ',
+            '] '))
+    }
+    
+    edges <- edgelist(module)
+    edges <- edges[edges$u < edges$v,]
+    edgeStrings <- c()
+    for (i in seq(length.out=nrow(edges))) {
+        u <- edges$u[i]
+        v <- edges$v[i]
+        ed <- edgeData(module, from=u, to=v)[[1]]
+        o <- c(o, paste0(u, ' -- ', v, ' [ label = "', ed$label, '"] '))
+    }
+    
+    o <- c(o, "}")
+    outFile <- paste(outputFilePrefix, "dot", sep=".")
+    out <- file(outFile)
+    writeLines(o, out)
+    close(out)
+    system2("neato", c("-Tps", "-O", outFile))
 }
 
 #' @importFrom XML append.xmlNode addAttributes

@@ -35,9 +35,9 @@ NULL
 #' @param attr.label Attribute to use as a label
 #' @param layout Layout to use
 #' @param ... Arguments for plot
-#' @importFrom igraph0 E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph
+#' @importFrom igraph0 E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
 #' @export
-plotNetwork <- function(module, scale=1, attr.label="label", layout=layout.kamada.kawai, ...) {
+plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
     if (!(attr.label %in% names(nodeDataDefaults(module)))) {
         return()        
     }
@@ -83,15 +83,12 @@ plotNetwork <- function(module, scale=1, attr.label="label", layout=layout.kamad
         }
     }
     shapes <- rep("circle", length(V(network)))
+    if (attr.shape %in% list.vertex.attributes(network)) {
+        shapes.possible <- c("circle", "csquare")
+        shapes <- shapes.possible[as.factor(get.vertex.attribute(network, attr.shape))]
+    }
     names(shapes) <- V(network)$name
-    if (!is.null(scores) && !is.null(names(scores))) {
-        shapes[intersect(names(which(scores < 0)), V(network)$name)] <- "csquare"
-    }
-    if (is.null(scores) && "score" %in% list.vertex.attributes(network)) {
-        scores <- V(network)$score
-        names(scores) <- V(network)$name
-        shapes[names(which(scores < 0))] <- "csquare"
-    }
+    
     if (!is.null(diff.expr) && !is.null(names(diff.expr))) {
         coloring <- .node.color(network, diff.expr)
     }
@@ -250,8 +247,8 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
-                              reactions.as.edges=T,
-                              collapse.reactions=F,
+                              reactions.as.edges=F,
+                              collapse.reactions=T,
                               plot=T) {
     es <- newEmptyObject()
     es$network <- network
@@ -458,14 +455,23 @@ findModules <- function(es,
     }
     
     
-    res <- runHeinz(
-        subnet=es$subnet, 
-        heinz.py=heinz.py, 
-        score.edges="score" %in% names(edgeDataDefaults(es$subnet)),
-        score.nodes="score" %in% names(nodeDataDefaults(es$subnet)),
-        heinz.nModules=heinz.nModules, 
-        heinz.tolerance=heinz.tolerance,
-        heinz.subopt_diff=heinz.subopt_diff)        
+    score.edges <- "score" %in% names(edgeDataDefaults(es$subnet))
+    score.nodes <- "score" %in% names(nodeDataDefaults(es$subnet))
+    
+    if (!is.null(heinz.py)) {
+        res <- runHeinz(
+            subnet=es$subnet, 
+            heinz.py=heinz.py, 
+            score.edges=score.edges,
+            score.nodes=score.nodes,
+            heinz.nModules=heinz.nModules, 
+            heinz.tolerance=heinz.tolerance,
+            heinz.subopt_diff=heinz.subopt_diff)        
+    } else if (score.edges) {
+        stop("Can't use heuristic search with scored edges")
+    } else {
+        res <- list(runFastHeinz(es$subnet, unlist(nodeData(es$subnet, attr="score"))))
+    }
         
     return(res)
 }
@@ -581,7 +587,7 @@ removeSimpleReactions <- function(module, es) {
     return(res)
 }
 
-#' Add products for leaf reactions
+#' Add all metabolites connected with reactions
 #' For every reaction node that have connections only with
 #' metabolites on one side of the reaction connections are
 #' added to metabolites on the other side of the reaction.
@@ -589,7 +595,7 @@ removeSimpleReactions <- function(module, es) {
 #' @param es Experiment set object
 #' @return Modified module
 #' @export
-addProductsForLeafRxns <- function(module, es) {
+addMetabolitesForReactions<- function(module, es) {
     stopifnot(!es$reactions.as.edges)
     rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
     rxn.edges <- edges(module, rxn.nodes)
@@ -644,6 +650,11 @@ addProductsForLeafRxns <- function(module, es) {
     return(res)
 }
 
+#' Add reactions that connect metabolites in module
+#' Metabolites are connected by reaction if they are on different sides
+#' @param module Module to work with
+#' @param es Experiment set object
+#' @return Module with interconnecting reactions
 #' @export
 addInterconnections <- function(module, es) {
     met.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "met"]
@@ -655,6 +666,9 @@ addInterconnections <- function(module, es) {
     return(res)
 }
 
+#' Copy attributes from reaction node to adjacent edges
+#' @param module Module do work with
+#' @return Module with attributes copied
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
     rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
@@ -677,6 +691,9 @@ expandReactionNodeAttributesToEdges <- function(module) {
     return(res)
 }
 
+#' Remove hanging nodes without data
+#' @param module Module to work with
+#' @return Module with hanging nodes removed
 #' @export
 removeHangingNodes <- function(module) {
     absent.data.nodes <- nodes(module)[is.na(unlist(nodeData(module, attr="pval")))]
