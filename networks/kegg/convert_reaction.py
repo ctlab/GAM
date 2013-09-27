@@ -16,7 +16,7 @@ descriptions = text.split("///\n")
 m2m = ["met.x\trxn\tmet.y"]
 r2e = ["rxn\tenz"]
 
-r2name = ["rxn\tname"]
+r2name = ["rxn\tname\tpathway"]
 
 for description in descriptions:
     if description == "":
@@ -52,8 +52,42 @@ for description in descriptions:
 
     (left, right) = map(compounds, equation.split("<=>"))
     m2m.extend(["%s\t%s\t%s" % (c1, rxn_id, c2) for c1 in left for c2 in right])
+    escaped_name = ""
     if "NAME" in d:
-        r2name.append('%s\t"%s"' % (rxn_id, d["NAME"].split("\n")[0]))
+        escaped_name = d["NAME"].replace("\n", " ") \
+                                .replace('"', '\\"') \
+                                .replace("<","") \
+                                .replace(">","")
+
+        if "FORMULA" in d:
+            for name in d["NAME"].split("\n"):
+                if name.endswith(";"):
+                    name = name[:-1]
+
+                name_full = name
+
+                if name == "beta-Tyrosine":
+                    pass
+                elif name.startswith("beta-"):
+                    name = name[len("beta-"):]
+                elif name.startswith("alpha-"):
+                    name = name[len("alpha-"):]
+
+
+
+
+                name = "%s: %s" % (d["FORMULA"], name)
+
+                if not name in anomers:
+                    anomers[name] = []
+                anomers[name].append((name_full, met_id))
+
+
+    pathways = ""
+    if "PATHWAY" in d:
+        pathways = "+".join([p.split()[0] for p in d["PATHWAY"].split("\n")])
+
+    r2name.append('%s\t"%s"\t"%s"' % (rxn_id, escaped_name, pathways))
 
 with open("net.sif", "w") as f:
     f.write("%s\n" % "\n".join(m2m))

@@ -6,7 +6,7 @@ with open("./glycan") as f:
 
 descriptions = text.split("///\n")
 
-m2name = ["met\tname"]
+m2name = ["met\tname\tpathway"]
 
 for description in descriptions:
     if description == "":
@@ -32,9 +32,42 @@ for description in descriptions:
 
     met_id = d["ENTRY"].split()[0]
 
+    escaped_name = ""
     if "NAME" in d:
-        m2name.append('%s\t"%s"' % (met_id, d["NAME"].replace("\n", " ")))
+        escaped_name = d["NAME"].replace("\n", " ") \
+                                .replace('"', '\\"') \
+                                .replace("<","") \
+                                .replace(">","")
 
+        if "FORMULA" in d:
+            for name in d["NAME"].split("\n"):
+                if name.endswith(";"):
+                    name = name[:-1]
+
+                name_full = name
+
+                if name == "beta-Tyrosine":
+                    pass
+                elif name.startswith("beta-"):
+                    name = name[len("beta-"):]
+                elif name.startswith("alpha-"):
+                    name = name[len("alpha-"):]
+
+
+
+
+                name = "%s: %s" % (d["FORMULA"], name)
+
+                if not name in anomers:
+                    anomers[name] = []
+                anomers[name].append((name_full, met_id))
+
+
+    pathways = ""
+    if "PATHWAY" in d:
+        pathways = "+".join([p.split()[0] for p in d["PATHWAY"].split("\n")])
+
+    m2name.append('%s\t"%s"\t"%s"' % (met_id, escaped_name, pathways))
 
 with open("gly2name.tsv", "w") as f:
     f.write("%s\n" % "\n".join(m2name))

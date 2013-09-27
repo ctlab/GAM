@@ -6,7 +6,7 @@ with open("./compound") as f:
 
 descriptions = text.split("///\n")
 
-m2name = ["met\tname"]
+m2name = ["met\tname\tpathway"]
 
 anomers = {}
 
@@ -35,13 +35,13 @@ for description in descriptions:
     met_id = d["ENTRY"].split()[0]
 
 
+    escaped_name = ""
     if "NAME" in d:
         escaped_name = d["NAME"].replace("\n", " ") \
                                 .replace('"', '\\"') \
                                 .replace("<","") \
                                 .replace(">","")
 
-        m2name.append('%s\t"%s"' % (met_id, escaped_name))
         if "FORMULA" in d:
             for name in d["NAME"].split("\n"):
                 if name.endswith(";"):
@@ -65,6 +65,12 @@ for description in descriptions:
                     anomers[name] = []
                 anomers[name].append((name_full, met_id))
 
+
+    pathways = ""
+    if "PATHWAY" in d:
+        pathways = "+".join([p.split()[0] for p in d["PATHWAY"].split("\n")])
+
+    m2name.append('%s\t"%s"\t"%s"' % (met_id, escaped_name, pathways))
 
 
 with open("mets2collapse.tsv", "w") as f:
