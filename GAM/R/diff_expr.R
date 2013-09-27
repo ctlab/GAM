@@ -95,6 +95,16 @@ fixInf <- function(dm) {
     dm
 }
 
+#' Make differential expression analysis using limma or DESeq
+#' @param exprs Table with expressions
+#' @param conditions.vector Vector of conditions for exprs columns
+#' @param state1 First condition to compare
+#' @param state2 Second condition to compare
+#' @param top How many most expressed genes should be kept
+#' @param log2 If TRUE apply log2 transformation (zeros replaced with minimal value in column)
+#' @param quantile Apply quantile normalisation
+#' @param use.deseq Use DESeq for analysis
+#' @return Table with p-values for differential expression and log-fold changes
 #' @import DESeq 
 #' @importFrom limma lmFit makeContrasts contrasts.fit eBayes topTable
 #' @export

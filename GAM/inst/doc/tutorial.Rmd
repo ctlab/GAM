@@ -1,3 +1,8 @@
+<!--
+%\VignetteIndexEntry{Genomic and metabolomic integrated analysis tutorial}
+%\VignetteEngine{knitr::knitr}
+-->
+
 Genomic and metabolomic integrated analysis tutorial
 ====================================================
 This is a small tutorial that describes how having metabolic mass-spectrometry
@@ -140,6 +145,12 @@ saveModule(module,
                   ".ms=", absent.met.score),
            types=c("pdf", "XGMML")
 )
+```
+
+There is a Cytoscape VizMap style supplied with the package that can be used 
+for visualization:
+```{r}
+system.file("GAM_VizMap.xml", package="GAM")
 ```
      
  

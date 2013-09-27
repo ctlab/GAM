@@ -33,6 +33,7 @@ NULL
 #' @param module Module to plot
 #' @param scale Scale factor for vertex sizes and label fonts
 #' @param attr.label Attribute to use as a label
+#' @param attr.shape Attribute to use for shape
 #' @param layout Layout to use
 #' @param ... Arguments for plot
 #' @importFrom igraph0 E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
@@ -236,7 +237,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 #' @param rxn.de Differential expression data for reactions
 #' @param met.ids Type of IDs used in met.de
 #' @param gene.ids Type of IDs used in gene.de
-#' @param reaction.as.edges If TRUE represent reaction as edges betwen metabolites,
+#' @param reactions.as.edges If TRUE represent reaction as edges betwen metabolites,
 #'                          otherwise represent them as nodes with connections to
 #'                          compounds
 #' @param collapse.reactions If TRUE collapse reaction nodes if they share enzyme
@@ -370,9 +371,6 @@ makeExperimentSet <- function(network,
     
     
     
-    es$met.de$origin <- NULL
-    es$rxn.de$origin <- NULL
-    es$all.de <- rbind(es$met.de, es$rxn.de)
     es$all.pval <- c(es$rxn.pval, es$met.pval)
     
     es$fb.all <- fitBumModel(es$all.pval, plot=F)
@@ -486,7 +484,6 @@ runHeinz <- function(subnet,
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
     tmpdir <- tempdir()        
-    tmpdir <- "/tmp"
     edges_file <- paste(tmpdir, "edges.txt", sep="/")
     nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
     
