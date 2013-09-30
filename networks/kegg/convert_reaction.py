@@ -8,7 +8,7 @@ def get_compound(s):
     return s.split()[-1]
 
 def compounds(s):
-    s = re.sub("\(.*?\)", "n", s)
+    s = re.sub("\(.*?\)", "", s)
     return map(get_compound, s.split("+"))
 
 descriptions = text.split("///\n")
@@ -17,6 +17,7 @@ m2m = ["met.x\trxn\tmet.y"]
 r2e = ["rxn\tenz"]
 
 r2name = ["rxn\tname\tpathway"]
+rpairs = ["\t".join(["rxn", "rpair", "met.x", "met.y", "rptype"])]
 
 for description in descriptions:
     if description == "":
@@ -89,6 +90,14 @@ for description in descriptions:
 
     r2name.append('%s\t"%s"\t"%s"' % (rxn_id, escaped_name, pathways))
 
+    if "RPAIR" in d:
+        for rpair in d["RPAIR"].split("\n"):
+            if len(rpair) == 0:
+                continue
+            (rpair, mets, rptype) = rpair.split()
+            (metx, mety) = mets.split("_")
+            rpairs.append("%s\t%s\t%s\t%s\t%s" % (rxn_id, rpair, metx, mety, rptype))
+
 with open("net.sif", "w") as f:
     f.write("%s\n" % "\n".join(m2m))
 
@@ -97,3 +106,6 @@ with open("rxn2enz.tsv", "w") as f:
 
 with open("rxn2name.tsv", "w") as f:
     f.write("%s\n" % "\n".join(r2name))
+
+with open("rpairs.tsv", "w") as f:
+    f.write("%s\n" % "\n".join(rpairs))

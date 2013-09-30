@@ -1,6 +1,7 @@
 export(addInterconnections)
 export(addMetabolitesForReactions)
 export(addNormLogFC)
+export(addTransEdges)
 export(convertPval)
 export(convertPvalBiomart)
 export(diffExpr)

@@ -242,6 +242,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 #'                          compounds
 #' @param collapse.reactions If TRUE collapse reaction nodes if they share enzyme
 #'                           and at least one metabolite
+#' @param use.rpairs If TRUE only rpairs will be used as reaction edges
 #' @param plot If TRUE plot BUM-models
 #' @export
 #' @importFrom plyr rename
@@ -250,6 +251,7 @@ makeExperimentSet <- function(network,
                               met.ids=NULL, gene.ids=NULL,
                               reactions.as.edges=F,
                               collapse.reactions=T,
+                              use.rpairs=T,
                               plot=T) {
     es <- newEmptyObject()
     es$network <- network
@@ -326,13 +328,24 @@ makeExperimentSet <- function(network,
             net.edges.ext[edges2rev, c("met.y", "met.x")]        
         
         
-        net.edges.pval <- (aggregate(pval ~ met.x * met.y, data=net.edges.ext, min))
+        net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min))
         net.edges.ext <- merge(net.edges.pval, net.edges.ext)
         net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
         net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
         
-        es$net.edges.ext <- net.edges.ext
         
+        
+        if (use.rpairs) {
+            edges.keep <- net.edges.ext$rptype %in% "main"
+        } else { 
+            edges.keep <- TRUE
+        }
+        
+        net.edges.ext.all <- net.edges.ext
+        net.edges.ext <- net.edges.ext[edges.keep,]
+        
+        es$net.edges.ext <- net.edges.ext
+        es$net.edges.ext.all <- net.edges.ext.all
         
         net1 <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
@@ -716,4 +729,13 @@ removeHangingNodes <- function(module) {
     
     return(res)
     
+}
+
+#' @export
+addTransEdges <- function(module, es) {
+    edges.keep <- es$net.edges.ext.all$rptype %in% c("main", "trans")
+    net.with.trans <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext.all[edges.keep,],
+                                 node.col="ID", edge.cols=c("met.x", "met.y"),
+                                 directed=F)
+    return(subNetwork(nodes(module), net.with.trans))
 }
