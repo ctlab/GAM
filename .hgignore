@@ -8,3 +8,5 @@ networks
 heinztmp
 GAM.Rcheck/
 GAM/man
+GAM/inst/doc/cache
+GAM/inst/doc/figure
