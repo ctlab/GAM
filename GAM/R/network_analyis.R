@@ -271,16 +271,19 @@ makeExperimentSet <- function(network,
             
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
             
-            matched <- es$rxn.de$ID %in% es$network$rxn2name$rxn
-            
             data(gene.id.map)
-            es$network$rxn2name$name[match(es$rxn.de$ID[matched], es$network$rxn2name$rxn)] <-
-                gene.id.map$name[match(es$rxn.de$origin[matched], gene.id.map[,es$network$gene.ids])]            
+            unknown.rxn <- setdiff(es$rxn.de$ID, es$network$rxn2name$rxn)
+            unknown.rxn2name <- do.call(cbind,  c(
+                list(unknown.rxn), 
+                rep(list(rep("", length(unknown.rxn))), ncol(es$network$rxn2name) - 1)))
+            unknown.rxn2name <- as.data.frame(unknown.rxn2name, stringsAsFactors=F)
+            colnames(unknown.rxn2name) <- colnames(es$network$rxn2name)
             
-            es$network$rxn2name <- rbind(es$network$rxn2name, 
-                                         cbind(rxn=es$rxn.de$ID[!matched],
-                                               name=gene.id.map$name[match(es$rxn.de$origin[!matched], gene.id.map[,es$network$gene.ids])]
-                                               ))
+            es$network$rxn2name <- rbind(es$network$rxn2name, unknown.rxn2name)
+            
+            es$network$rxn2name$name[match(es$rxn.de$ID, es$network$rxn2name$rxn)] <-
+                gene.id.map$name[match(es$rxn.de$origin, gene.id.map[,es$network$gene.ids])]            
+            
             
         }
         
@@ -351,11 +354,21 @@ makeExperimentSet <- function(network,
             es$rxn.de.origin.split <- split.mapping.by.connectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
             
             t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
-            from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
+            #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
             
+            es$rxn.de.ext$rxns <- es$rxn.de.ext$ID
             es$rxn.de.ext$ID <- es$rxn.de.origin.split            
-            es$rxn.de.ext <- unique(es$rxn.de.ext)
-            es$rxn.de.ext$rxns <- from.table$from[match(es$rxn.de.ext$ID, from.table$to)]
+            
+            uniqueJoin <- function(x) {
+                u  <-  unique(unlist(strsplit(as.character(x), split="\\+")))
+                return(paste(u, collapse="+"))
+            }
+            
+            cols.to.fix <- setdiff(c(colnames(es$network$rxn2name), "rxns"), c("rxn", "name"))
+            f <- as.formula(paste0("cbind(", paste0(cols.to.fix, collapse=","), ") ~ ID"))
+            cols.fixed <- aggregate(f , es$rxn.de.ext, uniqueJoin)
+            es$rxn.de.ext <- unique(es$rxn.de.ext[, !names(es$rxn.de.ext) %in% cols.to.fix])
+            es$rxn.de.ext <- merge(es$rxn.de.ext, cols.fixed)
             
             edges$rxn <- es$rxn.de.origin.split[edges$rxn]
             edges <- unique(edges)
@@ -635,6 +648,7 @@ addMetabolitesForReactions<- function(module, es) {
             for (c2 in c2s) {
                 if (!c2 %in% nodes(res)) {
                     res <- addNode(c2, res)
+                    nodeData(res, c2, attr="nodeType") <- "met"
                 }
                 if (!new.rxn %in% unlist(edges(res, c2))) {
                     res <- addEdge(new.rxn, c2, res)
