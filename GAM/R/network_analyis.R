@@ -249,7 +249,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
-                              reactions.as.edges=F,
+                              reactions.as.edges=T,
                               collapse.reactions=T,
                               use.rpairs=T,
                               plot=T) {
@@ -423,6 +423,7 @@ appendModule <- function(res, module.graph) {
 #' @param heinz.nModules Number of modules to search for
 #' @param heinz.tolerance tolerance parameter for heinz
 #' @param heinz.subopt_diff subopt_diff parameter for heinz
+#' @param simplify If TRUE and only one module was found return just the module, not a list.
 #' @return List of most significant modules
 #' @export 
 findModules <- function(es,                         
@@ -431,7 +432,8 @@ findModules <- function(es,
                          score.separately=T,
                          heinz.py, heinz.nModules=1,
                          heinz.tolerance=10,
-                         heinz.subopt_diff=100) {
+                         heinz.subopt_diff=100,
+                         simplify=T) {
     
     if (!is.null(fdr)) {
         met.fdr <- fdr
@@ -497,6 +499,9 @@ findModules <- function(es,
         res <- list(runFastHeinz(es$subnet, unlist(nodeData(es$subnet, attr="score"))))
     }
         
+    if (simplify && length(res) == 1) {
+        return(res[[1]])
+    }
     return(res)
 }
 
@@ -731,6 +736,10 @@ removeHangingNodes <- function(module) {
     
 }
 
+#' Add reaction trans- edges connecting metabolites in module
+#' @param module Module to work with
+#' @param es Experiment set object
+#' @return Modified module
 #' @export
 addTransEdges <- function(module, es) {
     edges.keep <- es$net.edges.ext.all$rptype %in% c("main", "trans")
