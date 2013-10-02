@@ -45,107 +45,52 @@ saveModuleToPdf <- function(module, outputFilePrefix) {
     dev.off()
 }
 
-
-saveModuleToHtml <- function(module, outputFilePrefix) {
-    template <- 
-"<!DOCTYPE html>
-<html>
-    <head>
-    <meta name='description' content='[Visual style example]' />
-    <script src='http://ajax.googleapis.com/ajax/libs/jquery/1/jquery.min.js'></script>
-    <meta charset=utf-8 />
-    <title>Visual style example</title>
-    <script src='http://cytoscape.github.io/cytoscape.js/api/cytoscape.js-latest/cytoscape.min.js'></script>
-    
-    <style id='jsbin-css'>
-    body { 
-    font: 14px helvetica neue, helvetica, arial, sans-serif;
-    }
-    
-    #cy {
-    height: 100%;
-    width: 100%;
-    position: absolute;
-    left: 0;
-    top: 0;
-}
-    </style>
-    </head>
-    <body>
-    <div id='cy'></div>
-    <script>
-    $('#cy').cytoscape({
-    layout: {
-    name: 'arbor'
-    },
-    
-    style: cytoscape.stylesheet()
-    .selector('node')
-    .css({
-    'shape': 'data(faveShape)',
-    'width': 'mapData(weight, 40, 80, 20, 60)',
-    'content': 'data(name)',
-    'text-valign': 'center',
-    'text-outline-width': 2,
-    'text-outline-color': 'data(faveColor)',
-    'background-color': 'data(faveColor)',
-    'color': '#fff'
-    })
-    .selector(':selected')
-    .css({
-    'border-width': 3,
-    'border-color': '#333'
-    })
-    .selector('edge')
-    .css({
-    'width': 'mapData(strength, 70, 100, 2, 6)',
-    'target-arrow-shape': 'triangle',
-    'source-arrow-shape': 'circle',
-    'line-color': 'data(faveColor)',
-    'source-arrow-color': 'data(faveColor)',
-    'target-arrow-color': 'data(faveColor)'
-    })
-    .selector('edge.questionable')
-    .css({
-    'line-style': 'dotted',
-    'target-arrow-shape': 'diamond'
-    })
-    .selector('.faded')
-    .css({
-    'opacity': 0.25,
-    'text-opacity': 0
-    }),
-    
-    elements: {
-        %elements%
-    },
-    
-    ready: function(){
-    window.cy = this;
-    
-    // giddy up
-    }
-    });
-    </script>
-    </body>
-    </html>
-"
-    nodeStrings <- c()
-    for (node in nodes(module)) {
-        nodeStrings <- c(nodeStrings, paste0("{ data: { id: '", node, "' } }" ))
-    }
-    edges <- edgelist(module)
-    edgeStrings <- c()
-    for (i in seq(length.out=nrow(edges))) {
-        edgeStrings <- c(edgeStrings, paste0("{ data: { source: '", edges$u[i], "', target: '", edges$v[i], "' } }" ))
-    }
-    
-    graphString <- paste0("nodes: [", paste(nodeStrings, collapse=",\n"), "],\n edges: [", paste(edgeStrings, collapse=",\n"), "]")
-    
-    f <- file(paste0(outputFilePrefix, ".html"))
-    replaced <- gsub("%elements%", graphString, template)
-    writeLines(replaced, f)
+saveModuleToJson <- function(module, outputFilePrefix) {
+    graphString <- getModuleJsonString(module)
+    f <- file(paste0(outputFilePrefix, ".json"))
+    writeLines(graphString, f)
     close(f)
+}
+
+get.vertex.attributes <- function(graph, index) {
+    sapply(list.vertex.attributes(graph), 
+           function(attr) get.vertex.attribute(graph, attr, index),
+           simplify=F,
+           USE.NAMES=T)
+}
+
+get.edge.attributes <- function(graph, index) {
+    sapply(list.edge.attributes(graph), 
+           function(attr) get.edge.attribute(graph, attr, index),
+           simplify=F,
+           USE.NAMES=T)
+}
+
+
+#' @export
+#' @importFrom rjson toJSON
+getModuleJsonString <- function(module) {
+    imodule <- igraph.from.graphNEL(module)
+    
+    getNodeObject <- function(i) {
+        return(c(
+            list(index = i),
+            get.vertex.attributes(imodule, i)))
+    }
+    
+    getEdgeObject <- function(i) {
+        es <- get.edges(imodule, i)
+        return(c(
+            list(source=es[1], target=es[2]),
+            get.edge.attributes(imodule, i)))
+    }
+    
+    graphObject <- list(
+        nodes=lapply(V(imodule), getNodeObject),
+        links=lapply(E(imodule), getEdgeObject)
+        )
+    
+    return(toJSON(graphObject))
 }
 
 saveModuleToDot<- function(module, name, outputFilePrefix) {
