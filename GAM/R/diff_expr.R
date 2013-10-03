@@ -1,4 +1,4 @@
-#' Convert IDs in differential expression data using BiomRt database
+#' Convert IDs in differential expression data using BioMart database
 #' When there is multiple entries with the same after conversion 
 #' only one with minimal p-value is kept.
 #' @param pval Table to covnert

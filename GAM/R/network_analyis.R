@@ -364,7 +364,7 @@ makeExperimentSet <- function(network,
             rxn.graph <- graphNEL.from.tables(edge.table=rxn.net, directed=F)
             
             #rxn.de.origin.split <- es$rxn.de$origin
-            es$rxn.de.origin.split <- split.mapping.by.connectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
+            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
             
             t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
             #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))

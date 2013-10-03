@@ -108,7 +108,7 @@ convert.node.names <- function(network, from, to) {
     network2   
 }
 
-split.mapping.by.connectivity <- function(graph, from, to) {
+splitMappingByConnectivity <- function(graph, from, to) {
     names(to) <- from
     
     es <- edges(graph)

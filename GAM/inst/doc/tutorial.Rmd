@@ -2,6 +2,9 @@
 %\VignetteIndexEntry{Genomic and metabolomic integrated analysis tutorial}
 %\VignetteEngine{knitr::knitr}
 -->
+```{r eval=TRUE, echo=FALSE}
+opts_chunk$set(error=F, cache=T, dev="svg")
+```
 
 Genomic and metabolomic integrated analysis tutorial
 ====================================================
