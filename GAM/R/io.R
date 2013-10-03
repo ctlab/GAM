@@ -66,10 +66,8 @@ get.edge.attributes <- function(graph, index) {
            USE.NAMES=T)
 }
 
-
 #' @export
-#' @importFrom rjson toJSON
-getModuleJsonString <- function(module) {
+module2list <- function(module) {
     imodule <- igraph.from.graphNEL(module)
     
     getNodeObject <- function(i) {
@@ -89,7 +87,12 @@ getModuleJsonString <- function(module) {
         nodes=lapply(V(imodule), getNodeObject),
         links=lapply(E(imodule), getEdgeObject)
         )
-    
+}
+
+#' @export
+#' @importFrom rjson toJSON
+getModuleJsonString <- function(module) {
+    graphObject <- module2list(module)    
     return(toJSON(graphObject))
 }
 

@@ -3,19 +3,32 @@ library(data.table)
 
 heinz.py <- "~/lib/heinz/heinz.py"
 
+renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
+    # Convert the expression + environment into a function
+    func <- exprToFunction(expr, env, quoted)
+    
+    function() {
+        val <- func()
+        if (is.null(val)) {
+            return(list(nodes=list(), links=list()));
+        }
+        module2list(val)
+    }
+}
+
 # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
     
     geneDEInput <- reactive({
-        if (is.null(input$gene.de)) {
+        if (is.null(input$gene_de)) {
             # User has not uploaded a file yet
             return(NULL)
         }
         
-        data.table(read.table(input$gene.de$datapath, sep="\t", header=T))
+        data.table(read.table(input$gene_de$datapath, sep="\t", header=T))
     })
     
-    output$gene.de.table <- renderTable({
+    output$gene_de_table <- renderTable({
         data <- geneDEInput()
         if (is.null(data)) {
             return(NULL)
@@ -25,15 +38,15 @@ shinyServer(function(input, output) {
     
     
     metDEInput <- reactive({
-        if (is.null(input$met.de)) {
+        if (is.null(input$met_de)) {
             # User has not uploaded a file yet
             return(NULL)
         }
         
-        data.table(read.table(input$met.de$datapath, sep="\t", header=T))
+        data.table(read.table(input$met_de$datapath, sep="\t", header=T))
     })
     
-    output$met.de.table <- renderTable({
+    output$met_de_table <- renderTable({
         data <- metDEInput()
         if (is.null(data)) {
             return(NULL)
@@ -45,9 +58,9 @@ shinyServer(function(input, output) {
         input$preprocess
         network <- networks[[isolate(input$network)]]
         gene.de <- isolate(geneDEInput())
-        gene.ids <- gene.ids[isolate(input$gene.ids)]
+        gene.ids <- gene.ids[isolate(input$gene_ids)]
         met.de <- isolate(metDEInput())
-        met.ids <- met.ids[isolate(input$met.ids)]
+        met.ids <- met.ids[isolate(input$met_ids)]
         if (is.null(gene.de) || is.null(met.de)) {
             return(NULL)
         }
@@ -55,16 +68,16 @@ shinyServer(function(input, output) {
         makeExperimentSet(network=network, met.de=met.de, gene.de=gene.de, met.ids=met.ids, gene.ids=gene.ids, plot=F)
     })
     
-    output$network.summary <- renderPrint({
+    output$network_summary <- renderPrint({
         es <- esInput()
         es$subnet
     })
     
     moduleInput <- reactive({
         input$find
-        met.fdr <- isolate(input$met.fdr)
-        gene.fdr <- isolate(input$gene.fdr)
-        absent.met.score=isolate(input$absent.met.score)
+        met.fdr <- isolate(input$met_fdr)
+        gene.fdr <- isolate(input$gene_fdr)
+        absent.met.score=isolate(input$absent_met_score)
         
         es <- isolate(esInput())
         
@@ -79,7 +92,11 @@ shinyServer(function(input, output) {
                     heinz.py=heinz.py)
     })
     
-    output$module.summary <- renderPrint({
+    output$module_summary <- renderPrint({
+        moduleInput()
+    })
+    
+    output$module <- renderGraph({
         moduleInput()
     })
     

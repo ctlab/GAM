@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+  <script src="shared/jquery.js" type="text/javascript"></script>
+  <script src="shared/shiny.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="shared/shiny.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/slider/css/jquery.slider.min.css"/>
+  <script src="shared/slider/js/jquery.slider.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="shared/bootstrap/css/bootstrap.min.css"/>
+  <script src="shared/bootstrap/js/bootstrap.min.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <script src="d3.v3.js" type="text/javascript"></script>
+  <script src="plot.js" type="text/javascript"></script>
+  <link rel="stylesheet" type="text/css" href="plot.css"/>
+  <link rel="stylesheet" type="text/css" href="shared/bootstrap/css/bootstrap-responsive.min.css"/>
+  <title>Shiny GAM</title>
+</head>
+<body>
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span12" style="padding: 10px 0px;">
+      <h1>Shine on you crazy diamond</h1>
+    </div>
+  </div>
+  <div class="row-fluid">
+    <div class="span4">
+      <form class="well">
+        <label class="control-label" for="network">Select a network:</label>
+        <select id="network">
+          <option value="Mouse musculus" selected="selected">Mouse musculus</option>
+          <option value="Homo sapiens">Homo sapiens</option>
+        </select>
+        <label>Select file with gene p-values</label>
+        <input id="gene_de" type="file"/>
+        <div id="gene_de_progress" class="progress progress-striped active shiny-file-input-progress">
+          <div class="bar"></div>
+          <label></label>
+        </div>
+        <label class="control-label" for="gene_ids">Select type of gene IDs:</label>
+        <select id="gene_ids">
+          <option value="RefSeq mRNA accession" selected="selected">RefSeq mRNA accession</option>
+          <option value="Entrez gene">Entrez gene</option>
+          <option value="Gene symbol">Gene symbol</option>
+        </select>
+        <label>Select file with metabolite p-values</label>
+        <input id="met_de" type="file"/>
+        <div id="met_de_progress" class="progress progress-striped active shiny-file-input-progress">
+          <div class="bar"></div>
+          <label></label>
+        </div>
+        <label class="control-label" for="met_ids">Select type of metabolite IDs:</label>
+        <select id="met_ids">
+          <option value="HMDB" selected="selected">HMDB</option>
+          <option value="KEGG">KEGG</option>
+        </select>
+        <br/>
+        <button id="preprocess" type="button" class="btn action-button">Preprocess</button>
+        <label for="gene_fdr">FDR for genes</label>
+        <input id="gene_fdr" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+        <label for="met_fdr">FDR for metabolites</label>
+        <input id="met_fdr" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+        <label for="absent_met_score">Score for absent metabolites</label>
+        <input id="absent_met_score" type="number" value="-20"/>
+        <br/>
+        <button id="find" type="button" class="btn action-button">Find module</button>
+        <br/>
+      </form>
+    </div>
+    <div class="span8">
+      <div id="gene_de_table" class="shiny-html-output"></div>
+      <div id="met_de_table" class="shiny-html-output"></div>
+      <div id="network_summary" class="shiny-text-output"></div>
+      <div id="module_summary" class="shiny-text-output"></div>
+      <div id="module" class="graph-output"></div>
+      <div id="graph_container" class="graph-output"></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
