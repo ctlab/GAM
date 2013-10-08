@@ -514,9 +514,10 @@ runHeinz <- function(subnet,
                       heinz.nModules=1, 
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
-    tmpdir <- tempdir()        
-    edges_file <- paste(tmpdir, "edges.txt", sep="/")
-    nodes_file <- paste(tmpdir, "nodes.txt", sep="/")
+    graph.dir <- tempfile("graph")
+    dir.create(graph.dir)
+    edges_file <- paste(graph.dir, "edges.txt", sep="/")
+    nodes_file <- paste(graph.dir, "nodes.txt", sep="/")
     
     writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
     
@@ -531,6 +532,7 @@ runHeinz <- function(subnet,
     wd.bak <- getwd()
     heinz.dir <- dirname(heinz.py)
     setwd(heinz.dir)
+    heinz.tmpdir <- tempfile("heinztmp")
     system2(paste0("./", basename(heinz.py)),
             c("-n", nodes_file,
               "-e", edges_file,
@@ -539,6 +541,7 @@ runHeinz <- function(subnet,
               "-s", heinz.nModules,
               "--tolerance", heinz.tolerance,
               "--subopt_diff", heinz.subopt_diff,
+              "--heinztmp", heinz.tmpdir,
               "-v"),
             env="ILOG_LICENSE_FILE=./access.ilm")
     setwd(wd.bak)
