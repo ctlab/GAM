@@ -1,6 +1,17 @@
 library(shiny)
 library(data.table)
 
+library(GAM)
+
+data(kegg.mouse.network)
+data(kegg.human.network)
+networks <- list(
+    "Mouse musculus"=kegg.mouse.network,
+    "Homo sapiens"=kegg.human.network)
+
+data(gene.id.map)
+data(met.id.map)
+
 heinz.py <- "~/lib/heinz/heinz.py"
 
 renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
@@ -16,6 +27,8 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     }
 }
 
+necessary.de.fields <- c("ID", "pval", "logFC")
+
 # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
     
@@ -25,7 +38,29 @@ shinyServer(function(input, output) {
             return(NULL)
         }
         
-        data.table(read.table(input$geneDE$datapath, sep="\t", header=T))
+        res <- data.table(read.table(input$geneDE$datapath, sep="\t", header=T))
+        if (!all(necessary.de.fields %in% names(res))) {
+            stop(paste0("Genomic differential expression data should contain at least these fields: ", 
+                        paste(necessary.de.fields, collapse=", ")))
+        }
+        res
+    })
+    
+    geneIdsType <- reactive({
+        data <- geneDEInput()
+        if (is.null(data)) {
+            return(NULL)
+        }
+        res <- getIdsType(data$ID, gene.id.map)
+        if (length(res) != 1) {
+            stop("Can't determine type of IDs for genes")
+        }
+        res
+    })
+    
+    output$geneIdsType <- reactive({
+        geneIdsType()
+        
     })
     
     output$geneDETable <- renderTable({
@@ -43,7 +78,28 @@ shinyServer(function(input, output) {
             return(NULL)
         }
         
-        data.table(read.table(input$metDE$datapath, sep="\t", header=T))
+        res <- data.table(read.table(input$metDE$datapath, sep="\t", header=T))
+        if (!all(necessary.de.fields %in% names(res))) {
+            stop(paste0("Metabolic differential expression data should contain at least these fields: ", 
+                        paste(necessary.de.fields, collapse=", ")))
+        }
+        res
+    })
+    
+    metIdsType <- reactive({
+        data <- metDEInput()
+        if (is.null(data)) {
+            return(NULL)
+        }
+        res <- getIdsType(data$ID, met.id.map)
+        if (length(res) != 1) {
+            stop("Can't determine type of IDs for metabolites")
+        }
+        res
+    })
+    
+    output$metIdsType <- reactive({
+        metIdsType()
     })
     
     output$metDETable <- renderTable({
@@ -58,14 +114,25 @@ shinyServer(function(input, output) {
         input$preprocess
         network <- networks[[isolate(input$network)]]
         gene.de <- isolate(geneDEInput())
-        gene.ids <- gene.ids[isolate(input$geneIds)]
+        gene.ids <- isolate(geneIdsType())
         met.de <- isolate(metDEInput())
-        met.ids <- met.ids[isolate(input$metIds)]
+        met.ids <- isolate(metIdsType())
         if (is.null(gene.de) || is.null(met.de)) {
             return(NULL)
         }
         
-        makeExperimentSet(network=network, met.de=met.de, gene.de=gene.de, met.ids=met.ids, gene.ids=gene.ids, plot=F)
+        reactions.as.edges = isolate(input$reactionsAs) == "edges"
+        collapse.reactions = isolate(input$collapseReactions)
+        use.rpairs = isolate(input$useRpairs)
+        
+        makeExperimentSet(
+            network=network,
+            met.de=met.de, gene.de=gene.de,
+            met.ids=met.ids, gene.ids=gene.ids,
+            reactions.as.edges=reactions.as.edges,
+            collapse.reactions=collapse.reactions,
+            use.rpairs=use.rpairs,
+            plot=F)
     })
     
     output$networkSummary <- renderPrint({
@@ -73,7 +140,7 @@ shinyServer(function(input, output) {
         es$subnet
     })
     
-    moduleInput <- reactive({
+    rawModuleInput <- reactive({
         input$find
         met.fdr <- isolate(input$metFDR)
         gene.fdr <- isolate(input$geneFDR)
@@ -90,6 +157,39 @@ shinyServer(function(input, output) {
                     gene.fdr=gene.fdr,
                     absent.met.score=absent.met.score,
                     heinz.py=heinz.py)
+    })
+    
+    moduleInput <- reactive({
+        module <- rawModuleInput()
+        if (is.null(module)) {
+            return(NULL)
+        }
+        es <- isolate(esInput())
+        
+        if (es$reactions.as.edges) {
+            if (isolate(input$useRpairs)) {
+                if (input$addTransPairs) {
+                    module <- addTransEdges(module, es)
+                }
+            }
+        } else {
+            if (input$addMetabolitesForReactions) {
+                module <- addMetabolitesForReactions(module, es)
+            }
+            module <- addInterconnections(module, es)
+            module <- addNormLogFC(module)
+            
+            if (input$removeHangingNodes) {
+                module <- removeHangingNodes(module)
+            }
+            
+            if (input$removeSimpleReactions) {
+                module <- removeSimpleReactions(module, es)
+            }
+            module <- expandReactionNodeAttributesToEdges(module)
+        }
+            
+        module
     })
     
     output$moduleSummary <- renderPrint({

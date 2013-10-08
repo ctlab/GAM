@@ -47,7 +47,7 @@ available differential expression data, and type of IDs that is
 used in this data. One part of preprocessing is to fir p-values distribution
 to beta-uniform model, by default `makeEXperimentSet` makes histogram and QQ-plot,
 so one can check if it fits good enough.
-```{r chache=TRUE, error=FALSE, message=FALSE}
+```{r chache=TRUE, error=FALSE, message=FALSE, fig.width=5, fig.height=5}
 es <- makeExperimentSet(network=kegg.mouse.network,
                         met.de=mouse.macrophages$met.de.M1.M2,
                         gene.de=mouse.macrophages$gene.de.M1.M2,

@@ -15,6 +15,17 @@ convertPvalBiomart <- function(pval, from, to, mart) {
     convert.pval(pval, map$from, map$to)
 }
 
+#' @export
+getIdsType <- function(ids, id.map) {
+    res <- c()
+    for (id.type in names(id.map)) {
+        if (any(ids %in% id.map[, id.type])) {
+            res <- c(res, id.type)
+        }
+    }
+    res
+}
+
 #' Convert IDs in differential expression data
 #' When there is multiple entries with the same after conversion 
 #' only one with minimal p-value is kept.
