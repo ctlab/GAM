@@ -186,11 +186,12 @@ addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.labe
     
 }
 
-#' @importFrom igraph0 graph.edgelist igraph.to.graphNEL simplify
+#' @importFrom igraph graph.edgelist igraph.to.graphNEL simplify
 graphNEL.from.tables <- function(node.table=list(), edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=T,
                                  name.as.label=T) {    
+    # :ToDo: use graph.data.frame, it does almost the same
     
     if (is.character(edge.cols)) {
         edge.cols <- match(edge.cols, colnames(edge.table))

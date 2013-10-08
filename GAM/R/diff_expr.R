@@ -167,7 +167,8 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
         fit2<-eBayes(fit2)
         
         f.top<-topTable(fit2, sort.by="B", number=top, resort.by="P")
-        res = data.frame(ID=f.top$ID, pval=f.top$adj.P.Val, logFC=-f.top$logFC, stringsAsFactors=F)        
+        ids <- if ("ID" %in% names(f.top)) f.top$ID else rownames(f.top)
+        res = data.frame(ID=ids, pval=f.top$adj.P.Val, logFC=-f.top$logFC, stringsAsFactors=F)        
     }
     return(res)
 }

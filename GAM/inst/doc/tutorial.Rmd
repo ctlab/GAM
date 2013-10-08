@@ -3,6 +3,7 @@
 %\VignetteEngine{knitr::knitr}
 -->
 ```{r eval=TRUE, echo=FALSE}
+require(knitr)
 opts_chunk$set(error=F, cache=T, dev="svg")
 ```
 

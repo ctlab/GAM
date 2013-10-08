@@ -36,7 +36,7 @@ NULL
 #' @param attr.shape Attribute to use for shape
 #' @param layout Layout to use
 #' @param ... Arguments for plot
-#' @importFrom igraph0 E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
+#' @importFrom igraph E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
     if (!(attr.label %in% names(nodeDataDefaults(module)))) {
@@ -114,7 +114,7 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
     
     
     es <- get.edges(network, E(network))
-    es <- es + 1 # :ToDo: remove when moving from igraph0
+    #es <- es + 1 # :ToDo: remove when moving from igraph0
     
     #print(paste("par:", par("pin")))
     scale <- scale * min(par("pin")) / 10

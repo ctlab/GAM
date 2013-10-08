@@ -72,14 +72,14 @@ module2list <- function(module) {
     
     getNodeObject <- function(i) {
         return(c(
-            list(index = i),
+            list(index = i - 1),
             get.vertex.attributes(imodule, i)))
     }
     
     getEdgeObject <- function(i) {
         es <- get.edges(imodule, i)
         return(c(
-            list(source=es[1], target=es[2]),
+            list(source=es[1]-1, target=es[2]-1),
             get.edge.attributes(imodule, i)))
     }
     
@@ -87,6 +87,7 @@ module2list <- function(module) {
         nodes=lapply(V(imodule), getNodeObject),
         links=lapply(E(imodule), getEdgeObject)
         )
+    graphObject
 }
 
 #' @export
@@ -177,7 +178,7 @@ saveModuleToXgmml <- function(network, name, file) {
 }
 
 # internal method for the addition of nodes to xml
-#' @importFrom igraph0 get.vertex.attribute
+#' @importFrom igraph get.vertex.attribute
 .XGMML.nodes <- function(network)
 {
     # create node-nodes
@@ -224,7 +225,7 @@ saveModuleToXgmml <- function(network, name, file) {
 }
 
 # internal method for the addition of edges to XGMML
-#' @importFrom igraph0 get.edge.attribute get.edgelist list.edge.attributes
+#' @importFrom igraph get.edge.attribute get.edgelist list.edge.attributes
 .XGMML.edges <- function(network)
 {
     # create edge-nodes
