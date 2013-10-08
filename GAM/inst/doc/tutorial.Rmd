@@ -87,7 +87,7 @@ absent.met.score=c(-20)
 
 And now we can finally find most significant module in our network.
 ```{r chache=TRUE, error=FALSE}
-module <- findModules(es,
+module <- findModule(es,
                        met.fdr=met.fdr,
                        gene.fdr=gene.fdr,
                        absent.met.score=absent.met.score,
@@ -153,7 +153,7 @@ absent.met.score=c(-20)
 
 And finding modules:
 ```{r chache=TRUE, error=FALSE}
-module <- findModules(es,
+module <- findModule(es,
                        met.fdr=met.fdr,
                        gene.fdr=gene.fdr,
                        absent.met.score=absent.met.score,

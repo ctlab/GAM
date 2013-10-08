@@ -13,7 +13,7 @@ html, body {
     margin: 0;
 }
 
-#graph_container {
+#graphContainer {
   width: 100%;
 }
 .overlay {

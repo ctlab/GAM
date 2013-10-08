@@ -32,48 +32,49 @@
           <option value="Homo sapiens">Homo sapiens</option>
         </select>
         <label>Select file with gene p-values</label>
-        <input id="gene_de" type="file"/>
-        <div id="gene_de_progress" class="progress progress-striped active shiny-file-input-progress">
+        <input id="geneDE" type="file"/>
+        <div id="geneDEProgress" class="progress progress-striped active shiny-file-input-progress">
           <div class="bar"></div>
           <label></label>
         </div>
-        <label class="control-label" for="gene_ids">Select type of gene IDs:</label>
-        <select id="gene_ids">
+        <label class="control-label" for="geneIds">Select type of gene IDs:</label>
+        <select id="geneIds">
           <option value="RefSeq mRNA accession" selected="selected">RefSeq mRNA accession</option>
           <option value="Entrez gene">Entrez gene</option>
           <option value="Gene symbol">Gene symbol</option>
         </select>
         <label>Select file with metabolite p-values</label>
-        <input id="met_de" type="file"/>
-        <div id="met_de_progress" class="progress progress-striped active shiny-file-input-progress">
+        <input id="metDE" type="file"/>
+        <div id="metDEProgress" class="progress progress-striped active shiny-file-input-progress">
           <div class="bar"></div>
           <label></label>
         </div>
-        <label class="control-label" for="met_ids">Select type of metabolite IDs:</label>
-        <select id="met_ids">
+        <label class="control-label" for="metIds">Select type of metabolite IDs:</label>
+        <select id="metIds">
           <option value="HMDB" selected="selected">HMDB</option>
           <option value="KEGG">KEGG</option>
         </select>
         <br/>
         <button id="preprocess" type="button" class="btn action-button">Preprocess</button>
-        <label for="gene_fdr">FDR for genes</label>
-        <input id="gene_fdr" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
-        <label for="met_fdr">FDR for metabolites</label>
-        <input id="met_fdr" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
-        <label for="absent_met_score">Score for absent metabolites</label>
-        <input id="absent_met_score" type="number" value="-20"/>
+        <label for="geneFDR">FDR for genes</label>
+        <input id="geneFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+        <label for="metFDR">FDR for metabolites</label>
+        <input id="metFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+        <label for="absentMetScore">Score for absent metabolites</label>
+        <input id="absentMetScore" type="number" value="-20"/>
         <br/>
         <button id="find" type="button" class="btn action-button">Find module</button>
+        <a id="downloadXGMML" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
         <br/>
       </form>
     </div>
     <div class="span8">
-      <div id="gene_de_table" class="shiny-html-output"></div>
-      <div id="met_de_table" class="shiny-html-output"></div>
-      <div id="network_summary" class="shiny-text-output"></div>
-      <div id="module_summary" class="shiny-text-output"></div>
+      <div id="geneDETable" class="shiny-html-output"></div>
+      <div id="metDETable" class="shiny-html-output"></div>
+      <div id="networkSummary" class="shiny-text-output"></div>
+      <div id="moduleSummary" class="shiny-text-output"></div>
       <div id="module" class="graph-output"></div>
-      <div id="graph_container" class="graph-output"></div>
+      <div id="graphContainer" class="graph-output"></div>
     </div>
   </div>
 </div>

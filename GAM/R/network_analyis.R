@@ -229,7 +229,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     return(es)
 }
 
-#' Make preprocessing necessary for findModules function
+#' Make preprocessing necessary for findModule function
 #' Converts gene and metabolite ids, makes an actual to work with.
 #' @param network Network object
 #' @param met.de Differential expression data for metabolites
@@ -426,7 +426,7 @@ appendModule <- function(res, module.graph) {
 #' @param simplify If TRUE and only one module was found return just the module, not a list.
 #' @return List of most significant modules
 #' @export 
-findModules <- function(es,                         
+findModule <- function(es,                         
                          fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
                          absent.met.score=NULL,
                          score.separately=T,

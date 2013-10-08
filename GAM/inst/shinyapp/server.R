@@ -20,15 +20,15 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
 shinyServer(function(input, output) {
     
     geneDEInput <- reactive({
-        if (is.null(input$gene_de)) {
+        if (is.null(input$geneDE)) {
             # User has not uploaded a file yet
             return(NULL)
         }
         
-        data.table(read.table(input$gene_de$datapath, sep="\t", header=T))
+        data.table(read.table(input$geneDE$datapath, sep="\t", header=T))
     })
     
-    output$gene_de_table <- renderTable({
+    output$geneDETable <- renderTable({
         data <- geneDEInput()
         if (is.null(data)) {
             return(NULL)
@@ -38,29 +38,29 @@ shinyServer(function(input, output) {
     
     
     metDEInput <- reactive({
-        if (is.null(input$met_de)) {
+        if (is.null(input$metDE)) {
             # User has not uploaded a file yet
             return(NULL)
         }
         
-        data.table(read.table(input$met_de$datapath, sep="\t", header=T))
+        data.table(read.table(input$metDE$datapath, sep="\t", header=T))
     })
     
-    output$met_de_table <- renderTable({
+    output$metDETable <- renderTable({
         data <- metDEInput()
         if (is.null(data)) {
             return(NULL)
         }
-        format(head(data[order(logFC)]))
+        format(head(data[order(pval)]))
     })
     
     esInput <- reactive({
         input$preprocess
         network <- networks[[isolate(input$network)]]
         gene.de <- isolate(geneDEInput())
-        gene.ids <- gene.ids[isolate(input$gene_ids)]
+        gene.ids <- gene.ids[isolate(input$geneIds)]
         met.de <- isolate(metDEInput())
-        met.ids <- met.ids[isolate(input$met_ids)]
+        met.ids <- met.ids[isolate(input$metIds)]
         if (is.null(gene.de) || is.null(met.de)) {
             return(NULL)
         }
@@ -68,16 +68,16 @@ shinyServer(function(input, output) {
         makeExperimentSet(network=network, met.de=met.de, gene.de=gene.de, met.ids=met.ids, gene.ids=gene.ids, plot=F)
     })
     
-    output$network_summary <- renderPrint({
+    output$networkSummary <- renderPrint({
         es <- esInput()
         es$subnet
     })
     
     moduleInput <- reactive({
         input$find
-        met.fdr <- isolate(input$met_fdr)
-        gene.fdr <- isolate(input$gene_fdr)
-        absent.met.score=isolate(input$absent_met_score)
+        met.fdr <- isolate(input$metFDR)
+        gene.fdr <- isolate(input$geneFDR)
+        absent.met.score=isolate(input$absentMetScore)
         
         es <- isolate(esInput())
         
@@ -85,14 +85,14 @@ shinyServer(function(input, output) {
             return(NULL)
         }
 
-        findModules(es,
+        findModule(es,
                     met.fdr=met.fdr,
                     gene.fdr=gene.fdr,
                     absent.met.score=absent.met.score,
                     heinz.py=heinz.py)
     })
     
-    output$module_summary <- renderPrint({
+    output$moduleSummary <- renderPrint({
         moduleInput()
     })
     
@@ -100,4 +100,9 @@ shinyServer(function(input, output) {
         moduleInput()
     })
     
+    output$downloadXGMML <- downloadHandler(
+        filename = "module.xgmml",
+        content = function(file) {
+            saveModuleToXgmml(moduleInput(), "module", file)
+        })
 })

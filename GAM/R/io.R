@@ -39,8 +39,9 @@ networkToTab <- function(edges, file.name) {
 }
 
 
-saveModuleToPdf <- function(module, outputFilePrefix) {
-    pdf(paste(outputFilePrefix, "pdf", sep="."), width=15, height=15)
+#' @export
+saveModuleToPdf <- function(module, file) {
+    pdf(file, width=15, height=15)
     plotNetwork(module, attr.label="label", vertex.size=2)
     dev.off()
 }
@@ -135,6 +136,7 @@ saveModuleToDot<- function(module, name, outputFilePrefix) {
     system2("neato", c("-Tps", "-O", outFile))
 }
 
+#' @export
 #' @importFrom XML append.xmlNode addAttributes
 saveModuleToXgmml <- function(network, name, file) {
     require(XML)
@@ -153,7 +155,7 @@ saveModuleToXgmml <- function(network, name, file) {
     top <- append.xmlNode(top, edges) 
     # save to file as xgmml
     print("...writing to file")
-    saveXML(top, file=paste(file, ".xgmml", sep=""), encoding="UTF-8")
+    saveXML(top, file, encoding="UTF-8")
     if("package:XML" %in% search()){detach("package:XML")}
 }
 # internal method to create the first part of the XGMML-file, description
@@ -290,9 +292,9 @@ saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
     
     for (type in types) {
         if (type == "pdf") {
-            saveModuleToPdf(module, outputFilePrefix)
+            saveModuleToPdf(module, paste0(outputFilePrefix, ".pdf"))
         } else if (type == "XGMML") {
-            saveModuleToXgmml(module, name=basename(outputFilePrefix), outputFilePrefix)
+            saveModuleToXgmml(module, name=basename(outputFilePrefix), paste0(outputFilePrefix, ".xgmml"))
         } else {
             saveNetwork(module, file=outputFilePrefix,type=type)
         }

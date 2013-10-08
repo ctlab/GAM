@@ -13,7 +13,7 @@ Shiny.outputBindings.register(graphOutputBinding, "alserg.graphOutputBinding");
 
 
 var svg;
-var container = "#graph_container";
+var container = "#graphContainer";
 var force;
 
 positiveFCScale = d3.scale.linear().clamp(true).domain([0,2]).range(["#cccccc","#ff0000"]);
