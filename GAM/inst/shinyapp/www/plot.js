@@ -86,6 +86,36 @@ function loadGraph(graph) {
         .style("stroke", getColor)
         .style("stroke-width", getSize);
 
+    var edgepaths = svg.selectAll(".edgepath")
+        .data(graph.links)
+        .enter()
+        .append('path')
+        .attr({'d': function(d) {return 'M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y},
+               'class':'edgepath',
+               'fill-opacity':0,
+               'stroke-opacity':0,
+               'fill':'blue',
+               'stroke':'red',
+               'id':function(d,i) {return 'edgepath'+i}})
+        .style("pointer-events", "none");
+
+    var edgelabels = svg.selectAll(".edgelabel")
+        .data(graph.links)
+        .enter()
+        .append('text')
+        .style("pointer-events", "none")
+        .attr('class', 'edgelabel')
+        .style('fill', 'black')
+        .style("font-size", getSize);
+
+    edgelabels.append('textPath')
+        .attr('xlink:href',function(d,i) {return '#edgepath'+i})
+        .style("pointer-events", "none")
+        .attr('text-anchor', 'middle')
+        .attr('startOffset', '50%')
+        .attr('alignment-baseline', 'central')
+        .text(function(d,i){return d.label});
+
     var node = svg.selectAll(".node")
         .data(graph.nodes)
         .enter()
@@ -108,11 +138,27 @@ function loadGraph(graph) {
 
     force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })
-        .attr("y1", function(d) { return d.source.y; })
-        .attr("x2", function(d) { return d.target.x; })
-        .attr("y2", function(d) { return d.target.y; });
+            .attr("y1", function(d) { return d.source.y; })
+            .attr("x2", function(d) { return d.target.x; })
+            .attr("y2", function(d) { return d.target.y; });
 
-    node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+        node.attr("transform", function(d) { return "translate(" + d.x + "," + d.y + ")"; });
+
+        edgepaths.attr('d', function(d) { var path='M '+d.source.x+' '+d.source.y+' L '+ d.target.x +' '+d.target.y;
+                                           //console.log(d)
+                                           return path});       
+
+        edgelabels.attr('transform',function(d,i){
+            if (d.target.x<d.source.x){
+                bbox = this.getBBox();
+                rx = bbox.x+bbox.width/2;
+                ry = bbox.y+bbox.height/2;
+                return 'rotate(180 '+rx+' '+ry+')';
+                }
+            else {
+                return 'rotate(0)';
+                }
+        });
     });
 }
 
