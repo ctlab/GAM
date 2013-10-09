@@ -36,27 +36,30 @@ getIdsType <- function(ids, id.map) {
 #' @importFrom plyr rename
 #' @export
 convertPval <- function(pval, from, to) {
-    map <- data.frame(from=from, to=to, stringsAsFactors=F)
-    pval.ext <- merge(map, pval, by.x = "from", by.y = "ID")
-    
+# implementation using data.table (slower because of sorting)
+# {
+#     pval.table <- data.table(pval, key="ID")
+#     map <- data.table(ID=from, to=to, key="ID")
+#     pval.ext <- merge(map, pval, by="ID")
+#     pval.ext[,origin:=ID]
+#     pval.ext[,ID:=to]
+#     pval.ext$to <- NULL
+#     res <- pval.ext
+#     res <- merge(res[,list(pval=min(pval)), by=ID], res, by=c("ID", "pval"))
+#     res <- res[!duplicated(res$ID),]
+# }
+    map <- data.frame(ID=from, to=to, stringsAsFactors=F)
+    pval.ext <- merge(map, pval, by="ID")
     if ("origin" %in% colnames(pval)) {
-        pval.ext$from <- NULL
+        pval.ext$ID<- NULL
     } else {
-        pval.ext <- rename(pval.ext, c("from"="origin"))
+        pval.ext <- rename(pval.ext, c("ID"="origin"))
     }
     
     res <- rename(pval.ext, c("to"="ID"))
     
-    get_min_pval <- function(id) {
-        subset <- res[res$ID == id,]
-        
-        # :ToDo: more intelligent aggregate function?
-        subset[which.min(subset$pval),]        
-    }
-    
     res <- merge(aggregate(pval ~ ID, res, min), res)
     res <- res[!duplicated(res$ID),]
-    res <- res[order(res$pval),]    
     res
 }
 

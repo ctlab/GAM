@@ -72,7 +72,7 @@ connected subgraph problem. [Heinz](http://www.mi.fu-berlin.de/w/LiSA/Heinz)
 is used for this purpose. Directory with heinz should also contain a license file
 for CPLEX.
 ```{r}
-heinz.py <- "~/lib/heinz/heinz.py"
+heinz.py <- "/usr/local/lib/heinz/heinz.py"
 list.files(dirname(heinz.py))
 ```
 

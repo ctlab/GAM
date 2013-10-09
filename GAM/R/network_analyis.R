@@ -1,6 +1,14 @@
 #' @import BioNet 
 NULL
 
+#' Load data only if its absent from global environment
+lazyData <- function(name, ...) {
+    if (!name %in% ls(envir=.GlobalEnv)) {
+        print(paste0("No ", name, ", loading"))
+        data(name, ...)
+    }
+}
+
 .node.color <- function(network, colors)
 { 
     colors <- colors[V(network)$name]
@@ -194,7 +202,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
         print("Processing gene p-values...")
         es$gene.de$logFC <- fixInf(es$gene.de$logFC)
         if (!is.null(gene.ids)) {
-            data("gene.id.map")
+            lazyData("gene.id.map")
             es$gene.de <- convertPval(es$gene.de, 
                                        from=gene.id.map[,gene.ids], 
                                        to=gene.id.map[,es$network$gene.ids])
@@ -209,7 +217,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
         print("Processing metabolite p-values...")
         es$met.de$logFC <- fixInf(es$met.de$logFC)        
         if (!is.null(met.ids)) {
-            data("met.id.map")
+            lazyData("met.id.map")
             es$met.de <- convertPval(es$met.de, 
                                       from=met.id.map[,met.ids], 
                                       to=met.id.map[,es$network$met.ids])
@@ -246,6 +254,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 #' @param plot If TRUE plot BUM-models
 #' @export
 #' @importFrom plyr rename
+#' @import data.table
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
@@ -273,7 +282,7 @@ makeExperimentSet <- function(network,
             
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
             
-            data(gene.id.map)
+            lazyData("gene.id.map")
             unknown.rxn <- setdiff(es$rxn.de$ID, es$network$rxn2name$rxn)
             unknown.rxn2name <- do.call(cbind,  c(
                 list(unknown.rxn), 
@@ -359,12 +368,15 @@ makeExperimentSet <- function(network,
         
         if (collapse.reactions) {
             print("Collapsing reactions by common most significant enzymes")
-            rxn.net <- merge(rename(edges, c("rxn"="rxn.x")), rename(edges, c("rxn" = "rxn.y")))
+            
+            edges <- data.table(edges, key="met")
+            rxn.net <- merge(rename(edges, c("rxn"="rxn.x")), rename(edges, c("rxn" = "rxn.y")), by="met", allow.cartesian=T)
             rxn.net <- unique(rxn.net[, c("rxn.x", "rxn.y")])
-            rxn.graph <- graphNEL.from.tables(edge.table=rxn.net, directed=F)
             
             #rxn.de.origin.split <- es$rxn.de$origin
-            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.graph, rxn.de.ext$ID, rxn.de.ext$origin)
+            print("before split")
+            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
+            print("after split")
             
             t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
             #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
@@ -377,14 +389,18 @@ makeExperimentSet <- function(network,
                 return(paste(u, collapse="+"))
             }
             
+            print("before fixing")
             cols.to.fix <- setdiff(c(colnames(es$network$rxn2name), "rxns"), c("rxn", "name"))
             f <- as.formula(paste0("cbind(", paste0(cols.to.fix, collapse=","), ") ~ ID"))
             cols.fixed <- aggregate(f , es$rxn.de.ext, uniqueJoin)
+            print("after fixing")
+            
             es$rxn.de.ext <- unique(es$rxn.de.ext[, !names(es$rxn.de.ext) %in% cols.to.fix])
             es$rxn.de.ext <- merge(es$rxn.de.ext, cols.fixed)
             
             edges$rxn <- es$rxn.de.origin.split[edges$rxn]
             edges <- unique(edges)
+            print("Done collapsing")
         }
         
         es$edges <- edges

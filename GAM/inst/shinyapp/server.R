@@ -12,7 +12,7 @@ networks <- list(
 data(gene.id.map)
 data(met.id.map)
 
-heinz.py <- "~/lib/heinz/heinz.py"
+heinz.py <- "/usr/local/lib/heinz/heinz.py"
 
 renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     # Convert the expression + environment into a function

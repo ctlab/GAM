@@ -108,50 +108,87 @@ convert.node.names <- function(network, from, to) {
     network2   
 }
 
-splitMappingByConnectivity <- function(graph, from, to) {
+splitMappingByConnectivity <- function(connections, from, to) {
+    colors <- seq_along(from)
+    names(colors) <- from
     names(to) <- from
-    
-    es <- edges(graph)
-    to.new <- to
-    to.new[] <- NA
-    
-    comp_names <- unique(to)
-    comp_counts <- rep(0, length(comp_names))
-    names(comp_counts) <- comp_names
-    
-    comp_sizes <- rep(0, length(comp_names))
-    names(comp_sizes) <- comp_names
-    
-    dfs <- function(node, mark.allow, new.name) {    
-        if (is.na(to[node]) || (to[node] != mark.allow)) {
-            return(0)
-        }
+    connections <- connections[connections[,1] != connections[,2],]
+    c1 <- connections[to[connections[,1]] == to[connections[,2]],]
+    while (T) {
+        c2 <- data.frame(x=colors[c1[,1]], y=colors[c1[,2]])
         
-        if (!is.na(to.new[node])) {
-            return(0)
+        c2[c2$x > c2$y, ] <- c2[c2$x > c2$y, c("y", "x")]
+        c1 <- c1[c2$x != c2$y, ]
+        c2 <- c2[c2$x != c2$y, ]
+        if (nrow(c2) == 0) {
+            break;
         }
-        to.new[node] <<- new.name
-        
-        res <- 1
-        for (v in es[[node]]) {
-            res <- res + dfs(v, mark.allow, new.name)
-        }
-        res
+        c2 <- aggregate(x ~ y, c2, min)
+        colors[match(c2$y, colors)] <- c2$x
     }
+#     while (T) {
+#         c2 <- data.table(x=colors[c1[,1]], y=colors[c1[,2]])
+#         
+#         c2[x > y, ] <- c2[x > y, list(y,x)]
+#         c2 <- c2[x != y, ]
+#         if (nrow(c2) == 0) {
+#             break;
+#         }
+#         c2 <- c2[, list(x=min(x)), by=y]
+#         colors[match(c2$y, colors)] <- c2$x
+#     }
     
-    for (node in from) {
-        if (!is.na(to.new[node])) {
-            next
-        }
-        comp_n <- comp_counts[to[node]] + 1
-        comp_counts[to[node]] <- comp_n
-        comp_name <- paste(to[node], comp_n, sep=".")
-        comp_size <- dfs(node, to[node], comp_name)    
-        comp_sizes[comp_name] <- comp_size
-    }
     
-    to.new
+    res <- paste(to, colors, sep=".")
+    names(res) <- from
+    res
 }
+
+# splitMappingByConnectivity <- function(connections, from, to) {
+#     graph <- graphNEL.from.tables(edge.table=connections, directed=F)
+#     names(to) <- from
+#     
+#     es <- edges(graph)
+#     to.new <- to
+#     to.new[] <- NA
+#     
+#     comp_names <- unique(to)
+#     comp_counts <- rep(0, length(comp_names))
+#     names(comp_counts) <- comp_names
+#     
+#     comp_sizes <- rep(0, length(comp_names))
+#     names(comp_sizes) <- comp_names
+#     
+#     dfs <- function(node, mark.allow, new.name) {    
+#         if (is.na(to[node]) || (to[node] != mark.allow)) {
+#             return(0)
+#         }
+#         
+#         if (!is.na(to.new[node])) {
+#             return(0)
+#         }
+#         to.new[node] <<- new.name
+#         
+#         res <- 1
+#         for (v in es[[node]]) {
+#             res <- res + dfs(v, mark.allow, new.name)
+#         }
+#         res
+#     }
+#     
+#     for (node in from) {
+#         if (!is.na(to.new[node])) {
+#             next
+#         }
+#         comp_n <- comp_counts[to[node]] + 1
+#         comp_counts[to[node]] <- comp_n
+#         comp_name <- paste(to[node], comp_n, sep=".")
+#         comp_size <- dfs(node, to[node], comp_name)    
+#         comp_sizes[comp_name] <- comp_size
+#     }
+#     
+#     to.new
+# }
 
 
 addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.label=T) {
