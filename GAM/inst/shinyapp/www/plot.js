@@ -84,7 +84,9 @@ function loadGraph(graph) {
         .enter().append("line")
         .attr("class", "link")
         .style("stroke", getColor)
-        .style("stroke-width", getSize);
+        .style("stroke-width", getSize)
+        .style("stroke-dasharray", function(d) { if (d.rptype == "trans") return "5,5"; else return ""; });  
+
 
     var edgepaths = svg.selectAll(".edgepath")
         .data(graph.links)
