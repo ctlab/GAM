@@ -584,7 +584,7 @@ runHeinz <- function(subnet,
 #' @param module Module to modify
 #' @param es Experiment set object
 #' @return Modified module
-#' @importFrom igraph add.edges delete.edges delete.vertices
+#' @importFrom igraph add.edges delete.edges delete.vertices degree
 #' @export
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -593,7 +593,7 @@ removeSimpleReactions <- function(module, es) {
         res <- igraph.from.graphNEL(res)
     }
     
-    rxn.nodes <- V(res)[nodeType == "rxn" & igraph::degree(res) == 2]$name
+    rxn.nodes <- V(res)[nodeType == "rxn" & degree(res) == 2]$name
     rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
     rxn.edges <- matrix(V(res)[rxn.edges]$name, ncol=2)
     rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)

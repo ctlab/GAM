@@ -227,30 +227,43 @@ addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.labe
     
 }
 
-#' @importFrom igraph graph.edgelist igraph.to.graphNEL simplify
-graphNEL.from.tables <- function(node.table=list(), edge.table,
+moveColumnsToFront <- function(d, cols) {
+    if (is.character(cols)) {
+        cols <- match(cols, colnames(d))
+    }
+    d[, c(cols, seq_along(d)[-cols])]
+}
+
+#' @importFrom igraph graph.edgelist igraph.to.graphNEL simplify graph.data.frame
+#' @importFrom plyr rbind.fill
+graphNEL.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=T,
                                  name.as.label=T) {    
     # :ToDo: use graph.data.frame, it does almost the same
     
-    if (is.character(edge.cols)) {
-        edge.cols <- match(edge.cols, colnames(edge.table))
+    edge.table <- moveColumnsToFront(edge.table, edge.cols)
+    
+    if ("name" %in% names(edge.table)) {
+        edge.table <- rename(edge.table, c("name"="label"))
     }
     
-    net1 <- graph.edgelist(as.matrix(edge.table[,edge.cols]), directed=directed)
-    net1 <- simplify(net1, remove.multiple=T)
+    
+    if (is.list(node.table)) {
+        for (name in names(node.table)) {
+            node.table[[name]]$nodeType <- name
+            node.table[[name]] <- moveColumnsToFront(node.table[[name]], node.col)
+        }
+        node.table <- do.call(rbind.fill, node.table)
+    } else if (!is.null(node.table)) {
+        node.table <- moveColumnsToFront(node.table, node.col)
+    }
+    
+    if ("name" %in% names(node.table)) {
+        node.table <- rename(node.table, c("name"="label"))
+    }
+    net1 <- graph.data.frame(edge.table, directed=directed, node.table)
+    net1 <- delete.vertices(net1, V(net1)[degree(net1) == 0])
     net1 <- igraph.to.graphNEL(net1)
-    
-    net1 <- addNodeAttributes(net1, node.table, node.col, name.as.label)
-    
-    
-    for (edge.attr in colnames(edge.table)[-edge.cols]) {        
-        new.attr <- if (edge.attr == "name" && name.as.label) "label" else edge.attr
-        
-        edgeDataDefaults(net1, new.attr) <- NA
-        edgeData(net1, from=edge.table[,edge.cols[1]], to=edge.table[,edge.cols[2]], attr=new.attr) <- 
-            edge.table[,edge.attr]        
-    }
     return(net1)
 }
