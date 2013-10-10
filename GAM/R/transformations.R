@@ -108,7 +108,9 @@ convert.node.names <- function(network, from, to) {
     network2   
 }
 
+#' @export
 splitMappingByConnectivity <- function(connections, from, to) {
+    connections <- data.frame(connections)
     colors <- seq_along(from)
     names(colors) <- from
     names(to) <- from
@@ -124,7 +126,9 @@ splitMappingByConnectivity <- function(connections, from, to) {
             break;
         }
         c2 <- aggregate(x ~ y, c2, min)
-        colors[match(c2$y, colors)] <- c2$x
+        
+        matched <- colors %in% c2$y
+        colors[matched] <- c2$x[match(colors[matched], c2$y)]
     }
 #     while (T) {
 #         c2 <- data.table(x=colors[c1[,1]], y=colors[c1[,2]])

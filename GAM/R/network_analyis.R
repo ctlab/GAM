@@ -369,9 +369,9 @@ makeExperimentSet <- function(network,
         if (collapse.reactions) {
             print("Collapsing reactions by common most significant enzymes")
             
-            edges <- data.table(edges, key="met")
-            rxn.net <- merge(rename(edges, c("rxn"="rxn.x")), rename(edges, c("rxn" = "rxn.y")), by="met", allow.cartesian=T)
-            rxn.net <- unique(rxn.net[, c("rxn.x", "rxn.y")])
+            edges.dt <- data.table(edges, key="met")
+            rxn.net <- merge(rename(edges.dt, c("rxn"="rxn.x")), rename(edges.dt, c("rxn" = "rxn.y")), by="met", allow.cartesian=T)
+            rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
             
             #rxn.de.origin.split <- es$rxn.de$origin
             print("before split")
@@ -581,57 +581,50 @@ runHeinz <- function(subnet,
 #' @param module Module to modify
 #' @param es Experiment set object
 #' @return Modified module
+#' @importFrom igraph add.edges delete.edges delete.vertices
 #' @export
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
-    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
-    rxn.edges <- edges(module, rxn.nodes)
-    bm.rxns <- names(rxn.edges)[sapply(rxn.edges, length) == 2]
-    original.rxns <- unlist(nodeData(module, bm.rxns, attr="rxns"))
-    
     res <- module
-    for (attr in names(nodeDataDefaults(res))) {
-        if (!attr %in% edgeDataDefaults(res)) {
-            edgeDataDefaults(res, attr) <- nodeDataDefaults(res, attr)
-        }
+    if (is(res, "graphNEL")) {
+        res <- igraph.from.graphNEL(res)
     }
     
-    for (new.rxn in bm.rxns) {
-        is.reaction <- F
-        c1 <- rxn.edges[[new.rxn]][[1]]
-        c2 <- rxn.edges[[new.rxn]][[2]]
-        
-        for (old.rxn in names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])) {
-            is.reaction <- 
-                is.reaction || 
-                any((es$network$graph.raw$met.x == c1) & 
-                    (es$network$graph.raw$met.y == c2) & 
-                    (es$network$graph.raw$rxn == old.rxn))
-            
-            is.reaction <- 
-                is.reaction || 
-                any((es$network$graph.raw$met.x == c2) & 
-                    (es$network$graph.raw$met.y == c1) & 
-                    (es$network$graph.raw$rxn == old.rxn))
-        }
-        if (is.reaction) {
-            if (!c1 %in% unlist(edges(res, c2)) && !c2 %in% unlist(edges(res, c1))) {
-                res <- addEdge(from=c1, to=c2, res)
-            }
-            # :ToDo: what if there already was an edge
-            if (is.na(edgeData(res, from=c1, to=c2, attr="pval")) || 
-                    unlist(edgeData(res, from=c1, to=c2, attr="pval")) > unlist(nodeData(res, new.rxn, "pval"))) {
-                
-                for (attr in names(nodeDataDefaults(res))) {
-                    edgeData(res, from=c1, to=c2, attr=attr) <- nodeData(res, new.rxn, attr)
-                }
-            }
-            
-            res <- removeNode(new.rxn, res)
-        }
-        
-    }
-    return(res)
+    rxn.nodes <- V(res)[nodeType == "rxn" & igraph::degree(res) == 2]$name
+    rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
+    rxn.edges <- matrix(V(res)[rxn.edges]$name, ncol=2)
+    rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)
+    rxn.edges[rxn.edges.types[,2] == "rxn"] <- rxn.edges[rxn.edges.types[,2] == "rxn", c(2, 1)]
+    
+    simple.edges <-  data.frame(do.call(rbind, split(rxn.edges[,2], rxn.edges[,1])), stringsAsFactors=F)
+    colnames(simple.edges) <- c("met.x", "met.y")
+    simple.edges$rxn <- rownames(simple.edges)
+    
+    new2old <- data.frame(new=es$rxn.de.origin.split, old=names(es$rxn.de.origin.split))
+    simple.edges.ext <- merge(simple.edges, new2old, by.x = "rxn", by.y="new")
+    
+    simple.edges.pasted.1 <- do.call(paste, c(simple.edges.ext[, c("met.x", "old", "met.y")], sep="\r"))
+    simple.edges.pasted.2 <- do.call(paste, c(simple.edges.ext[, c("met.y", "old", "met.x")], sep="\r"))
+    
+    graph.raw.pasted <- do.call(paste, c(es$network$graph.raw[, c("met.x", "rxn", "met.y")], sep="\r"))
+    
+    
+    is.simple <- simple.edges.pasted.1 %in% graph.raw.pasted | simple.edges.pasted.2 %in% graph.raw.pasted
+    simple.edges.ext <- simple.edges.ext[is.simple,]
+    
+    simple.edges <- simple.edges[simple.edges$rxn %in% simple.edges.ext$rxn,]
+    simple.edges <- simple.edges[order(V(res)[simple.edges$rxn]$pval),]
+    
+    res <- add.edges(
+        res, 
+        rbind(simple.edges$met.x, simple.edges$met.y),
+        attr=get.vertex.attributes(res, simple.edges$rxn)
+        )
+    res <- delete.edges(res, E(res, P=rbind(simple.edges$rxn, simple.edges$met.x)))
+    res <- delete.edges(res, E(res, P=rbind(simple.edges$rxn, simple.edges$met.y)))
+    res <- delete.vertices(res, simple.edges$rxn)
+    res <- simplify(res, edge.attr.comb="first")
+    return(igraph.to.graphNEL(res))
 }
 
 #' Add all metabolites connected with reactions
@@ -728,13 +721,15 @@ expandReactionNodeAttributesToEdges <- function(module) {
         }
     }
     
-    for (rxn.node in rxn.nodes) {
-        for (met.node in unlist(edges(res, rxn.node))) {
-            for (attr in names(nodeDataDefaults(res))) {
-                edgeData(res, from=rxn.node, to=met.node, attr=attr) <-
-                    nodeData(res, rxn.node, attr)
-            }
-        }
+    edges <- edgelist(module)
+    z <- edges$v %in% rxn.nodes
+    edges[z, ] <- edges[z, c("v", "u")] 
+    edges <- unique(edges)
+    edges <- edges[edges$u %in% rxn.nodes, ]
+    
+    for (attr in names(nodeDataDefaults(res))) {
+        edgeData(res, from=edges$u, to=edges$v, attr=attr) <-
+            unlist(nodeData(res, edges$u, attr))
     }
     return(res)
 }
