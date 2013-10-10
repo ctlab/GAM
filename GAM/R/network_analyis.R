@@ -1,6 +1,9 @@
 #' @import BioNet 
 NULL
 
+setdiff.data.frame <-
+    function(A,B) A[ !duplicated( rbind(B,A) )[ -seq_len(nrow(B))] , ]
+
 #' Load data only if its absent from global environment
 lazyData <- function(name, ...) {
     if (!name %in% ls(envir=.GlobalEnv)) {
@@ -628,65 +631,46 @@ removeSimpleReactions <- function(module, es) {
 }
 
 #' Add all metabolites connected with reactions
-#' For every reaction node that have connections only with
-#' metabolites on one side of the reaction connections are
-#' added to metabolites on the other side of the reaction.
 #' @param module Module to modify
 #' @param es Experiment set object
 #' @return Modified module
+#' @importFrom igraph add.vertices
 #' @export
 addMetabolitesForReactions<- function(module, es) {
     stopifnot(!es$reactions.as.edges)
-    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
-    rxn.edges <- edges(module, rxn.nodes)
-    leaf.rxns <- names(rxn.edges)[sapply(rxn.edges, length) == 1]
-    original.rxns <- unlist(nodeData(module, leaf.rxns, attr="rxns"))
-    
     res <- module
-    
-    for (new.rxn in rxn.nodes) {
-        
-        cs <- rxn.edges[[new.rxn]]
-        
-        old.rxns <- names(es$rxn.de.origin.split[es$rxn.de.origin.split == new.rxn])
-        
-        candidate.rxns <- c()
-        for (old.rxn in old.rxns) {
-            rxn.net <- es$network$graph.raw[es$network$graph.raw$rxn == old.rxn,]
-            net.cs <- unique(c(rxn.net$met.x, rxn.net$met.y))
-            
-            if (length(setdiff(cs, net.cs)) == 0) {
-                #candidate.rxns <- c(candidate.rxns, old.rxn)
-            }
-            candidate.rxns <- c(candidate.rxns, old.rxn)
-
-            if (any((rxn.net$met.x %in% cs) & (rxn.net$met.y %in% cs))) {
-                next
-            }
-        }
-        
-        if (length(candidate.rxns) > 1) {
-            #next
-        }
-        
-        for (old.rxn in candidate.rxns) {
-            rxn.net <- es$network$graph.raw[es$network$graph.raw$rxn == old.rxn,]
-            rxn.net <- rbind(rxn.net, rename(rxn.net, c("met.x"="met.y", "met.y"="met.x")))
-            
-            c2s <- unique(c(rxn.net$met.x, rxn.net$met.y))
-            
-            for (c2 in c2s) {
-                if (!c2 %in% nodes(res)) {
-                    res <- addNode(c2, res)
-                    nodeData(res, c2, attr="nodeType") <- "met"
-                }
-                if (!new.rxn %in% unlist(edges(res, c2))) {
-                    res <- addEdge(new.rxn, c2, res)
-                }
-            }
-        }
-        
+    if (is(res, "graphNEL")) {
+        res <- igraph.from.graphNEL(res)
     }
+    
+    rxn.nodes <- V(res)[nodeType == "rxn"]$name
+    rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
+    rxn.edges <- matrix(V(res)[rxn.edges]$name, ncol=2)
+    rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)
+    rxn.edges[rxn.edges.types[,2] == "rxn"] <- rxn.edges[rxn.edges.types[,2] == "rxn", c(2, 1)]
+    rxn.edges <- data.frame(rxn.edges, stringsAsFactors=F)
+    colnames(rxn.edges) <- c("rxn", "met")
+    
+    new2old <- data.frame(new=es$rxn.de.origin.split, old=names(es$rxn.de.origin.split), stringsAsFactors=F)
+    new2old <- new2old[new2old$new %in% rxn.nodes,]
+    
+    all.rxn.edges <- merge(es$network$graph.raw, new2old, by.x="rxn", by.y="old")
+    all.rxn.edges <- 
+        rbind(
+            rename(all.rxn.edges[, c("new", "met.x")], c("met.x"="met", "new"="rxn")),
+            rename(all.rxn.edges[, c("new", "met.y")], c("met.y"="met", "new"="rxn"))
+        )
+    all.rxn.edges <- unique(all.rxn.edges)
+    new.edges <- setdiff.data.frame(all.rxn.edges, rxn.edges)
+    new.vertices <- setdiff(new.edges$met, V(res)$name)
+    res <- add.vertices(res, length(new.vertices), attr=list(name=new.vertices))
+    res <- add.edges(
+        res, 
+        rbind(new.edges$rxn, new.edges$met),
+        attr=list(weight=1)
+    )
+        
+    res <- igraph.to.graphNEL(res)
     res <- addNodeAttributes(res, list(met=es$met.de.ext))
     return(res)
 }
