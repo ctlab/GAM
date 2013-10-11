@@ -71,8 +71,6 @@ get.edge.attributes <- function(graph, index) {
 
 #' @export
 module2list <- function(module) {
-    imodule <- igraph.from.graphNEL(module)
-    
     getNodeObject <- function(i) {
         return(c(
             list(index = i - 1),
@@ -104,10 +102,6 @@ getModuleJsonString <- function(module) {
 #' @importFrom XML append.xmlNode addAttributes
 saveModuleToXgmml <- function(network, name, file) {
     require(XML)
-    if(is(network, "graphNEL"))
-    {
-        network <- igraph.from.graphNEL(network)  
-    }
     top <- .XGMML.destription(name=name)
     print("...adding nodes")
     # append nodes

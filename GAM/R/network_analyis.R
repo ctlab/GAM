@@ -47,14 +47,11 @@ lazyData <- function(name, ...) {
 #' @param attr.shape Attribute to use for shape
 #' @param layout Layout to use
 #' @param ... Arguments for plot
-#' @importFrom igraph E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
+#' @importFrom igraph E V list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
     network <- module
     
-    if (is(network, "graphNEL")) {
-        network <- igraph.from.graphNEL(network)
-    }
     if (is.null(V(network)$name)) {
         V(network)$name <- as.character(V(network))
     }
@@ -167,9 +164,6 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
 #' @return Modified module with normalized log-foldchange node attribute
 #' @export
 addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm", group.by="nodeType") {
-    if (is(module, "graphNEL")) {
-        module <- igraph.from.graphNEL(module)
-    }
     node.types <- unique(na.omit(get.vertex.attribute(module, group.by)))
         
     for (node.type in node.types) {
@@ -179,7 +173,6 @@ addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm
         module <- set.vertex.attribute(module, logFC.norm.attr, module.type.nodes, module.type.norm.de)
     }
     
-    module <- igraph.to.graphNEL(module)
     module
 }
 
@@ -357,7 +350,7 @@ makeExperimentSet <- function(network,
         es$net.edges.ext <- net.edges.ext
         es$net.edges.ext.all <- net.edges.ext.all
         
-        net1 <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
+        net1 <- graph.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
                                      directed=F)
         
@@ -405,7 +398,7 @@ makeExperimentSet <- function(network,
         }
         
         es$edges <- edges
-        net1 <- graphNEL.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
+        net1 <- graph.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
                                      node.col="ID",
                                      directed=F)
         
@@ -454,9 +447,6 @@ findModule <- function(es,
                          simplify=T) {
     
     net <- es$subnet
-    if (is(net, "graphNEL")) {
-        net <- igraph.from.graphNEL(net)
-    }
     
     if (!is.null(fdr)) {
         met.fdr <- fdr
@@ -496,8 +486,6 @@ findModule <- function(es,
         if (es$reactions.as.edges) {
             
             E(net)$score <- rxn.scores[E(net)$rxn]
-            edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
-                rxn.scores[es$net.edges.ext$rxn]
         } else {
             rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
             V(net)[names(rxn.scores)]$score <- rxn.scores
@@ -538,9 +526,6 @@ runHeinz <- function(subnet,
                       heinz.nModules=1, 
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
-    if (is(subnet, "graphNEL")) {
-        subnet <- igraph.from.graphNEL(subnet)
-    }
     
     graph.dir <- tempfile("graph")
     dir.create(graph.dir)
@@ -577,7 +562,7 @@ runHeinz <- function(subnet,
     res <- list()
     for (i in 0:(heinz.nModules-1)) {
         module.graph <- readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                      network = subnet, format="graphNEL")
+                                      network = subnet, format="igraph")
         res <- appendModule(res, module.graph)
         
     }
@@ -597,9 +582,6 @@ runHeinz <- function(subnet,
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
     res <- module
-    if (is(res, "graphNEL")) {
-        res <- igraph.from.graphNEL(res)
-    }
     
     rxn.nodes <- V(res)[nodeType == "rxn" & degree(res) == 2]$name
     rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
@@ -635,7 +617,7 @@ removeSimpleReactions <- function(module, es) {
     res <- delete.edges(res, E(res, P=rbind(simple.edges$rxn, simple.edges$met.y)))
     res <- delete.vertices(res, simple.edges$rxn)
     res <- simplify(res, edge.attr.comb="first")
-    return(igraph.to.graphNEL(res))
+    return(res)
 }
 
 #' Add all metabolites connected with reactions
@@ -647,9 +629,6 @@ removeSimpleReactions <- function(module, es) {
 addMetabolitesForReactions<- function(module, es) {
     stopifnot(!es$reactions.as.edges)
     res <- module
-    if (is(res, "graphNEL")) {
-        res <- igraph.from.graphNEL(res)
-    }
     
     rxn.nodes <- V(res)[nodeType == "rxn"]$name
     rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
@@ -679,7 +658,6 @@ addMetabolitesForReactions<- function(module, es) {
     )
         
     res <- addNodeAttributes(res, list(met=es$met.de.ext))
-    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
@@ -691,19 +669,12 @@ addMetabolitesForReactions<- function(module, es) {
 #' @importFrom igraph induced.subgraph
 #' @export
 addInterconnections <- function(module, es) {
-    if (is(module, "graphNEL")) {
-        module<- igraph.from.graphNEL(module)
-    }
     met.nodes <- V(module)[nodeType == "met"]$name
     interconnects <- es$graph.raw$rxn[es$graph.raw$met.x %in% met.nodes & es$graph.raw$met.y %in% met.nodes]
     interconnects <- unique(es$rxn.de.origin.split[interconnects])
     
     new.nodes <- unique(c(V(module)$name, interconnects))
-    if (is(es$subnet, "graphNEL")) {
-        es$subnet <- igraph.from.graphNEL(es$subnet)
-    }
     res <- induced.subgraph(es$subnet, new.nodes)
-    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
@@ -714,9 +685,6 @@ addInterconnections <- function(module, es) {
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
     res <- module
-    if (is(res, "graphNEL")) {
-        res <- igraph.from.graphNEL(res)
-    }
     
     rxn.nodes <- V(res)[nodeType == "rxn"]
     
@@ -728,7 +696,6 @@ expandReactionNodeAttributesToEdges <- function(module) {
     for (attr in list.vertex.attributes(res)) {
         res <- set.edge.attribute(res, attr, edge.ids, get.vertex.attribute(res, attr, edges[,1]))
     }
-    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
@@ -738,11 +705,7 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' @export
 removeHangingNodes <- function(module) {
     res <- module
-    if (is(res, "graphNEL")) {
-        res <- igraph.from.graphNEL(res)
-    }
     res <- delete.vertices(res, V(res)[degree(res) == 1 & is.na(pval)])
-    res <- igraph.to.graphNEL(res)
     return(res)
     
 }
@@ -754,11 +717,11 @@ removeHangingNodes <- function(module) {
 #' @export
 addTransEdges <- function(module, es) {
     edges.keep <- es$net.edges.ext.all$rptype %in% c("main", "trans")
-    net.with.trans <- graphNEL.from.tables(
+    net.with.trans <- graph.from.tables(
         node.table=es$met.de.ext,
         edge.table=es$net.edges.ext.all[edges.keep,],
         node.col="ID",
         edge.cols=c("met.x", "met.y"),
         directed=F)
-    return(subNetwork(nodes(module), net.with.trans))
+    return(induced.subgraph(net.with.trans, V(module)$name))
 }

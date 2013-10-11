@@ -126,52 +126,6 @@ splitMappingByConnectivity <- function(connections, from, to) {
     res
 }
 
-# splitMappingByConnectivity <- function(connections, from, to) {
-#     graph <- graphNEL.from.tables(edge.table=connections, directed=F)
-#     names(to) <- from
-#     
-#     es <- edges(graph)
-#     to.new <- to
-#     to.new[] <- NA
-#     
-#     comp_names <- unique(to)
-#     comp_counts <- rep(0, length(comp_names))
-#     names(comp_counts) <- comp_names
-#     
-#     comp_sizes <- rep(0, length(comp_names))
-#     names(comp_sizes) <- comp_names
-#     
-#     dfs <- function(node, mark.allow, new.name) {    
-#         if (is.na(to[node]) || (to[node] != mark.allow)) {
-#             return(0)
-#         }
-#         
-#         if (!is.na(to.new[node])) {
-#             return(0)
-#         }
-#         to.new[node] <<- new.name
-#         
-#         res <- 1
-#         for (v in es[[node]]) {
-#             res <- res + dfs(v, mark.allow, new.name)
-#         }
-#         res
-#     }
-#     
-#     for (node in from) {
-#         if (!is.na(to.new[node])) {
-#             next
-#         }
-#         comp_n <- comp_counts[to[node]] + 1
-#         comp_counts[to[node]] <- comp_n
-#         comp_name <- paste(to[node], comp_n, sep=".")
-#         comp_size <- dfs(node, to[node], comp_name)    
-#         comp_sizes[comp_name] <- comp_size
-#     }
-#     
-#     to.new
-# }
-
 
 #' Add attributes for nodes from data.frame
 #' @param graph igraph object
@@ -208,10 +162,9 @@ moveColumnsToFront <- function(d, cols) {
     d[, c(cols, seq_along(d)[-cols])]
 }
 
-#' @importFrom igraph graph.edgelist igraph.to.graphNEL simplify graph.data.frame
+#' @importFrom igraph graph.edgelist simplify graph.data.frame
 #' @importFrom plyr rbind.fill
-#' @export
-graphNEL.from.tables <- function(node.table=NULL, edge.table,
+graph.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=T,
                                  name.as.label=T) {    
@@ -224,6 +177,5 @@ graphNEL.from.tables <- function(node.table=NULL, edge.table,
     net1 <- graph.data.frame(edge.table, directed=directed)
     net1 <- delete.vertices(net1, V(net1)[degree(net1) == 0])
     net1 <- addNodeAttributes(net1, node.table, node.col, name.as.label)
-    net1 <- igraph.to.graphNEL(net1)
     return(net1)
 }
