@@ -86,28 +86,6 @@ edgelist <- function(network) {
     return(res)
 }
 
-convert.node.names <- function(network, from, to) {
-    edges <- edgelist(network)
-    m1 <- match(edges$u, from)
-    edges$u[!is.na(m1)] <- to[m1[!is.na(m1)]]
-    m2 <- match(edges$v, from)
-    edges$v[!is.na(m2)] <- to[m2[!is.na(m2)]]
-    edges <- unique(edges)
-    network2 <- graph.edgelist(as.matrix(edges), directed=F)
-    network2 <- simplify(network2, remove.multiple=T)
-    network2 <- igraph.to.graphNEL(network2)
-    
-    nodeDataDefaults(network2) <- nodeDataDefaults(network)
-    
-    old_nodes <- intersect(nodes(network), nodes(network2))
-    
-    for (attr in names(nodeDataDefaults(network))) {
-        nodeData(network2, old_nodes, attr) <- nodeData(network, old_nodes, attr)
-    }
-    
-    network2   
-}
-
 #' @export
 splitMappingByConnectivity <- function(connections, from, to) {
     connections <- data.frame(connections)
@@ -195,36 +173,30 @@ splitMappingByConnectivity <- function(connections, from, to) {
 # }
 
 
+#" @param graph igraph object
 addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.label=T) {
-    if (class(node.table) != "list") {
-        node.table <- list(node.table)        
-    }
-
-    for (i in seq(length.out=length(node.table))) {
-        nt <- node.table[[i]]
-        nodeType <- names(node.table)[i]
-        
-        if (is.character(node.col)) {
-            node.col.cur <- match(node.col, colnames(nt))
-        } else {
-            node.col.cur <- node.col
+    if (is.list(node.table)) {
+        for (name in names(node.table)) {
+            node.table[[name]]$nodeType <- name
+            node.table[[name]] <- moveColumnsToFront(node.table[[name]], node.col)
         }
-        
-        nt <- nt[nt[,node.col.cur] %in% nodes(graph),]        
-        
-        for (node.attr in colnames(nt)[-node.col.cur]) {
-            new.attr <- if (node.attr == "name" && name.as.label) "label" else node.attr
-            
-            nodeDataDefaults(graph, new.attr) <- NA
-            nodeData(graph, n=nt[,node.col], attr=new.attr) <- nt[,node.attr]
-        }        
-        if (!is.null(nodeType) && nodeType != "") {
-            nodeDataDefaults(graph, "nodeType") <- NA
-            nodeData(graph, n=nt[,node.col], attr="nodeType") <- nodeType
-        }
+        node.table <- do.call(rbind.fill, node.table)
+    } else if (!is.null(node.table)) {
+        node.table <- moveColumnsToFront(node.table, node.col)
     }
-    return(graph)
     
+    if ("name" %in% names(node.table) && name.as.label) {
+        node.table <- rename(node.table, c("name"="label"))
+    }
+    
+    node.table <- node.table[node.table[,1] %in% V(graph)$name, ]
+    
+    res <- graph
+    for (name in names(node.table)[-1]) {
+        res <- set.vertex.attribute(res, name, node.table[,1], node.table[, name])
+    }
+    
+    return(res)
 }
 
 moveColumnsToFront <- function(d, cols) {
@@ -236,34 +208,20 @@ moveColumnsToFront <- function(d, cols) {
 
 #' @importFrom igraph graph.edgelist igraph.to.graphNEL simplify graph.data.frame
 #' @importFrom plyr rbind.fill
+#' @export
 graphNEL.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=T,
                                  name.as.label=T) {    
-    # :ToDo: use graph.data.frame, it does almost the same
-    
     edge.table <- moveColumnsToFront(edge.table, edge.cols)
     
-    if ("name" %in% names(edge.table)) {
+    if ("name" %in% names(edge.table) && name.as.label) {
         edge.table <- rename(edge.table, c("name"="label"))
     }
     
-    
-    if (is.list(node.table)) {
-        for (name in names(node.table)) {
-            node.table[[name]]$nodeType <- name
-            node.table[[name]] <- moveColumnsToFront(node.table[[name]], node.col)
-        }
-        node.table <- do.call(rbind.fill, node.table)
-    } else if (!is.null(node.table)) {
-        node.table <- moveColumnsToFront(node.table, node.col)
-    }
-    
-    if ("name" %in% names(node.table)) {
-        node.table <- rename(node.table, c("name"="label"))
-    }
-    net1 <- graph.data.frame(edge.table, directed=directed, node.table)
+    net1 <- graph.data.frame(edge.table, directed=directed)
     net1 <- delete.vertices(net1, V(net1)[degree(net1) == 0])
+    net1 <- addNodeAttributes(net1, node.table, node.col, name.as.label)
     net1 <- igraph.to.graphNEL(net1)
     return(net1)
 }

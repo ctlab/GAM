@@ -50,24 +50,34 @@ lazyData <- function(name, ...) {
 #' @importFrom igraph E V igraph.from.graphNEL list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
-    if (!(attr.label %in% names(nodeDataDefaults(module)))) {
-        return()        
+    network <- module
+    
+    if (is(network, "graphNEL")) {
+        network <- igraph.from.graphNEL(network)
+    }
+    if (is.null(V(network)$name)) {
+        V(network)$name <- as.character(V(network))
     }
     # Hack for coloring
     
-    if ("logFC.norm" %in% names(nodeDataDefaults(module))) {
-        de <- unlist(nodeData(module, attr="logFC.norm"))
+    if ("logFC.norm" %in% list.vertex.attributes(network)) {
+        de <- V(network)$logFC.norm
         de <- de * 10
     } else {
-        de <- unlist(nodeData(module, attr="logFC"))    
+        de <- V(network)$logFC
     }
+    names(de) <- V(network)$name
     de[is.na(de)] <- 0
+    
     
     de[de < 0] <- de[de < 0] - 1
     de[de > 0] <- de[de > 0] + 1
     
-    attr.labels = na.omit(unlist(nodeData(module, nodes(module), attr=attr.label)))
-    node.labels = nodes(module)
+    attr.labels = get.vertex.attribute(network, attr.label)
+    names(attr.labels) <- V(network)$name
+    attr.labels <- na.omit(attr.labels)
+    
+    node.labels = V(network)$name
     names(node.labels) <-node.labels
     all.labels = c(attr.labels, node.labels[!names(node.labels) %in% names(attr.labels)])
     
@@ -78,27 +88,13 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
                          
     diff.expr <- de
     labels <- all.labels[node.labels]
-    network <- module
     
-    if (is(network, "graphNEL")) {
-        network <- igraph.from.graphNEL(network)
-    }
-    if (is.null(V(network)$name)) {
-        V(network)$name <- as.character(V(network))
-    }
-    if (is.null(labels)) {
-        if ("geneSymbol" %in% list.vertex.attributes(network)) {
-            labels <- V(network)$geneSymbol
-        }
-        else {
-            labels <- V(network)$name
-        }
-    }
     shapes <- rep("circle", length(V(network)))
     if (attr.shape %in% list.vertex.attributes(network)) {
         shapes.possible <- c("circle", "csquare")
         shapes <- shapes.possible[as.factor(get.vertex.attribute(network, attr.shape))]
     }
+    
     names(shapes) <- V(network)$name
     
     if (!is.null(diff.expr) && !is.null(names(diff.expr))) {
@@ -171,17 +167,19 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
 #' @return Modified module with normalized log-foldchange node attribute
 #' @export
 addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm", group.by="nodeType") {
-    nodeDataDefaults(module, logFC.norm.attr) <- NA
-    module.nodes <- nodes(module)
-    node.types <- unique(na.omit(unlist(nodeData(module, module.nodes, group.by))))
+    if (is(module, "graphNEL")) {
+        module <- igraph.from.graphNEL(module)
+    }
+    node.types <- unique(na.omit(get.vertex.attribute(module, group.by)))
         
     for (node.type in node.types) {
-        module.type.nodes <- module.nodes[which(unlist(nodeData(module, module.nodes, group.by)) == node.type)]
-        module.type.de <- unlist(nodeData(module, module.type.nodes, logFC.attr))        
+        module.type.nodes <- V(module)[get.vertex.attribute(module, group.by) == node.type]
+        module.type.de <- get.vertex.attribute(module, logFC.attr, module.type.nodes)
         module.type.norm.de <- module.type.de / max(abs(na.omit(module.type.de)))
-        nodeData(module, module.type.nodes, logFC.norm.attr) <- unname(module.type.norm.de)
+        module <- set.vertex.attribute(module, logFC.norm.attr, module.type.nodes, module.type.norm.de)
     }
     
+    module <- igraph.to.graphNEL(module)
     module
 }
 
@@ -670,8 +668,8 @@ addMetabolitesForReactions<- function(module, es) {
         attr=list(weight=1)
     )
         
-    res <- igraph.to.graphNEL(res)
     res <- addNodeAttributes(res, list(met=es$met.de.ext))
+    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
