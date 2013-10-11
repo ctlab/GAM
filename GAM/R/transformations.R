@@ -79,7 +79,7 @@ escape.names <- function(net) {
 #' @return Data.frame with edges
 #' @export
 edgelist <- function(network) {
-    edges <- edges(network)
+    edges <- graph::edges(network)
     vs <- unlist(edges)
     us <- rep(names(edges), sapply(edges, length))
     res <- data.frame(u=us, v=vs, stringsAsFactors=F)
@@ -175,7 +175,7 @@ splitMappingByConnectivity <- function(connections, from, to) {
 
 #" @param graph igraph object
 addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.label=T) {
-    if (is.list(node.table)) {
+    if (class(node.table) == "list") {
         for (name in names(node.table)) {
             node.table[[name]]$nodeType <- name
             node.table[[name]] <- moveColumnsToFront(node.table[[name]], node.col)

@@ -11,8 +11,9 @@ test_that("graphNEL.from.tables works", {
         name=paste0("Connection", 1:4),
         stringsAsFactors=F)
     
-    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et)
+    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
+    expect_equal(isDirected(g), F)
     expect_equal(length(nodes(g)), nrow(met.nt) + nrow(rxn.nt))
     expect_equal(nrow(getEdgeList(g)), nrow(et))
     

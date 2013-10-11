@@ -1,0 +1,96 @@
+context("Post-processing")
+
+test_that("addNormLogFC works", {
+    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02", "C02"), 
+        v=c("R01", "R02", "R01", "R02"), 
+        stringsAsFactors=F)
+    
+    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    
+    g1 <- addNormLogFC(g)
+    
+    expect_equal(nodeData(g1, "C01", "logFC.norm")[[1]], 0.5)
+    expect_equal(nodeData(g1, "C02", "logFC.norm")[[1]], 1)
+    expect_equal(nodeData(g1, "R01", "logFC.norm")[[1]], 0.25)
+    expect_equal(nodeData(g1, "R02", "logFC.norm")[[1]], 1)
+})
+
+test_that("addInterconnections works", {
+    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02", "C02"), 
+        v=c("R01", "R02", "R01", "R02"), 
+        stringsAsFactors=F)
+    
+    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    es <- newEmptyObject()
+    es$subnet <- g
+    es$graph.raw <- data.frame(met.x=c("C01", "C01"), rxn=c("R01", "R02"), met.y=c("C02", "C02"), stringsAsFactors=F)
+    es$rxn.de.origin.split <- rxn.nt$ID
+    names(es$rxn.de.origin.split) <- rxn.nt$ID
+    module <- subNetwork(c("C01", "C02", "R01"), es$subnet)
+    
+    module1 <- addInterconnections(module, es)
+    
+    expect_true("R02" %in% nodes(module1))
+})
+
+test_that("expandReactionNodeAttributesToEdges works", {
+    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02", "C02"), 
+        v=c("R01", "R02", "R01", "R02"), 
+        stringsAsFactors=F)
+    
+    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    
+    g1 <- expandReactionNodeAttributesToEdges(g)
+    
+    expect_true("logFC" %in% names(edgeDataDefaults(g1)))
+    expect_equal(edgeData(g1, "C01", "R01", "logFC")[[1]], 3)
+})
+
+test_that("removeHangingNodes works", {
+    met.nt <- data.frame(ID=c("C01", "C02"), pval=c(1e-5, NA), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), pval=c(1e-12, 1e-42), stringsAsFactors=F) 
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02"), 
+        v=c("R01", "R02", "R01"), 
+        stringsAsFactors=F)
+    
+    g <- graphNEL.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    
+    g1 <- removeHangingNodes(g)
+    
+    expect_true(!"C02" %in% nodes(g1))
+})
+
+test_that("addTransEdges works", {
+    met.nt <- data.frame(ID=c("C01", "C02", "C03"), pval=c(1e-5, NA, 1e-6), stringsAsFactors=F)
+    et <- data.frame(
+        met.x=c("C01", "C02", "C01"),
+        met.y=c("C02", "C03", "C03"),
+        rxn=c("R01", "R02", "R03"),
+        rptype=c("main", "main", "trans"),
+        pval=c(1e-12, 1e-42, 1e-4),
+        stringsAsFactors=F)
+    
+    g <- graphNEL.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
+    
+    es <- newEmptyObject()
+    es$met.de.ext <- met.nt
+    es$net.edges.ext.all <- et
+    
+    g1 <- addTransEdges(g, es)
+    expect_true("R03" %in% edgeData(g1, attr="rxn"))
+    
+})

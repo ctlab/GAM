@@ -680,12 +680,19 @@ addMetabolitesForReactions<- function(module, es) {
 #' @return Module with interconnecting reactions
 #' @export
 addInterconnections <- function(module, es) {
-    met.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "met"]
+    if (is(module, "graphNEL")) {
+        module<- igraph.from.graphNEL(module)
+    }
+    met.nodes <- V(module)[nodeType == "met"]$name
     interconnects <- es$graph.raw$rxn[es$graph.raw$met.x %in% met.nodes & es$graph.raw$met.y %in% met.nodes]
     interconnects <- unique(es$rxn.de.origin.split[interconnects])
     
-    new.nodes <- unique(c(nodes(module), interconnects))
-    res <- subNetwork(new.nodes, es$subnet)
+    new.nodes <- unique(c(V(module)$name, interconnects))
+    if (is(es$subnet, "graphNEL")) {
+        es$subnet <- igraph.from.graphNEL(es$subnet)
+    }
+    res <- induced.subgraph(es$subnet, new.nodes)
+    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
@@ -694,25 +701,22 @@ addInterconnections <- function(module, es) {
 #' @return Module with attributes copied
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
-    rxn.nodes <- nodes(module)[unlist(nodeData(module, attr="nodeType")) == "rxn"]
-    
     res <- module
-    for (attr in names(nodeDataDefaults(res))) {
-        if (!attr %in% edgeDataDefaults(res)) {
-            edgeDataDefaults(res, attr) <- nodeDataDefaults(res, attr)
-        }
+    if (is(res, "graphNEL")) {
+        res <- igraph.from.graphNEL(res)
     }
     
-    edges <- edgelist(module)
-    z <- edges$v %in% rxn.nodes
-    edges[z, ] <- edges[z, c("v", "u")] 
-    edges <- unique(edges)
-    edges <- edges[edges$u %in% rxn.nodes, ]
+    rxn.nodes <- V(res)[nodeType == "rxn"]
     
-    for (attr in names(nodeDataDefaults(res))) {
-        edgeData(res, from=edges$u, to=edges$v, attr=attr) <-
-            unlist(nodeData(res, edges$u, attr))
+    edge.ids <- E(res)[adj(rxn.nodes)]
+    edges <- get.edges(res, edge.ids)
+    z <- edges[, 2] %in% rxn.nodes
+    edges[z, ] <- edges[z, 2:1] 
+    
+    for (attr in list.vertex.attributes(res)) {
+        res <- set.edge.attribute(res, attr, edge.ids, get.vertex.attribute(res, attr, edges[,1]))
     }
+    res <- igraph.to.graphNEL(res)
     return(res)
 }
 
@@ -721,13 +725,12 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' @return Module with hanging nodes removed
 #' @export
 removeHangingNodes <- function(module) {
-    absent.data.nodes <- nodes(module)[is.na(unlist(nodeData(module, attr="pval")))]
-    edges <- edgelist(module)
-    absent.data.edges <- edges[edges$u %in% absent.data.nodes,]
-    absent.nodes.degree <- table(absent.data.edges$u)
-    hanging.nodes <- names(absent.nodes.degree)[absent.nodes.degree == 1]
-    res <- subNetwork(setdiff(nodes(module), hanging.nodes), module)
-    
+    res <- module
+    if (is(res, "graphNEL")) {
+        res <- igraph.from.graphNEL(res)
+    }
+    res <- delete.vertices(res, V(res)[degree(res) == 1 & is.na(pval)])
+    res <- igraph.to.graphNEL(res)
     return(res)
     
 }
@@ -739,8 +742,11 @@ removeHangingNodes <- function(module) {
 #' @export
 addTransEdges <- function(module, es) {
     edges.keep <- es$net.edges.ext.all$rptype %in% c("main", "trans")
-    net.with.trans <- graphNEL.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext.all[edges.keep,],
-                                 node.col="ID", edge.cols=c("met.x", "met.y"),
-                                 directed=F)
+    net.with.trans <- graphNEL.from.tables(
+        node.table=es$met.de.ext,
+        edge.table=es$net.edges.ext.all[edges.keep,],
+        node.col="ID",
+        edge.cols=c("met.x", "met.y"),
+        directed=F)
     return(subNetwork(nodes(module), net.with.trans))
 }
