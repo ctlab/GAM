@@ -173,8 +173,10 @@ splitMappingByConnectivity <- function(connections, from, to) {
 # }
 
 
-#" @param graph igraph object
-addNodeAttributes <- function(graph, node.table=list(), node.col=1, name.as.label=T) {
+#' Add attributes for nodes from data.frame
+#' @param graph igraph object
+#' @importFrom igraph set.vertex.attribute
+addNodeAttributes <- function(graph, node.table, node.col=1, name.as.label=T) {
     if (class(node.table) == "list") {
         for (name in names(node.table)) {
             node.table[[name]]$nodeType <- name

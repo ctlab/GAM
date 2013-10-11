@@ -442,6 +442,7 @@ appendModule <- function(res, module.graph) {
 #' @param heinz.subopt_diff subopt_diff parameter for heinz
 #' @param simplify If TRUE and only one module was found return just the module, not a list.
 #' @return List of most significant modules
+#' @importFrom igraph V<- E<-
 #' @export 
 findModule <- function(es,                         
                          fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
@@ -451,6 +452,11 @@ findModule <- function(es,
                          heinz.tolerance=10,
                          heinz.subopt_diff=100,
                          simplify=T) {
+    
+    net <- es$subnet
+    if (is(net, "graphNEL")) {
+        net <- igraph.from.graphNEL(net)
+    }
     
     if (!is.null(fdr)) {
         met.fdr <- fdr
@@ -481,29 +487,30 @@ findModule <- function(es,
             print(paste0("absent.met.score <- ", absenet.met.score))
         }
         
-        nodeDataDefaults(es$subnet, "score") <- absent.met.score
-        met.scores <- met.scores[names(met.scores) %in% nodes(es$subnet)]
-        nodeData(es$subnet, names(met.scores), "score") <- met.scores
+        V(net)$score <- absent.met.score
+        met.scores <- met.scores[names(met.scores) %in% V(net)$name]
+        V(net)[names(met.scores)]$score <- met.scores
     }
     
     if (!is.null(rxn.scores)) {
         if (es$reactions.as.edges) {
-            edgeDataDefaults(es$subnet, "score") <- NA
+            
+            E(net)$score <- rxn.scores[E(net)$rxn]
             edgeData(es$subnet, from=es$net.edges.ext$met.x, to=es$net.edges.ext$met.y, attr="score") <- 
                 rxn.scores[es$net.edges.ext$rxn]
         } else {
-            rxn.scores <- rxn.scores[names(rxn.scores) %in% nodes(es$subnet)]
-            nodeData(es$subnet, names(rxn.scores), "score") <- rxn.scores
+            rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
+            V(net)[names(rxn.scores)]$score <- rxn.scores
         }
     }
     
     
-    score.edges <- "score" %in% names(edgeDataDefaults(es$subnet))
-    score.nodes <- "score" %in% names(nodeDataDefaults(es$subnet))
+    score.edges <- "score" %in% list.edge.attributes(net)
+    score.nodes <- "score" %in% list.vertex.attributes(net)
     
     if (!is.null(heinz.py)) {
         res <- runHeinz(
-            subnet=es$subnet, 
+            subnet=net, 
             heinz.py=heinz.py, 
             score.edges=score.edges,
             score.nodes=score.nodes,
@@ -513,7 +520,7 @@ findModule <- function(es,
     } else if (score.edges) {
         stop("Can't use heuristic search with scored edges")
     } else {
-        res <- list(runFastHeinz(es$subnet, unlist(nodeData(es$subnet, attr="score"))))
+        res <- list(runFastHeinz(net, V(net)$score))
     }
         
     if (simplify && length(res) == 1) {
@@ -531,6 +538,10 @@ runHeinz <- function(subnet,
                       heinz.nModules=1, 
                       heinz.tolerance=10,
                       heinz.subopt_diff=100) {
+    if (is(subnet, "graphNEL")) {
+        subnet <- igraph.from.graphNEL(subnet)
+    }
+    
     graph.dir <- tempfile("graph")
     dir.create(graph.dir)
     edges_file <- paste(graph.dir, "edges.txt", sep="/")
@@ -540,8 +551,7 @@ runHeinz <- function(subnet,
     
     if (!score.nodes) {
         # Hack to make writeHeinzeNodes working
-        nodeDataDefaults(subnet, "score")  <- 0
-        nodeData(subnet, attr="score") <- 0
+        V(subnet)$score <- 0
     }
     writeHeinzNodes(subnet, file=nodes_file, use.score=T)
     
@@ -566,8 +576,8 @@ runHeinz <- function(subnet,
     
     res <- list()
     for (i in 0:(heinz.nModules-1)) {
-        module.graph = readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                      network = subnet)
+        module.graph <- readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+                                      network = subnet, format="graphNEL")
         res <- appendModule(res, module.graph)
         
     }
@@ -678,6 +688,7 @@ addMetabolitesForReactions<- function(module, es) {
 #' @param module Module to work with
 #' @param es Experiment set object
 #' @return Module with interconnecting reactions
+#' @importFrom igraph induced.subgraph
 #' @export
 addInterconnections <- function(module, es) {
     if (is(module, "graphNEL")) {
@@ -699,6 +710,7 @@ addInterconnections <- function(module, es) {
 #' Copy attributes from reaction node to adjacent edges
 #' @param module Module do work with
 #' @return Module with attributes copied
+#' @importFrom igraph set.edge.attribute
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
     res <- module
