@@ -1,6 +1,6 @@
 library(shiny)
 library(data.table)
-
+library(igraph)
 library(GAM)
 
 data(kegg.mouse.network)

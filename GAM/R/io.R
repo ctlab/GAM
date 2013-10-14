@@ -74,19 +74,19 @@ module2list <- function(module) {
     getNodeObject <- function(i) {
         return(c(
             list(index = i - 1),
-            get.vertex.attributes(imodule, i)))
+            get.vertex.attributes(module, i)))
     }
     
     getEdgeObject <- function(i) {
-        es <- get.edges(imodule, i)
+        es <- get.edges(module, i)
         return(c(
             list(source=es[1]-1, target=es[2]-1),
-            get.edge.attributes(imodule, i)))
+            get.edge.attributes(module, i)))
     }
     
     graphObject <- list(
-        nodes=lapply(V(imodule), getNodeObject),
-        links=lapply(E(imodule), getEdgeObject)
+        nodes=lapply(V(module), getNodeObject),
+        links=lapply(E(module), getEdgeObject)
         )
     graphObject
 }
