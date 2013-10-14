@@ -143,7 +143,7 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
                 
         cds <- newCountDataSet(round(counts), classes_vector)
         cds <- estimateSizeFactors(cds)
-        cds <- estimateDispersions(cds, fitType="local")
+        cds <- estimateDispersions(cds)
         res <- nbinomTest(cds, state1, state2)
         res <- res[res$baseMean > 5,]
         res <- res[order(res$baseMean, decreasing=T),]        
