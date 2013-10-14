@@ -13,10 +13,10 @@ if (file.exists(heinz.py)) {
             score=c(1, -10),
             stringsAsFactors=F)
         
-        g <- graphNEL.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
+        g <- graph.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
         
         module <- runHeinz(g, heinz.py, score.nodes=T, score.edges=T)[[1]]
         
-        expect_equivalent(nodes(module), c("C01", "C02"))
+        expect_equivalent(V(module)$name, c("C01", "C02"))
     })
 }

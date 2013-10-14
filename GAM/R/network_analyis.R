@@ -8,7 +8,7 @@ setdiff.data.frame <-
 lazyData <- function(name, ...) {
     if (!name %in% ls(envir=.GlobalEnv)) {
         print(paste0("No ", name, ", loading"))
-        data(name, ...)
+        do.call(data, list(name, ...))
     }
 }
 

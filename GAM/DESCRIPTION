@@ -6,7 +6,7 @@ Date: 2013-08-31
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: More about what it does (maybe more than one line)
-Imports: BioNet (>= 1.20), DESeq, igraph, limma, plyr, XML, graph, rjson
+Imports: BioNet (>= 1.20), DESeq, igraph, limma, plyr, XML, graph, rjson, data.table
 License: GPL (>=2)
 VignetteBuilder: knitr
 Suggests: knitr, data.table

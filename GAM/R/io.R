@@ -54,16 +54,16 @@ saveModuleToJson <- function(module, outputFilePrefix) {
 }
 
 #' @export
-get.vertex.attributes <- function(graph, index) {
-    sapply(list.vertex.attributes(graph), 
+get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attributes(graph)) {
+    sapply(attrs,
            function(attr) get.vertex.attribute(graph, attr, index),
            simplify=F,
            USE.NAMES=T)
 }
 
 #' @export
-get.edge.attributes <- function(graph, index) {
-    sapply(list.edge.attributes(graph), 
+get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph)) {
+    sapply(attrs, 
            function(attr) get.edge.attribute(graph, attr, index),
            simplify=F,
            USE.NAMES=T)

@@ -5,6 +5,7 @@
 #' @aliases GAM
 #' @docType package
 #' @author Alexey Sergushichev \email{alsergbox@@gmail.com}
+#' @imprt data.table
 NULL
 
 #' Integrated genomic and metabolic data for different macrophages stimulation in mice

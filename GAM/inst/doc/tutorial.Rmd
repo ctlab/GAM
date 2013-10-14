@@ -20,8 +20,9 @@ This section shows basics of the GAM package using genomic and metabolic data
 for mouse macrophages under different treatments. Package includes both these data
 and already constructed mouse network   
 
-```{r}
+```{r message=FALSE}
 library("GAM")
+library("igraph")
 data("mouse.macrophages")
 data("kegg.mouse.network")
 ```
@@ -91,8 +92,7 @@ module <- findModule(es,
                        met.fdr=met.fdr,
                        gene.fdr=gene.fdr,
                        absent.met.score=absent.met.score,
-                       heinz.py=heinz.py,                                
-                       heinz.nModules=1                       
+                       heinz.py=heinz.py,                    
 )
 module
 ```
@@ -157,8 +157,7 @@ module <- findModule(es,
                        met.fdr=met.fdr,
                        gene.fdr=gene.fdr,
                        absent.met.score=absent.met.score,
-                       heinz.py=heinz.py,                                
-                       heinz.nModules=1                       
+                       heinz.py=heinz.py
 )
 module
 ```
@@ -292,76 +291,3 @@ kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
      
-Adding attributes to modules
-----------------------------------------
-
-Sometimes it useful to add additional attributes to the module. For example
-it may be interesting to add p-values and log-fold change for metabolites
-and reactions also for M0 vs. M1 and M0 vs. M2. There are no special functions
-for this in the package but it can be done pretty straightforward but first 
-one has to have data with the same IDs as in network:
-
-```{r cache=TRUE}
-data(gene.id.map)
-data(met.id.map)
-gene.de.M0.M1 <- convertPval(mouse.macrophages$gene.de.M0.M1, gene.id.map$RefSeq, gene.id.map$Entrez)
-met.de.M0.M1 <- convertPval(mouse.macrophages$met.de.M0.M1, met.id.map$HMDB, met.id.map$KEGG)
-gene.de.M0.M2 <- convertPval(mouse.macrophages$gene.de.M0.M2, gene.id.map$RefSeq, gene.id.map$Entrez)
-met.de.M0.M2 <- convertPval(mouse.macrophages$met.de.M0.M2, met.id.map$HMDB, met.id.map$KEGG)
-```
-
-Then one can add this data as attributes to the modules. The only thing to remember is
-that `graphNEL` doesn't store attributes for reverse edges, even when a graph is not
-directed.
-
-```{r cache=TRUE}
-for (attr in c("pval", "logFC")) {            
-    edges <- edgelist(module)            
-    edges <- edges[!is.na(edgeData(module, from=edges$u, to=edges$v, attr="origin")),]
-
-    
-    new.attr <- paste0(attr, ".M0.M1")
-    nodeDataDefaults(module, new.attr) <- NA
-    nodeData(module, attr=new.attr) <-
-        met.de.M0.M1[
-            match(nodes(module),
-                  met.de.M0.M1$ID),
-            attr]
-    
-    edgeDataDefaults(module, new.attr) <- NA
-    edgeData(module, from=edges$u, to=edges$v, attr=new.attr) <- 
-        gene.de.M0.M1[
-            match(
-                unlist(edgeData(
-                    module, 
-                    from=edges$u,
-                    to=edges$v,
-                    attr="origin")), 
-                gene.de.M0.M1$ID),
-            attr]    
-    
-    new.attr <- paste0(attr, ".M0.M2")
-    nodeDataDefaults(module, new.attr) <- NA
-    nodeData(module, attr=new.attr) <-
-        met.de.M0.M2[
-            match(
-                nodes(module), 
-                met.de.M0.M2$ID),
-            attr]
-    
-    edgeDataDefaults(module, new.attr) <- NA
-    edgeData(module, from=edges$u, to=edges$v, attr=new.attr) <- 
-        gene.de.M0.M2[
-            match(
-                unlist(edgeData(
-                    module, 
-                    from=edges$u,
-                    to=edges$v,
-                    attr="origin")), 
-                gene.de.M0.M2$ID),
-            attr]    
-}
-
-nodeData(module)[[1]]
-edgeData(module)[[1]]
-```
