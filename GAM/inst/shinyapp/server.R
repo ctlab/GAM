@@ -176,7 +176,9 @@ shinyServer(function(input, output) {
             if (input$addMetabolitesForReactions) {
                 module <- addMetabolitesForReactions(module, es)
             }
-            module <- addInterconnections(module, es)
+            if (input$addInterconnections) {
+                module <- addInterconnections(module, es)
+            }
             module <- addNormLogFC(module)
             
             if (input$removeHangingNodes) {
