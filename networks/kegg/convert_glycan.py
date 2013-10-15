@@ -39,29 +39,6 @@ for description in descriptions:
                                 .replace("<","") \
                                 .replace(">","")
 
-        if "FORMULA" in d:
-            for name in d["NAME"].split("\n"):
-                if name.endswith(";"):
-                    name = name[:-1]
-
-                name_full = name
-
-                if name == "beta-Tyrosine":
-                    pass
-                elif name.startswith("beta-"):
-                    name = name[len("beta-"):]
-                elif name.startswith("alpha-"):
-                    name = name[len("alpha-"):]
-
-
-
-
-                name = "%s: %s" % (d["FORMULA"], name)
-
-                if not name in anomers:
-                    anomers[name] = []
-                anomers[name].append((name_full, met_id))
-
 
     pathways = ""
     if "PATHWAY" in d:
