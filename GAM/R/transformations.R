@@ -86,7 +86,6 @@ edgelist <- function(network) {
     return(res)
 }
 
-#' @export
 splitMappingByConnectivity <- function(connections, from, to) {
     connections <- data.frame(connections)
     colors <- seq_along(from)
@@ -129,6 +128,9 @@ splitMappingByConnectivity <- function(connections, from, to) {
 
 #' Add attributes for nodes from data.frame
 #' @param graph igraph object
+#' @param node.table Table with attribute values
+#' @param node.col Column (number of character) with vertex IDs
+#' @param name.as.label If TRUE rename "name" attribute to "label"
 #' @importFrom igraph set.vertex.attribute
 addNodeAttributes <- function(graph, node.table, node.col=1, name.as.label=T) {
     if (class(node.table) == "list") {

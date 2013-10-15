@@ -6,15 +6,20 @@
 #' @param to Mart attribute for result IDs
 #' @param mart Mart to use
 #' @return Table with IDs converted
+#' @importFrom biomaRt getBM
 #' @export
 convertPvalBiomart <- function(pval, from, to, mart) {
     map <- getBM(attributes=c(from, to), filters=from, values=pval$ID, mart=mart)
     colnames(map) <- c("from", "to")
     map$to <- as.character(map$to)
     map <- na.omit(map)
-    convert.pval(pval, map$from, map$to)
+    convertPval(pval, map$from, map$to)
 }
 
+#' Get possible ID type  of IDs from a vector
+#' @param ids Vector of IDs
+#' @param id.map Map between different type of IDs
+#' @return Vector of possible IDs
 #' @export
 getIdsType <- function(ids, id.map) {
     res <- c()
@@ -68,6 +73,7 @@ convertPval <- function(pval, from, to) {
 #' @param zero.rm If TRUE removes genes with zero expression in all samples
 #' @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
 #' @param quantile If TRUE applies quantile normalization
+#' @importFrom limma normalizeBetweenArrays
 #' @export
 normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     if (zero.rm) {
@@ -89,7 +95,7 @@ normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     }
     
     if (quantile) {
-        exprs2 <- as.data.frame(normalize.quantiles(as.matrix(exprs), copy=T))
+        exprs2 <- as.data.frame(normalizeBetweenArrays(as.matrix(exprs), method="quantile"))
         colnames(exprs2) <- colnames(exprs)
         rownames(exprs2) <- rownames(exprs)
         exprs <- exprs2

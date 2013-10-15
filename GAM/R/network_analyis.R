@@ -5,6 +5,8 @@ setdiff.data.frame <-
     function(A,B) A[ !duplicated( rbind(B,A) )[ -seq_len(nrow(B))] , ]
 
 #' Load data only if its absent from global environment
+#' @param name Name of a dataset
+#' @param ... Additional arguments for data()
 lazyData <- function(name, ...) {
     if (!name %in% ls(envir=.GlobalEnv)) {
         print(paste0("No ", name, ", loading"))
@@ -176,8 +178,8 @@ addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm
     module
 }
 
-#' Scores p-value by fitted BUM-model
-#' This is a helper function based on BioNet::scoreFunction()
+# Scores p-value by fitted BUM-model
+# This is a helper function based on BioNet::scoreFunction()
 scoreValue <- function (fb, pval, fdr = 0.01) 
 {
     return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
@@ -185,18 +187,20 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 
 
 #' Preprocess experiment set's differential expression data for genes and metabolites
+#' 
 #' Convert metabolite and gene IDs to be the same as in network. Computes
 #' reaction differential expression data.
 #' @param es Experiment set with DE data
-#' @param met.ids Type of IDs used in metabolite DE data (@see met.id.map for possible values)
-#' @param gene.ids Type of IDs used in gene DE data (@see gene.id.map for possible values)
-# :ToDo: this function is ugly, refactor
+#' @param met.ids Type of IDs used in metabolite DE data (see met.id.map for possible values)
+#' @param gene.ids Type of IDs used in gene DE data (see gene.id.map for possible values)
+#' @param plot If TRUE plot BUM fit
 preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     if (!is.null(es$gene.de)) {
         print("Processing gene p-values...")
         es$gene.de$logFC <- fixInf(es$gene.de$logFC)
         if (!is.null(gene.ids)) {
             lazyData("gene.id.map")
+            gene.id.map <- get("gene.id.map")
             es$gene.de <- convertPval(es$gene.de, 
                                        from=gene.id.map[,gene.ids], 
                                        to=gene.id.map[,es$network$gene.ids])
@@ -212,6 +216,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
         es$met.de$logFC <- fixInf(es$met.de$logFC)        
         if (!is.null(met.ids)) {
             lazyData("met.id.map")
+            met.id.map <- get("met.id.map")
             es$met.de <- convertPval(es$met.de, 
                                       from=met.id.map[,met.ids], 
                                       to=met.id.map[,es$network$met.ids])
@@ -277,6 +282,8 @@ makeExperimentSet <- function(network,
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
             
             lazyData("gene.id.map")
+            gene.id.map <- get("gene.id.map")
+            
             unknown.rxn <- setdiff(es$rxn.de$ID, es$network$rxn2name$rxn)
             unknown.rxn2name <- do.call(cbind,  c(
                 list(unknown.rxn), 
@@ -474,7 +481,7 @@ findModule <- function(es,
     if (!is.null(met.scores)) {
         if (is.null(absent.met.score)) {
             absent.met.score <- mean(met.scores[met.scores < 0])
-            print(paste0("absent.met.score <- ", absenet.met.score))
+            print(paste0("absent.met.score <- ", absent.met.score))
         }
         
         V(net)$score <- absent.met.score

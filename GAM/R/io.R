@@ -39,6 +39,9 @@ networkToTab <- function(edges, file.name) {
 }
 
 
+#' Plot a module to PDF
+#' @param module Module to save
+#' @param file File to save plot to
 #' @export
 saveModuleToPdf <- function(module, file) {
     pdf(file, width=15, height=15)
@@ -53,6 +56,11 @@ saveModuleToJson <- function(module, outputFilePrefix) {
     close(f)
 }
 
+#' Get values of multiple atrributes of multiple vertices
+#' @param graph Graph
+#' @param index Vertices to select
+#' @param attrs Vector of attribute names
+#' @return List of vectors of attribute values, one element per attribute
 #' @export
 get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attributes(graph)) {
     sapply(attrs,
@@ -61,6 +69,11 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
            USE.NAMES=T)
 }
 
+#' Get values of multiple atrributes of multiple edges
+#' @param graph Graph
+#' @param index Edges to select
+#' @param attrs Vector of attribute names
+#' @return List of vectors of attribute values, one element per attribute
 #' @export
 get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph)) {
     sapply(attrs, 
@@ -69,6 +82,9 @@ get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attribute
            USE.NAMES=T)
 }
 
+#' Converts a module from igraph to list of nodes and links
+#' @param module igraph module 
+#' @return list of two elements: list of nodes and list of links (edges)
 #' @export
 module2list <- function(module) {
     getNodeObject <- function(i) {
@@ -91,6 +107,8 @@ module2list <- function(module) {
     graphObject
 }
 
+#' Get json string of a module
+#' @param module Moculde to convert to JSONstring
 #' @export
 #' @importFrom rjson toJSON
 getModuleJsonString <- function(module) {
@@ -98,10 +116,14 @@ getModuleJsonString <- function(module) {
     return(toJSON(graphObject))
 }
 
+
+#' Save network to an XGMML file
+#' @param network Network to save
+#' @param name Name of the network
+#' @param file File to save to
 #' @export
-#' @importFrom XML append.xmlNode addAttributes
+#' @importFrom XML append.xmlNode addAttributes saveXML
 saveModuleToXgmml <- function(network, name, file) {
-    require(XML)
     top <- .XGMML.destription(name=name)
     print("...adding nodes")
     # append nodes
@@ -116,6 +138,8 @@ saveModuleToXgmml <- function(network, name, file) {
     saveXML(top, file, encoding="UTF-8")
     if("package:XML" %in% search()){detach("package:XML")}
 }
+
+#' @importFrom XML xmlNode
 # internal method to create the first part of the XGMML-file, description
 .XGMML.destription <- function(name)
 {
