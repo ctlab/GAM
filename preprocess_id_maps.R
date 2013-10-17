@@ -7,6 +7,7 @@ save(gene.id.map, file="./GAM//data/gene.id.map.rda", compress="xz")
 
 hmdb2kegg <- read.csv("./misc/hmdb2kegg.tsv", header=T, colClasses="character", sep="\t")
 kegg2name <- read.table("./networks//kegg/met2name.tsv", header=T, colClasses="character")
+kegg2name <- kegg2name[, c("met", "name")]
 kegg2name$name <- gsub(";.*$", "", kegg2name$name)
 colnames(kegg2name) <- c("KEGG", "name")
 met.id.map <- merge(hmdb2kegg, kegg2name, all.x=T)
