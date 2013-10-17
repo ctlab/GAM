@@ -38,7 +38,7 @@ shinyServer(function(input, output) {
             return(NULL)
         }
         
-        res <- data.table(read.table(input$geneDE$datapath, sep="\t", header=T))
+        res <- data.table(read.table(input$geneDE$datapath, sep="\t", header=T, stringsAsFactors=F))
         if (!all(necessary.de.fields %in% names(res))) {
             stop(paste0("Genomic differential expression data should contain at least these fields: ", 
                         paste(necessary.de.fields, collapse=", ")))
@@ -78,7 +78,7 @@ shinyServer(function(input, output) {
             return(NULL)
         }
         
-        res <- data.table(read.table(input$metDE$datapath, sep="\t", header=T))
+        res <- data.table(read.table(input$metDE$datapath, sep="\t", header=T, stringsAsFactors=F))
         if (!all(necessary.de.fields %in% names(res))) {
             stop(paste0("Metabolic differential expression data should contain at least these fields: ", 
                         paste(necessary.de.fields, collapse=", ")))
@@ -117,7 +117,7 @@ shinyServer(function(input, output) {
         gene.ids <- isolate(geneIdsType())
         met.de <- isolate(metDEInput())
         met.ids <- isolate(metIdsType())
-        if (is.null(gene.de) || is.null(met.de)) {
+        if (is.null(gene.de) && is.null(met.de)) {
             return(NULL)
         }
         
@@ -140,8 +140,17 @@ shinyServer(function(input, output) {
         es$subnet
     })
     
+    output$showModulePanel <- reactive({
+        if (!is.null(esInput())) {
+            return(paste0("mp = $('#module-panel'); mp[0].scrollIntoView();",
+                          paste(sample(1:20, 10, replace=T), collapse="")))
+        }
+        # return("mp = $('#module-panel'); mp.hide();")
+        return("")
+    })
+    
     rawModuleInput <- reactive({
-        input$find
+        print(input$find)
         met.fdr <- isolate(input$metFDR)
         gene.fdr <- isolate(input$geneFDR)
         absent.met.score=isolate(input$absentMetScore)

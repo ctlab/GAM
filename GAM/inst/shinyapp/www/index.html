@@ -17,100 +17,148 @@
     <title>Shiny GAM</title>
   </head>
   <body>
-    <div class="container-fluid">
-      <div class="row-fluid">
+    <div class="container">
+      <div class="row">
         <div class="span12" style="padding: 10px 0px;">
           <h1>Shiny GAM</h1>
         </div>
       </div>
-      <div class="row-fluid">
-        <div class="span4">
-          <form class="well">
-            <label class="control-label" for="network">Select a network:</label>
-            <select id="network">
-              <option value="Mouse musculus" selected="selected">Mouse musculus</option>
-              <option value="Homo sapiens">Homo sapiens</option>
-            </select>
-            <label>Select a TSV-file with gene p-values</label>
-            <input id="geneDE" type="file"/>
-            <div id="geneDEProgress" class="progress progress-striped active shiny-file-input-progress">
-              <div class="bar"></div>
-              <label></label>
-            </div>
-            <label>Select a TSV-file with metabolite p-values</label>
-            <input id="metDE" type="file"/>
-            <div id="metDEProgress" class="progress progress-striped active shiny-file-input-progress">
-              <div class="bar"></div>
-              <label></label>
-            </div>
-            <label class="control-label" for="reactionsAs">How to interpret reactions:</label>
-            <select id="reactionsAs">
-              <option value="nodes" selected="selected">As nodes</option>
-              <option value="edges">As edges</option>
-            </select>
-            <div data-display-if="input.reactionsAs == 'nodes'">
-              <label class="checkbox" for="collapseReactions">
-                <input id="collapseReactions" type="checkbox" checked="checked"/>
-                <span>Collapse reactions</span>
-              </label>
-            </div>
-            <div data-display-if="input.reactionsAs != 'nodes'">
-              <label class="checkbox" for="useRpairs">
-                <input id="useRpairs" type="checkbox" checked="checked"/>
-                <span>Use RPAIRs</span>
-              </label>
-            </div>
-            <br/>
-            <button id="preprocess" type="button" class="btn action-button">Preprocess</button>
-            <label for="geneFDR">FDR for genes</label>
-            <input id="geneFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
-            <label for="metFDR">FDR for metabolites</label>
-            <input id="metFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
-            <label for="absentMetScore">Score for absent metabolites</label>
-            <input id="absentMetScore" type="number" value="-20"/>
-            <br/>
-            <button id="find" type="button" class="btn action-button">Find module</button>
-            <br/>
-            <div data-display-if="input.reactionsAs != 'nodes' && input.useRpairs">
-              <label class="checkbox" for="addTransPairs">
-                <input id="addTransPairs" type="checkbox"/>
-                <span>Add trans- edges</span>
-              </label>
-            </div>
-            <div data-display-if="input.reactionsAs == 'nodes'">
-              <label class="checkbox" for="addMetabolitesForReactions">
-                <input id="addMetabolitesForReactions" type="checkbox"/>
-                <span>Add all metabolites for reactions</span>
-              </label>
-              <label class="checkbox" for="addInterconnections">
-                <input id="addInterconnections" type="checkbox"/>
-                <span>Add interconnections</span>
-              </label>
-              <label class="checkbox" for="removeHangingNodes">
-                <input id="removeHangingNodes" type="checkbox"/>
-                <span>Remove hanging nodes</span>
-              </label>
-              <label class="checkbox" for="removeSimpleReactions">
-                <input id="removeSimpleReactions" type="checkbox"/>
-                <span>Remove simple reactions</span>
-              </label>
-            </div>
-            <br/>
-            <a id="downloadXGMML" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
-            <br/>
-          </form>
-        </div>
-        <div class="span8">
-          <div id="geneDETable" class="shiny-html-output"></div>
-          <div id="geneIdsType" class="shiny-text-output"></div>
-          <div id="metDETable" class="shiny-html-output"></div>
-          <div id="metIdsType" class="shiny-text-output"></div>
-          <div id="networkSummary" class="shiny-text-output"></div>
-          <div id="moduleSummary" class="shiny-text-output"></div>
-          <div id="module" class="graph-output"></div>
-          <div id="graphContainer" class="graph-output"></div>
-        </div>
+      <div class="row">
+          <div class="span12">
+              <div class="tabbable">
+                  <ul class="nav nav-tabs">
+                      <li class="active"> <a href="#tab-8504-1" data-toggle="tab">Work</a> </li>
+                      <li> <a href="#tab-8504-3" data-toggle="tab">Help</a> </li>
+                      <li> <a href="#tab-8504-4" data-toggle="tab">About</a> </li>
+                  </ul>
+                  <div class="tab-content">
+                      <div class="tab-pane active" id="tab-8504-1">
+                          <div class="row">
+                              <div class="span3">
+                                  <form class="well">
+                                      <label class="control-label" for="network">Select an organism:</label>
+                                      <select id="network">
+                                          <option value="Mouse musculus" selected="selected">Mouse musculus</option>
+                                          <option value="Homo sapiens">Homo sapiens</option>
+                                      </select>
+                                      <label>Select a TSV-file with gene p-values</label>
+                                      <input id="geneDE" type="file" accept="text/tab-separated-values"/>
+                                      <div id="geneDEProgress" class="progress progress-striped active shiny-file-input-progress">
+                                          <div class="bar"></div>
+                                          <label></label>
+                                      </div>
+                                      <label>Select a TSV-file with metabolite p-values</label>
+                                      <input id="metDE" type="file" accept="text/tab-separated-values"/>
+                                      <div id="metDEProgress" class="progress progress-striped active shiny-file-input-progress">
+                                          <div class="bar"></div>
+                                          <label></label>
+                                      </div>
+                                      <label class="control-label" for="reactionsAs">How to interpret reactions:</label>
+                                      <select id="reactionsAs">
+                                          <option value="nodes" selected="selected">As nodes</option>
+                                          <option value="edges">As edges</option>
+                                      </select>
+                                      <div data-display-if="input.reactionsAs == 'nodes'">
+                                          <label class="checkbox" for="collapseReactions">
+                                              <input id="collapseReactions" type="checkbox" checked="checked"/>
+                                              <span>Collapse reactions</span>
+                                          </label>
+                                      </div>
+                                      <div data-display-if="input.reactionsAs != 'nodes'">
+                                          <label class="checkbox" for="useRpairs">
+                                              <input id="useRpairs" type="checkbox" checked="checked"/>
+                                              <span>Use RPAIRs</span>
+                                          </label>
+                                      </div>
+                                      <br/>
+                                      <button id="preprocess" type="button" class="btn action-button">Preprocess</button>
+                                  </form>
+                              </div>
+                              <div class="span9">
+                                  <div class="row">
+                                      <div class="span4">
+                                          <h3>Genomic data</h3>
+                                          <div id="geneDETable" class="shiny-html-output"></div>
+                                          <div id="geneIdsType" class="shiny-text-output"></div>
+                                      </div>
+                                      <div class="span4">
+                                          <h3>Metabolic data</h3>
+                                          <div id="metDETable" class="shiny-html-output"></div>
+                                          <div id="metIdsType" class="shiny-text-output"></div>
+                                      </div>
+                                  </div>
+                                  <div id="networkSummary" class="shiny-text-output"></div>
+                              </div>
+                          </div>
+                          <div id="module-panel" class="row">
+                              <div class="span3">
+                                  <form class="well">
+                                      <label for="geneFDR">FDR for genes</label>
+                                      <input id="geneFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+                                      <label for="metFDR">FDR for metabolites</label>
+                                      <input id="metFDR" type="number" value="1e-06" min="1e-100" max="1" step="1e-200"/>
+                                      <label for="absentMetScore">Score for absent metabolites</label>
+                                      <input id="absentMetScore" type="number" value="-20"/>
+                                      <br/>
+                                      <button id="find" type="button" class="btn action-button">Find module</button>
+                                      <br/>
+                                      <div data-display-if="input.reactionsAs != 'nodes' && input.useRpairs">
+                                          <label class="checkbox" for="addTransPairs">
+                                              <input id="addTransPairs" type="checkbox"/>
+                                              <span>Add trans- edges</span>
+                                          </label>
+                                      </div>
+                                      <div data-display-if="input.reactionsAs == 'nodes'">
+                                          <label class="checkbox" for="addMetabolitesForReactions">
+                                              <input id="addMetabolitesForReactions" type="checkbox"/>
+                                              <span>Add all metabolites for reactions</span>
+                                          </label>
+                                          <label class="checkbox" for="addInterconnections">
+                                              <input id="addInterconnections" type="checkbox"/>
+                                              <span>Add interconnections</span>
+                                          </label>
+                                          <label class="checkbox" for="removeHangingNodes">
+                                              <input id="removeHangingNodes" type="checkbox"/>
+                                              <span>Remove hanging nodes</span>
+                                          </label>
+                                          <label class="checkbox" for="removeSimpleReactions">
+                                              <input id="removeSimpleReactions" type="checkbox"/>
+                                              <span>Remove simple reactions</span>
+                                          </label>
+                                      </div>
+                                      <br/>
+                                      <a id="downloadXGMML" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
+                                      <br/>
+                                  </form>
+                                  <div id="moduleSummary" class="shiny-text-output"></div>
+                              </div>
+                              <div class="span9">
+                                  <div id="module" class="graph-output"></div>
+                              </div>
+                          </div>
+                      </div>
+                      <div class="tab-pane" id="tab-8504-3">
+                          <div class="row">
+                              <div class="span9 offset3">
+                                  Help text.
+                              </div>
+                          </div>
+                      </div>
+                      <div class="tab-pane" id="tab-8504-4">
+                          <div class="row">
+                              <div class="span9 offset3">
+                                  <p> By Alexey Sergushichev.  </p>
+                                  <p> GAM version: </p>
+                                  <p> Links <p>
+                                  <p> Powered by Shiny. </p>
+                              </div>
+                          </div>
+                      </div>
+                  </div>
+              </div>
+          </div>
       </div>
     </div>
+    <div id="showModulePanel" class="js-output"></div>
   </body>
 </html>

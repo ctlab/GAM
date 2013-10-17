@@ -4,12 +4,22 @@ graphOutputBinding.find = function(scope) {
 };
 
 graphOutputBinding.renderValue = function(el, data) {
-    loadGraph(data);
+    loadGraph(el, data);
 }
-
 
 Shiny.outputBindings.register(graphOutputBinding, "alserg.graphOutputBinding");
 
+
+jsOutputBinding = new Shiny.OutputBinding();
+jsOutputBinding.find = function(scope) {
+    return $(scope).find(".js-output");
+};
+
+jsOutputBinding.renderValue = function(el, data) {
+    eval(data);
+}
+
+Shiny.outputBindings.register(jsOutputBinding, "alserg.jsOutputBinding");
 
 
 var svg;
@@ -37,47 +47,81 @@ function getSize(d) {
     return pvalScale(0);
 }
 
-window.onload = function() {
-    d3.select(window).on("resize", sizeChange);
-
-    sizeChange();
-
-
+function initContainer(container) {
     var width = $(container).width(),
         height = $(window).height();
 
 
-    force = d3.layout.force()
-        .charge(-300)
-        .linkDistance(100)
-        .size([width, height]);
 
-    svg = d3.select(container).append("svg")
-        .attr("width", width)
-        .attr("height", height)
+    container.svg = d3.select(container).append("svg")
         .append("g");
 
 
-    svg.append("rect")
+    container.svg
+        .append("rect")
         .attr("class", "overlay")
-        .attr("width", width)
-        .attr("height", height);
+        .attr("width", "1000")
+        .attr("height", "1000");
 
-    zoom = d3.behavior.zoom().scaleExtent([1/8, 8]).on("zoom", zoomed);
-    drag = force.drag()
-        .on("dragstart", function(d) { d3.event.sourceEvent.stopPropagation(); } );
+    function sizeChange() {
+        var width = container.width(),
+            height = width.height();
+        d3.select("svg")
+            .attr("width", width)
+            .attr("height", height);
+        d3.select("rect")
+            .attr("width", width)
+            .attr("height", height);
+    }
+    // $(container).resize(sizeChange);
 
-    svg = svg.call(zoom)
+    function zoomed() {
+        container.svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+    }
+
+    container.zoom = d3.behavior.zoom().scaleExtent([1/8, 8]).on("zoom", zoomed);
+
+    container.svg = container.svg.call(container.zoom)
       .append("g");
+
+}
+
+$(".graph-output").each(function(i) { 
+    this.onload = function() { 
+        initContainer(this);
+    };
+})
+window.onload = function() {
+    // d3.select(window).on("resize", sizeChange);
+
+    // sizeChange();
+
+    $(".graph-output").each(function(i) { initContainer(this) })
+    // initContainer($(container));
 
 
 }
 
-function loadGraph(graph) {
-    svg.text(null)
-    force.nodes(graph.nodes)
+function loadGraph(container, graph) {
+
+    var width = $(container).width(),
+        height = $(container).height();
+
+
+    container.force = d3.layout.force()
+        .nodes(graph.nodes)
         .links(graph.links)
+        .charge(-300)
+        .linkDistance(100)
+        .size([width, height])
         .start();
+
+    container.drag = container.force.drag()
+        .on("dragstart", function(d) { d3.event.sourceEvent.stopPropagation(); } );
+
+    container.svg.text(null);
+
+    var svg = container.svg;
 
     var link = svg.selectAll(".link")
         .data(graph.links)
@@ -123,7 +167,7 @@ function loadGraph(graph) {
         .enter()
         .append("g")
         .attr("class", "node")
-        .call(drag);
+        .call(container.drag);
 
     node.append("circle")
         .attr("cx", 0)
@@ -138,7 +182,7 @@ function loadGraph(graph) {
         .style("font-size", getSize)
         .text(function(d) { return d.label });
 
-    force.on("tick", function() {
+    container.force.on("tick", function() {
         link.attr("x1", function(d) { return d.source.x; })
             .attr("y1", function(d) { return d.source.y; })
             .attr("x2", function(d) { return d.target.x; })
@@ -164,17 +208,4 @@ function loadGraph(graph) {
     });
 }
 
-function zoomed() {
-  svg.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
-}
 
-function sizeChange() {
-    var width = $(container).width(),
-        height = $(window).height();
-    d3.select("svg")
-        .attr("width", width)
-        .attr("height", height);
-    d3.select("rect")
-        .attr("width", width)
-        .attr("height", height);
-}
