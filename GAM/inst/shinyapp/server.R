@@ -117,6 +117,9 @@ shinyServer(function(input, output) {
         gene.ids <- isolate(geneIdsType())
         met.de <- isolate(metDEInput())
         met.ids <- isolate(metIdsType())
+        if (is.null(gene.de)) {
+            return(NULL)
+        }
         if (is.null(gene.de) && is.null(met.de)) {
             return(NULL)
         }

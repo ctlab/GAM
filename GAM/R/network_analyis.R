@@ -313,12 +313,24 @@ makeExperimentSet <- function(network,
         
     print("Building network")    
     
+    if (is.null(es$met.de)) {
+        es$met.de <- data.frame(
+            ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), 
+            pval=NA,
+            logFC=NA,
+            stringsAsFactors=F)
+    }
+    
     met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=F)
     met.de.ext <- merge(met.de.ext, es$met.de, all.x=T) # all.x=T — we keep mets if there is no MS data
     met.de.ext <- merge(met.de.ext, es$network$met2name, by.x="ID", by.y="met", all.x=T)
     met.de.ext$logPval <- log(met.de.ext$pval)
     es$met.de.ext <- met.de.ext
     
+    
+    if (is.null(es$rxn.de)) {
+        es$rxn.de <- data.frame(ID=es$graph.raw$rxn, pval=NA, logFC=NA, stringsAsFactors=F)
+    }
     
     rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=F)
     rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=F) # we drop reaction if it's not expressed
@@ -338,7 +350,7 @@ makeExperimentSet <- function(network,
             net.edges.ext[edges2rev, c("met.y", "met.x")]        
         
         
-        net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min))
+        net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min, na.action=na.pass))
         net.edges.ext <- merge(net.edges.pval, net.edges.ext)
         net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
         net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
@@ -357,7 +369,7 @@ makeExperimentSet <- function(network,
         es$net.edges.ext <- net.edges.ext
         es$net.edges.ext.all <- net.edges.ext.all
         
-        net1 <- graph.from.tables(node.table=es$met.de.ext, edge.table=es$net.edges.ext,
+        net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
                                      directed=F)
         
@@ -462,7 +474,7 @@ findModule <- function(es,
     
             
     met.scores <- NULL    
-    if (!is.null(es$met.de) && !is.null(met.fdr)) {            
+    if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
         fb <- if (score.separately) es$fb.met else es$fb.all
         met.scores <- scoreValue(fb, na.omit(es$met.de.ext$pval), met.fdr)
         names(met.scores) <- es$met.de.ext$ID[!is.na(es$met.de.ext$pval)]
@@ -470,24 +482,23 @@ findModule <- function(es,
     
     
     rxn.scores <- NULL
-    if (!is.null(es$rxn.de) && !is.null(gene.fdr)) {
+    if (!is.null(es$fb.rxn) && !is.null(gene.fdr)) {
         fb <- if (score.separately) es$fb.rxn else es$fb.all
         rxn.scores <- scoreValue(fb, na.omit(es$rxn.de.ext$pval), gene.fdr)
         names(rxn.scores) <- es$rxn.de.ext$ID[!is.na(es$rxn.de.ext$pval)]
     }
     
     
-        
-    if (!is.null(met.scores)) {
-        if (is.null(absent.met.score)) {
-            absent.met.score <- mean(met.scores[met.scores < 0])
-            print(paste0("absent.met.score <- ", absent.met.score))
-        }
-        
-        V(net)$score <- absent.met.score
-        met.scores <- met.scores[names(met.scores) %in% V(net)$name]
-        V(net)[names(met.scores)]$score <- met.scores
+    if (is.null(absent.met.score)) {
+        absent.met.score <- mean(met.scores[met.scores < 0])
+        print(paste0("absent.met.score <- ", absent.met.score))
     }
+        
+    absent.met.scores <- sapply(V(net)[nodeType == "met"]$name, function(x) absent.met.score)
+    met.scores <- c(met.scores, absent.met.scores[!names(absent.met.scores) %in% names(met.scores)])
+    
+    met.scores <- met.scores[names(met.scores) %in% V(net)$name]
+    V(net)[names(met.scores)]$score <- met.scores
     
     if (!is.null(rxn.scores)) {
         if (es$reactions.as.edges) {
