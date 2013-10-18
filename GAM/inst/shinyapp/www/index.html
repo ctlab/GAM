@@ -78,16 +78,17 @@
                                   <div class="row">
                                       <div class="span4">
                                           <h3>Genomic data</h3>
+                                          <div id="geneDESummary" class="shiny-html-output"></div>
                                           <div id="geneDETable" class="shiny-html-output"></div>
-                                          <div id="geneIdsType" class="shiny-text-output"></div>
                                       </div>
                                       <div class="span4">
                                           <h3>Metabolic data</h3>
+                                          <div id="metDESummary" class="shiny-html-output"></div>
                                           <div id="metDETable" class="shiny-html-output"></div>
-                                          <div id="metIdsType" class="shiny-text-output"></div>
                                       </div>
                                   </div>
-                                  <div id="networkSummary" class="shiny-text-output"></div>
+                                  <h3>Network summary</h3>
+                                  <div id="networkSummary" class="shiny-html-output"></div>
                               </div>
                           </div>
                           <div id="module-panel" class="row">
@@ -132,7 +133,8 @@
                                       <a id="downloadXGMML" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
                                       <br/>
                                   </form>
-                                  <div id="moduleSummary" class="shiny-text-output"></div>
+                                  <h3>Module summary</h3>
+                                  <div id="moduleSummary" class="shiny-html-output"></div>
                               </div>
                               <div class="span9">
                                   <div id="module" class="graph-output"></div>

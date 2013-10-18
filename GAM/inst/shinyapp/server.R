@@ -2,6 +2,7 @@ library(shiny)
 library(data.table)
 library(igraph)
 library(GAM)
+library(markdown)
 
 data(kegg.mouse.network)
 data(kegg.human.network)
@@ -29,6 +30,11 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
 }
 
 necessary.de.fields <- c("ID", "pval", "logFC")
+
+vector2html <- function(v) {
+    res.md <- paste("*", names(v), "=", v, "\n", collapse="")
+    return(markdownToHTML(text=res.md, fragment.only=T))
+}
 
 # Define server logic required to generate and plot a random distribution
 shinyServer(function(input, output) {
@@ -59,9 +65,17 @@ shinyServer(function(input, output) {
         res
     })
     
-    output$geneIdsType <- reactive({
-        geneIdsType()
+    output$geneDESummary <- reactive({
+        gene.de <- geneDEInput()
+        ids.type <- geneIdsType()
+        if (is.null(gene.de)) {
+            return("There is no genomic data")
+        }
         
+        vector2html(c(
+            "length" = nrow(gene.de),
+            "ID type" = ids.type
+            ))
     })
     
     output$geneDETable <- renderTable({
@@ -99,8 +113,17 @@ shinyServer(function(input, output) {
         res
     })
     
-    output$metIdsType <- reactive({
-        metIdsType()
+    output$metDESummary <- reactive({
+        met.de <- metDEInput()
+        ids.type <- metIdsType()
+        if (is.null(met.de)) {
+            return("There is no metabolic data")
+        }
+        
+        vector2html(c(
+            "length" = nrow(met.de),
+            "ID type" = ids.type
+            ))
     })
     
     output$metDETable <- renderTable({
@@ -136,9 +159,17 @@ shinyServer(function(input, output) {
             plot=F)
     })
     
-    output$networkSummary <- renderPrint({
+    output$networkSummary <- reactive({
         es <- esInput()
-        es$subnet
+        net <- es$subnet
+        if (is.null(net)) {
+            return("There is no built network")
+        }
+        
+        vector2html(c(
+            "number of nodes" = length(V(net)),
+            "number of edges" = length(E(net))
+            ))
     })
     
     output$showModulePanel <- reactive({
@@ -206,8 +237,16 @@ shinyServer(function(input, output) {
         module
     })
     
-    output$moduleSummary <- renderPrint({
-        moduleInput()
+    output$moduleSummary <- reactive({
+        module <- moduleInput()
+        if (is.null(module)) {
+            return("There is no module yet")
+        }
+        
+        vector2html(c(
+            "number of nodes" = length(V(module)),
+            "number of edges" = length(E(module))
+            ))
     })
     
     output$module <- renderGraph({
