@@ -68,13 +68,14 @@ es$subnet
 ```
 
 
-To be able to find modules `GAM` need solver for maximum-wight
+To be able to find modules `GAM` need a solver for maximum-wight
 connected subgraph problem. [Heinz](http://www.mi.fu-berlin.de/w/LiSA/Heinz) 
 is used for this purpose. Directory with heinz should also contain a license file
 for CPLEX.
 ```{r}
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 list.files(dirname(heinz.py))
+solver <- heinz.solver(heinz.py)
 ```
 
 Set FDRs and score for absent metabolites. Using these parameters size of the module
@@ -89,11 +90,10 @@ absent.met.score=c(-20)
 And now we can finally find most significant module in our network.
 ```{r chache=TRUE, error=FALSE}
 module <- findModule(es,
-                       met.fdr=met.fdr,
-                       gene.fdr=gene.fdr,
-                       absent.met.score=absent.met.score,
-                       heinz.py=heinz.py,                    
-)
+                     met.fdr=met.fdr,
+                     gene.fdr=gene.fdr,
+                     absent.met.score=absent.met.score,
+                     solver=solver)
 module
 ```
 
@@ -154,11 +154,10 @@ absent.met.score=c(-20)
 And finding modules:
 ```{r chache=TRUE, error=FALSE}
 module <- findModule(es,
-                       met.fdr=met.fdr,
-                       gene.fdr=gene.fdr,
-                       absent.met.score=absent.met.score,
-                       heinz.py=heinz.py
-)
+                     met.fdr=met.fdr,
+                     gene.fdr=gene.fdr,
+                     absent.met.score=absent.met.score,
+                     solver=solver)
 module
 ```
 

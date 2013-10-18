@@ -13,6 +13,7 @@ data(gene.id.map)
 data(met.id.map)
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
+solver <- heinz.solver(heinz.py=heinz.py, cplexTimeLimit=10)
 
 renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     # Convert the expression + environment into a function
@@ -117,9 +118,6 @@ shinyServer(function(input, output) {
         gene.ids <- isolate(geneIdsType())
         met.de <- isolate(metDEInput())
         met.ids <- isolate(metIdsType())
-        if (is.null(gene.de)) {
-            return(NULL)
-        }
         if (is.null(gene.de) && is.null(met.de)) {
             return(NULL)
         }
@@ -157,6 +155,7 @@ shinyServer(function(input, output) {
         met.fdr <- isolate(input$metFDR)
         gene.fdr <- isolate(input$geneFDR)
         absent.met.score=isolate(input$absentMetScore)
+        absent.rxn.score=isolate(input$absentRxnScore)
         
         es <- isolate(esInput())
         
@@ -168,7 +167,8 @@ shinyServer(function(input, output) {
                     met.fdr=met.fdr,
                     gene.fdr=gene.fdr,
                     absent.met.score=absent.met.score,
-                    heinz.py=heinz.py)
+                    absent.rxn.score=absent.rxn.score,
+                    solver=solver)
     })
     
     moduleInput <- reactive({

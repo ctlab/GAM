@@ -379,7 +379,7 @@ makeExperimentSet <- function(network,
         edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
                        rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
         
-        if (collapse.reactions) {
+        if (collapse.reactions && "origin" %in% names(rxn.de.ext)) {
             print("Collapsing reactions by common most significant enzymes")
             
             edges.dt <- data.table(edges, key="met")
@@ -388,7 +388,7 @@ makeExperimentSet <- function(network,
             
             #rxn.de.origin.split <- es$rxn.de$origin
             print("before split")
-            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
+            es$rxn.de.origin.split <- GAM:::splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
             print("after split")
             
             t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
@@ -430,8 +430,8 @@ makeExperimentSet <- function(network,
     
     es$fb.all <- fitBumModel(es$all.pval, plot=F)
     if (plot) {
-        hist(es$fb.rxn, main="Histogram of all p-values")
-        plot(es$fb.rxn, main="QQ-Plot for joint BUM-model")
+        hist(es$fb.all, main="Histogram of all p-values")
+        plot(es$fb.all, main="QQ-Plot for joint BUM-model")
     }
     return(es)
 }
@@ -441,29 +441,119 @@ appendModule <- function(res, module.graph) {
     res
 }
 
+runHeinz <- function(subnet,
+                      heinz.py, 
+                      score.edges=F,
+                      score.nodes=T,                      
+                      nModules=1, 
+                      tolerance=10,
+                      subopt_diff=100,
+                      cplexTimeLimit=1e+75) {
+    
+    graph.dir <- tempfile("graph")
+    dir.create(graph.dir)
+    edges_file <- paste(graph.dir, "edges.txt", sep="/")
+    nodes_file <- paste(graph.dir, "nodes.txt", sep="/")
+    
+    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
+    
+    if (!score.nodes) {
+        # Hack to make writeHeinzeNodes working
+        V(subnet)$score <- 0
+    }
+    writeHeinzNodes(subnet, file=nodes_file, use.score=T)
+    
+    
+    wd.bak <- getwd()
+    heinz.dir <- dirname(heinz.py)
+    setwd(heinz.dir)
+    heinz.tmpdir <- tempfile("heinztmp")
+    system2(paste0("./", basename(heinz.py)),
+            c("-n", nodes_file,
+              "-e", edges_file,
+              "-N", if (score.nodes) "True" else "False",
+              "-E", if (score.edges) "True" else "False",              
+              "-s", nModules,
+              "--tolerance", tolerance,
+              "--subopt_diff", subopt_diff,
+              "--heinztmp", heinz.tmpdir,
+              "--additional", paste0("'cplexTimeLimit ", cplexTimeLimit, "'"),
+              "-v"),
+            env="ILOG_LICENSE_FILE=./access.ilm")
+    setwd(wd.bak)
+    
+    
+    res <- list()
+    for (i in 0:(nModules-1)) {
+        module.graph <- readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+                                      network = subnet, format="igraph")
+        res <- appendModule(res, module.graph)
+        
+    }
+    return(res)
+}
+
+#' Solves MWCS using heinz
+#' @param heinz.py Path to heinz.py executable
+#' @param nModules Number of modules to search for
+#' @param tolerance tolerance parameter for heinz
+#' @param subopt_diff subopt_diff parameter for heinz
+#' @export
+heinz.solver <- function(heinz.py,
+                         nModules=1,
+                         tolerance=10,
+                         subopt_diff=100,
+                         cplexTimeLimit=1e+75
+                         ) {
+    
+    
+    function(network) {
+        score.edges <- "score" %in% list.edge.attributes(network)
+        score.nodes <- "score" %in% list.vertex.attributes(network)
+        
+        res <- runHeinz(
+            subnet=network, 
+            heinz.py=heinz.py, 
+            score.edges=score.edges,
+            score.nodes=score.nodes,
+            nModules=nModules, 
+            tolerance=tolerance,
+            subopt_diff=subopt_diff,
+            cplexTimeLimit=cplexTimeLimit
+            )        
+    }
+}
+
+#' @export
+fastHeinz.solver <- function(network) {
+    score.edges <- "score" %in% list.edge.attributes(net) && !all(E(net)$score == 0)
+    if (score.edges) {
+        stop("Can't run fast heinz on network with scored edges")
+    }
+    res <- list(runFastHeinz(net, V(net)$score))
+}
+
 #' Find significant module in the network
 #' @param es Experiment set object
 #' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and gene.fdr aren't used
 #' @param met.fdr FDR for metabolites only
 #' @param gene.fdr FDR for genes/reactions only
 #' @param absent.met.score Score for metabolites absent from data
+#' @param absent.rxn.score Score for reactions when there is no genomic data
 #' @param score.separately Score metabolites and reactions separately
-#' @param heinz.py Path to heinz.py executable
-#' @param heinz.nModules Number of modules to search for
-#' @param heinz.tolerance tolerance parameter for heinz
-#' @param heinz.subopt_diff subopt_diff parameter for heinz
 #' @param simplify If TRUE and only one module was found return just the module, not a list.
+#' @param ... Additional arguments for solver
 #' @return List of most significant modules
 #' @importFrom igraph V<- E<-
 #' @export 
 findModule <- function(es,                         
-                         fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
-                         absent.met.score=NULL,
-                         score.separately=T,
-                         heinz.py, heinz.nModules=1,
-                         heinz.tolerance=10,
-                         heinz.subopt_diff=100,
-                         simplify=T) {
+                       fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
+                       absent.met.score=NULL,
+                       absent.rxn.score=0,
+                       score.separately=T,
+                       solver = fastHeinz.solver,
+                       simplify=T,
+                       ...) {
     
     net <- es$subnet
     
@@ -500,92 +590,29 @@ findModule <- function(es,
     met.scores <- met.scores[names(met.scores) %in% V(net)$name]
     V(net)[names(met.scores)]$score <- met.scores
     
-    if (!is.null(rxn.scores)) {
-        if (es$reactions.as.edges) {
-            
-            E(net)$score <- rxn.scores[E(net)$rxn]
-        } else {
-            rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
-            V(net)[names(rxn.scores)]$score <- rxn.scores
-        }
-    }
+    absent.rxn.scores <- sapply(es$rxn.de$ID, function(x) absent.rxn.score)
+    rxn.scores <- c(rxn.scores, absent.rxn.scores[!names(absent.rxn.scores) %in% names(rxn.scores)])
     
-    
-    score.edges <- "score" %in% list.edge.attributes(net)
-    score.nodes <- "score" %in% list.vertex.attributes(net)
-    
-    if (!is.null(heinz.py)) {
-        res <- runHeinz(
-            subnet=net, 
-            heinz.py=heinz.py, 
-            score.edges=score.edges,
-            score.nodes=score.nodes,
-            heinz.nModules=heinz.nModules, 
-            heinz.tolerance=heinz.tolerance,
-            heinz.subopt_diff=heinz.subopt_diff)        
-    } else if (score.edges) {
-        stop("Can't use heuristic search with scored edges")
-    } else {
-        res <- list(runFastHeinz(net, V(net)$score))
-    }
+    if (es$reactions.as.edges) {
         
-    if (simplify && length(res) == 1) {
+        E(net)$score <- rxn.scores[E(net)$rxn]
+    } else {
+        rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
+        V(net)[names(rxn.scores)]$score <- rxn.scores
+    }
+    
+    
+    res <- solver(net, ...)
+    
+    if (simplify && is(res, "list") && length(res) == 1) {
         return(res[[1]])
     }
+    
     return(res)
 }
 
 
 
-runHeinz <- function(subnet,
-                      heinz.py, 
-                      score.edges=F,
-                      score.nodes=T,                      
-                      heinz.nModules=1, 
-                      heinz.tolerance=10,
-                      heinz.subopt_diff=100) {
-    
-    graph.dir <- tempfile("graph")
-    dir.create(graph.dir)
-    edges_file <- paste(graph.dir, "edges.txt", sep="/")
-    nodes_file <- paste(graph.dir, "nodes.txt", sep="/")
-    
-    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
-    
-    if (!score.nodes) {
-        # Hack to make writeHeinzeNodes working
-        V(subnet)$score <- 0
-    }
-    writeHeinzNodes(subnet, file=nodes_file, use.score=T)
-    
-    
-    wd.bak <- getwd()
-    heinz.dir <- dirname(heinz.py)
-    setwd(heinz.dir)
-    heinz.tmpdir <- tempfile("heinztmp")
-    system2(paste0("./", basename(heinz.py)),
-            c("-n", nodes_file,
-              "-e", edges_file,
-              "-N", if (score.nodes) "True" else "False",
-              "-E", if (score.edges) "True" else "False",              
-              "-s", heinz.nModules,
-              "--tolerance", heinz.tolerance,
-              "--subopt_diff", heinz.subopt_diff,
-              "--heinztmp", heinz.tmpdir,
-              "-v"),
-            env="ILOG_LICENSE_FILE=./access.ilm")
-    setwd(wd.bak)
-    
-    
-    res <- list()
-    for (i in 0:(heinz.nModules-1)) {
-        module.graph <- readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
-                                      network = subnet, format="igraph")
-        res <- appendModule(res, module.graph)
-        
-    }
-    return(res)
-}
 
 #' Replace simple reaction nodes with edges
 #' For every reaction node that have just two connections
