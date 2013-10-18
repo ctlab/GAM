@@ -105,13 +105,19 @@
                                       <br/>
                                       <button id="find" type="button" class="btn action-button">Find module</button>
                                       <br/>
-                                      <div data-display-if="input.reactionsAs != 'nodes' && input.useRpairs">
+                                      <div id="postProcessingOptions" class="js-output">
+                                          <script>
+                                              networkHasReactionsAsEdges = false;
+                                              networkHasReactionsAsNodes = false;
+                                          </script>
+                                      </div>
+                                      <div data-display-if="networkHasReactionsAsEdges && input.useRpairs">
                                           <label class="checkbox" for="addTransPairs">
                                               <input id="addTransPairs" type="checkbox"/>
                                               <span>Add trans- edges</span>
                                           </label>
                                       </div>
-                                      <div data-display-if="input.reactionsAs == 'nodes'">
+                                      <div data-display-if="networkHasReactionsAsNodes">
                                           <label class="checkbox" for="addMetabolitesForReactions">
                                               <input id="addMetabolitesForReactions" type="checkbox"/>
                                               <span>Add all metabolites for reactions</span>

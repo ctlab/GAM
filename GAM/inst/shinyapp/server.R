@@ -32,8 +32,37 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
 necessary.de.fields <- c("ID", "pval", "logFC")
 
 vector2html <- function(v) {
-    res.md <- paste("*", names(v), "=", v, "\n", collapse="")
+    res.md <- paste("*", names(v), ": ", v, "\n", collapse="")
     return(markdownToHTML(text=res.md, fragment.only=T))
+}
+
+renderJs <- function(expr, env=parent.frame(), quoted=FALSE) {
+    # Convert the expression + environment into a function
+    func <- exprToFunction(expr, env, quoted)
+    
+    function() {
+        val <- func()
+        paste0(val, ";", 
+               paste(sample(1:20, 10, replace=T), collapse=""))
+    }
+}
+
+toJsLiteral <- function(x) {
+    if (is(x, "numeric")) {
+        return(as.character(x))
+    } else if (is(x, "character")) {
+        return(shQuote(x));
+    } else if (is(x, "logical")) {
+        return(if (x) "true" else "false")
+    } else {
+        stop(paste0("can't convert ", x, " to JS literal"))
+    }
+}
+
+makeJsAssignments  <- function(...) {
+    args <- list(...)
+    values <- sapply(args, toJsLiteral)
+    paste0(names(values), " = ", values, ";\n", collapse="")
 }
 
 # Define server logic required to generate and plot a random distribution
@@ -172,10 +201,17 @@ shinyServer(function(input, output) {
             ))
     })
     
-    output$showModulePanel <- reactive({
+    output$postProcessingOptions <- reactive({
+        es <- esInput()
+        makeJsAssignments(
+            networkHasReactionsAsNodes = !is.null(es) && !es$reactions.as.edges,
+            networkHasReactionsAsEdges = !is.null(es) && es$reactions.as.edges
+            )        
+    })
+    
+    output$showModulePanel <- renderJs({
         if (!is.null(esInput())) {
-            return(paste0("mp = $('#module-panel'); mp[0].scrollIntoView();",
-                          paste(sample(1:20, 10, replace=T), collapse="")))
+            return("mp = $('#module-panel'); mp[0].scrollIntoView();")
         }
         # return("mp = $('#module-panel'); mp.hide();")
         return("")
