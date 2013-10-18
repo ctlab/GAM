@@ -6,9 +6,11 @@
 #' @param to Mart attribute for result IDs
 #' @param mart Mart to use
 #' @return Table with IDs converted
-#' @importFrom biomaRt getBM
 #' @export
 convertPvalBiomart <- function(pval, from, to, mart) {
+    if (!require(biomaRt)) {
+        stop("convertPvalBiomart needs biomaRt package to work")
+    }
     map <- getBM(attributes=c(from, to), filters=from, values=pval$ID, mart=mart)
     colnames(map) <- c("from", "to")
     map$to <- as.character(map$to)
@@ -73,7 +75,6 @@ convertPval <- function(pval, from, to) {
 #' @param zero.rm If TRUE removes genes with zero expression in all samples
 #' @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
 #' @param quantile If TRUE applies quantile normalization
-#' @importFrom limma normalizeBetweenArrays
 #' @export
 normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     if (zero.rm) {
@@ -95,6 +96,9 @@ normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     }
     
     if (quantile) {
+        if (!require(limma)) {
+            stop("quantile normalization needs limma package to work")
+        }
         exprs2 <- as.data.frame(normalizeBetweenArrays(as.matrix(exprs), method="quantile"))
         colnames(exprs2) <- colnames(exprs)
         rownames(exprs2) <- rownames(exprs)
@@ -125,8 +129,6 @@ fixInf <- function(dm) {
 #' @param quantile Apply quantile normalisation
 #' @param use.deseq Use DESeq for analysis
 #' @return Table with p-values for differential expression and log-fold changes
-#' @import DESeq 
-#' @importFrom limma lmFit makeContrasts contrasts.fit eBayes topTable
 #' @export
 diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
     expression_matrix<-as.matrix(exprs)
@@ -145,6 +147,9 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
     ####################
     
     if (use.deseq) {
+        if (!require(DESeq)) {
+            stop("use.deseq=TRUE needs DESeq package to work")
+        }
         counts <- expression_matrix
                 
         cds <- newCountDataSet(round(counts), classes_vector)
@@ -159,6 +164,9 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
         res <- res[, c("id", "pval", "log2FoldChange")]
         colnames(res) <- c("ID", "pval", "logFC")
     } else {
+        if (!require(limma)) {
+            stop("use.deseq=FALSE needs limma package to work")
+        }
         log_expression_matrix<-normalizeExpressions(expression_matrix, zero.rm=T, log2=log2, quantile=quantile)
         group_names<-classes_vector
         

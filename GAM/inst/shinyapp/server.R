@@ -13,7 +13,7 @@ data(gene.id.map)
 data(met.id.map)
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
-solver <- heinz.solver(heinz.py=heinz.py, timeLimit=10)
+solver <- heinz.solver(heinz.py=heinz.py, timeLimit=60)
 
 renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     # Convert the expression + environment into a function

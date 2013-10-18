@@ -110,8 +110,10 @@ module2list <- function(module) {
 #' Get json string of a module
 #' @param module Moculde to convert to JSONstring
 #' @export
-#' @importFrom rjson toJSON
 getModuleJsonString <- function(module) {
+    if (!require(rjson)) {
+        stop("getModuleJsonString needs rsjon module to work")
+    }
     graphObject <- module2list(module)    
     return(toJSON(graphObject))
 }
