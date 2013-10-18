@@ -498,12 +498,14 @@ runHeinz <- function(subnet,
 #' @param nModules Number of modules to search for
 #' @param tolerance tolerance parameter for heinz
 #' @param subopt_diff subopt_diff parameter for heinz
+#' @param timeLimit Time limit for execution
+#' @return solver function
 #' @export
 heinz.solver <- function(heinz.py,
                          nModules=1,
                          tolerance=10,
                          subopt_diff=100,
-                         cplexTimeLimit=1e+75
+                         timeLimit=1e+75
                          ) {
     
     
@@ -519,18 +521,21 @@ heinz.solver <- function(heinz.py,
             nModules=nModules, 
             tolerance=tolerance,
             subopt_diff=subopt_diff,
-            cplexTimeLimit=cplexTimeLimit
+            cplexTimeLimit=timeLimit
             )        
     }
 }
 
+#' Solves MWCS with BioNet::runFastHeinz algorithm
+#' @param network Netowrk to find module in
+#' @return Module
 #' @export
 fastHeinz.solver <- function(network) {
-    score.edges <- "score" %in% list.edge.attributes(net) && !all(E(net)$score == 0)
+    score.edges <- "score" %in% list.edge.attributes(network) && !all(E(network)$score == 0)
     if (score.edges) {
         stop("Can't run fast heinz on network with scored edges")
     }
-    res <- list(runFastHeinz(net, V(net)$score))
+    res <- list(runFastHeinz(network, V(net)$score))
 }
 
 #' Find significant module in the network
@@ -541,6 +546,8 @@ fastHeinz.solver <- function(network) {
 #' @param absent.met.score Score for metabolites absent from data
 #' @param absent.rxn.score Score for reactions when there is no genomic data
 #' @param score.separately Score metabolites and reactions separately
+#' @param solver Solver function of MWCS problem to use, first argument should be a network,
+#'               result should be a module or list of modules
 #' @param simplify If TRUE and only one module was found return just the module, not a list.
 #' @param ... Additional arguments for solver
 #' @return List of most significant modules

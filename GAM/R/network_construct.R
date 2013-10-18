@@ -1,18 +1,3 @@
-getRxn2Met <- function(net) {
-    rxn2met.x <- data.frame(rxn=net$rxn, met=net$met.x, stringsAsFactors=F)
-    rxn2met.y <- data.frame(rxn=net$rxn, met=net$met.y, stringsAsFactors=F)
-    return(unique(rbind(rxn2met.x, rxn2met.y)))
-}
-
-getMetDegree <- function(net) {
-    rxn2met <- getRxn2Met(net)
-    met.degree <- table(rxn2met$met)
-    met.degree <- met.degree[order(met.degree, decreasing=T)]
-    met.degree <- as.data.frame(met.degree)
-    met.degree$name <- met2name$name[match(rownames(met.degree), met2name$met)]
-    return(met.degree)
-}
-
 #' Get KEGG network for specified organism
 #' @param kegg.db object with KEGG mappings
 #' @param organism Organism
