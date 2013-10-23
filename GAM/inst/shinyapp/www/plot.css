@@ -27,3 +27,13 @@ svg {
   fill: #eeeeee;
   pointer-events: all;
 }
+
+.help-tooltip {
+    data-placement: "right";
+}
+
+/*
+.popover-title { 
+    display: none; 
+}
+*/

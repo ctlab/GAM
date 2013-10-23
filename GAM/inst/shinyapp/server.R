@@ -32,8 +32,9 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
 necessary.de.fields <- c("ID", "pval", "logFC")
 
 vector2html <- function(v) {
-    res.md <- paste("*", names(v), ": ", v, "\n", collapse="")
-    return(markdownToHTML(text=res.md, fragment.only=T))
+    paste0("<ul>\n",
+           paste("<li>", names(v), ": ", v, "</li>\n", collapse=""),
+           "</ul>\n")
 }
 
 renderJs <- function(expr, env=parent.frame(), quoted=FALSE) {
@@ -201,11 +202,13 @@ shinyServer(function(input, output) {
             ))
     })
     
-    output$postProcessingOptions <- reactive({
+    output$networkParameters <- reactive({
         es <- esInput()
         makeJsAssignments(
-            networkHasReactionsAsNodes = !is.null(es) && !es$reactions.as.edges,
-            networkHasReactionsAsEdges = !is.null(es) && es$reactions.as.edges
+            network.available = !is.null(es),
+            network.hasReactionsAsNodes = !is.null(es) && !es$reactions.as.edges,
+            network.hasReactionsAsEdges = !is.null(es) && es$reactions.as.edges,
+            network.usesRpairs = !is.null(es) && es$use.rpairs
             )        
     })
     
@@ -285,11 +288,24 @@ shinyServer(function(input, output) {
             ))
     })
     
+    output$moduleParameters <- reactive({
+        m <- moduleInput()
+        makeJsAssignments(
+            module.available = !is.null(m)
+            )        
+    })
+    
     output$module <- renderGraph({
         moduleInput()
     })
     
-    output$downloadXGMML <- downloadHandler(
+    output$downloadNetwork <- downloadHandler(
+        filename = "network.xgmml",
+        content = function(file) {
+            saveModuleToXgmml(esInput()$subnet, "network", file)
+        })
+    
+    output$downloadModule<- downloadHandler(
         filename = "module.xgmml",
         content = function(file) {
             saveModuleToXgmml(moduleInput(), "module", file)

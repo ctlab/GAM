@@ -270,6 +270,7 @@ makeExperimentSet <- function(network,
     
     es$graph.raw <- es$network$graph.raw
     es$reactions.as.edges <- reactions.as.edges
+    es$use.rpairs <- use.rpairs
     
     
     es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids, plot=plot)

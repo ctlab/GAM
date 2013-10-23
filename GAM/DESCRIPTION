@@ -10,4 +10,4 @@ Imports: BioNet (>= 1.20), igraph, plyr, XML, graph, data.table
 Depends: R (>= 2.10)
 License: GPL (>=2)
 VignetteBuilder: knitr
-Suggests: knitr, biomaRt, rjson, DESeq, limma
+Suggests: knitr, biomaRt, rjson, DESeq, limma, markdown

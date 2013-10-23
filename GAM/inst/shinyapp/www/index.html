@@ -17,6 +17,23 @@
     <title>Shiny GAM</title>
   </head>
   <body>
+      <div id="networkParameters" class="js-output">
+          <script>
+              network = {
+                  available: false,
+                  hasReactionsAsEdges: false,
+                  hasReactionsAsNodes: false,
+                  usesRpairs: false
+              };
+          </script>
+      </div>
+      <div id="moduleParameters" class="js-output">
+          <script>
+              module = {
+                  available: false
+              };
+          </script>
+      </div>
     <div class="container">
       <div class="row">
         <div class="span12" style="padding: 10px 0px;">
@@ -26,17 +43,23 @@
       <div class="row">
           <div class="span12">
               <div class="tabbable">
-                  <ul class="nav nav-tabs">
-                      <li class="active"> <a href="#tab-8504-1" data-toggle="tab">Work</a> </li>
-                      <li> <a href="#tab-8504-3" data-toggle="tab">Help</a> </li>
-                      <li> <a href="#tab-8504-4" data-toggle="tab">About</a> </li>
+                  <ul class="nav nav-tabs" id="tab-panel-main">
+                      <li class="active"> <a href="#tab-main" data-toggle="tab">Work</a> </li>
+                      <li> <a href="#tab-help" data-toggle="tab">Help</a> </li>
+                      <li> <a href="#tab-about" data-toggle="tab">About</a> </li>
                   </ul>
                   <div class="tab-content">
-                      <div class="tab-pane active" id="tab-8504-1">
+                      <div class="tab-pane active" id="tab-main">
                           <div class="row">
                               <div class="span3">
                                   <form class="well">
-                                      <label class="control-label" for="network">Select an organism: <i class="icon-question-sign"></i></label>
+                                      <label class="control-label" for="network">
+                                          Select an organism: 
+                                          <a id="select-organism-tooltip" class="help-tooltip" href="#" 
+                                              title="You have to select an organism">
+                                              <i class="icon-question-sign"></i>
+                                          </a>
+                                      </label>
                                       <select id="network">
                                           <option value="Mouse musculus" selected="selected">Mouse musculus</option>
                                           <option value="Homo sapiens">Homo sapiens</option>
@@ -55,8 +78,8 @@
                                       </div>
                                       <label class="control-label" for="reactionsAs">How to interpret reactions:</label>
                                       <select id="reactionsAs">
-                                          <option value="nodes" selected="selected">As nodes</option>
-                                          <option value="edges">As edges</option>
+                                          <option value="edges" selected="selected">As edges</option>
+                                          <option value="nodes">As nodes</option>
                                       </select>
                                       <div data-display-if="input.reactionsAs == 'nodes'">
                                           <label class="checkbox" for="collapseReactions">
@@ -71,7 +94,7 @@
                                           </label>
                                       </div>
                                       <br/>
-                                      <button id="preprocess" type="button" class="btn action-button">Preprocess</button>
+                                      <button id="preprocess" type="button" class="btn action-button">Make network</button>
                                   </form>
                               </div>
                               <div class="span9">
@@ -89,6 +112,9 @@
                                   </div>
                                   <h3>Network summary</h3>
                                   <div id="networkSummary" class="shiny-html-output"></div>
+                                  <div data-display-if="network.available">
+                                      <a id="downloadNetwork" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a><br>
+                                  </div>
                               </div>
                           </div>
                           <div id="module-panel" class="row">
@@ -105,19 +131,13 @@
                                       <br/>
                                       <button id="find" type="button" class="btn action-button">Find module</button>
                                       <br/>
-                                      <div id="postProcessingOptions" class="js-output">
-                                          <script>
-                                              networkHasReactionsAsEdges = false;
-                                              networkHasReactionsAsNodes = false;
-                                          </script>
-                                      </div>
-                                      <div data-display-if="networkHasReactionsAsEdges && input.useRpairs">
+                                      <div data-display-if="network.hasReactionsAsEdges && network.usesRpairs">
                                           <label class="checkbox" for="addTransPairs">
                                               <input id="addTransPairs" type="checkbox"/>
                                               <span>Add trans- edges</span>
                                           </label>
                                       </div>
-                                      <div data-display-if="networkHasReactionsAsNodes">
+                                      <div data-display-if="network.hasReactionsAsNodes">
                                           <label class="checkbox" for="addMetabolitesForReactions">
                                               <input id="addMetabolitesForReactions" type="checkbox"/>
                                               <span>Add all metabolites for reactions</span>
@@ -136,25 +156,142 @@
                                           </label>
                                       </div>
                                       <br/>
-                                      <a id="downloadXGMML" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
                                       <br/>
                                   </form>
                                   <h3>Module summary</h3>
                                   <div id="moduleSummary" class="shiny-html-output"></div>
+                                  <div data-display-if="module.available">
+                                      <a id="downloadModule" class="btn shiny-download-link" href="" target="_blank">Download XGMML</a>
+                                  </div>
                               </div>
                               <div class="span9">
                                   <div id="module" class="graph-output"></div>
                               </div>
                           </div>
                       </div>
-                      <div class="tab-pane" id="tab-8504-3">
+                      <div class="tab-pane" id="tab-help">
                           <div class="row">
                               <div class="span9 offset3">
-                                  Help text.
+                                  <p>
+                                  This web-application provides a way to analyse transcriptional and/or 
+                                  metabolic data in a context of biochemical reactions.
+                                  </p>
+
+                                  <p>
+                                  First, select an organism, so that only reactions possible
+                                  in the organism are used.
+                                  </p>
+
+                                  <p>
+                                  Then upload available data: gene and/or
+                                  metabolite differential expression data in a
+                                  tab-separated format. The first line of these
+                                  files should be a header with column names.
+                                  Columns should include "ID", "pval" and
+                                  "logFC": identificator of a gene (RefSeq mRNA
+                                  transcript ID or Entrez ID), P-value for the
+                                  gene and a logarithm of a fold-change
+                                  correspondingly.  You can download example
+                                  data for <a href="/publications/supp_materials/GAM/gene.de.M1.M2.tsv">genes</a>
+                                  and <a href="/publications/supp_materials/GAM/met.de.M1.M2.tsv">metabolites</a>.
+                                  As you upload your files summary of them will
+                                  appear, so you can check that it was parsed
+                                  correctly.
+                                  </p>
+
+                                  <p>
+                                  Select an interpretation of reactions in a
+                                  network: either as edges or as nodes.  For
+                                  interpretation of reactions as edges
+                                  network is made in a
+                                  following way. For each pair of metabolites
+                                  with multiple reaction connections between
+                                  them only one with minimal p-value is kept.
+                                  Then all the remaining reactions and
+                                  metabolites that take part in these reactions
+                                  are combined into a network as edges and nodes
+                                  correspondingly. A possible option is to
+                                  consider not all cross-connections between
+                                  substrates and products for a reaction, but
+                                  only those that make up a KEGG reaction pair
+                                  (RPAIR, see <a href=http://www.genome.jp/kegg/reaction/>KEGG REACTION</a> for details).
+                                  </p>
+
+                                  <p>
+                                  If reaction are interpreted as nodes then
+                                  both metabolites and reactions are added as
+                                  nodes to the network. Edges
+                                  are added between a metabolite and a reaction
+                                  if the metabolite takes part in this reaction.
+                                  Then, as an option, groups of reactions
+                                  having at least one common metabolite and the
+                                  same most significant gene can be collapsed
+                                  into single nodes.
+                                  </p>
+
+                                  <p>
+                                  Generally, all this options lead to similar 
+                                  results. We recommend to use default option
+                                  values as this make a network simpler and analysis
+                                  faster.
+                                  </p>
+
+                                  <p>
+                                  After making a network you can find a
+                                  connected module that contains the most
+                                  significantly changed genes and reactions.
+                                  Internally this is done by firstly scoring nodes
+                                  and edges based on their P-values such that
+                                  positive scores correspond to significant
+                                  P-values and negative scores correspond to
+                                  insignificant changes. Then the problem
+                                  of finding a connected subgraph with maximum
+                                  summary weight is solved. As this problem
+                                  is NP-hard and solving it may take a lot of 
+                                  time there is a one minute time limit for 
+                                  running solver.
+                                  By changing FDR values and scores for absent
+                                  metabolites and reactions you can control
+                                  size of the module. We recommend to start
+                                  from default values and then gradually change
+                                  them depending on the results. 
+                                  </p>
+
+                                  <p>
+                                  There are couple of post-processing steps that 
+                                  are available. If in the network reactions are
+                                  edges and RPAIRs are used then trans- 
+                                  connections can be added. When reactions are
+                                  nodes following operations could be applied:
+                                  <ul>
+                                      <li> Adding all metabolites that are part
+                                      of any rection in the module. </li>
+
+                                      <li> Adding all reactions that aren't present
+                                      in the module but are directly connected
+                                      to two metabolites from the module.</li>
+
+                                      <li> Removing all metabolites with no data
+                                      and only one connection in the module </li>
+
+                                      <li> Replacing reaction nodes with edges 
+                                      for reactions that connect only two
+                                      metabolites in the module and these two
+                                      metabolites are on different sides of 
+                                      the reaction. </li>
+                                  </ul>
+                                  </p>
+
+                                  <p>
+                                  Anytime you can download the module in a XGMML
+                                  format and, for example, explore it in Cytoscape.
+                                  You can download GAM's VizMap style for Cytoscape
+                                  <a href="/publications/supp_materials/GAM/GAM_VizMap.xml">here</a>.
+                                  </p>
                               </div>
                           </div>
                       </div>
-                      <div class="tab-pane" id="tab-8504-4">
+                      <div class="tab-pane" id="tab-about">
                           <div class="row">
                               <div class="span9 offset3">
                                   <p> By Alexey Sergushichev.  </p>

@@ -23,7 +23,6 @@ Shiny.outputBindings.register(jsOutputBinding, "alserg.jsOutputBinding");
 
 
 var svg;
-var container = "#graphContainer";
 var force;
 
 positiveFCScale = d3.scale.linear().clamp(true).domain([0,2]).range(["#cccccc","#ff0000"]);
@@ -99,13 +98,19 @@ window.onload = function() {
     $(".graph-output").each(function(i) { initContainer(this) })
     // initContainer($(container));
 
-
+    // $('.help-popover').popover();
+    $('.help-tooltip').tooltip({
+        placement: "right",
+        delay: { show: 0, hide: 1000 }
+    });
 }
 
 function loadGraph(container, graph) {
 
     var width = $(container).width(),
         height = $(container).height();
+
+    container.zoo
 
 
     container.force = d3.layout.force()
