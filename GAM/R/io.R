@@ -124,135 +124,114 @@ getModuleJsonString <- function(module) {
 #' @param name Name of the network
 #' @param file File to save to
 #' @export
-#' @importFrom XML append.xmlNode addAttributes saveXML
 saveModuleToXgmml <- function(network, name, file) {
-    top <- .XGMML.destription(name=name)
-    print("...adding nodes")
-    # append nodes
-    nodes <- .XGMML.nodes(network=network)
-    top <- append.xmlNode(top, nodes) 
-    print("...adding edges")
-    # append edges
-    edges <- .XGMML.edges(network=network)
-    top <- append.xmlNode(top, edges) 
-    # save to file as xgmml
-    print("...writing to file")
-    saveXML(top, file, encoding="UTF-8")
-    if("package:XML" %in% search()){detach("package:XML")}
+    s <- getGraphXmlString(network, name)
+    write(s, file)
 }
 
-#' @importFrom XML xmlNode
-# internal method to create the first part of the XGMML-file, description
-.XGMML.destription <- function(name)
-{
-    # create top node
-    # top part of xml
-    top <- xmlNode("graph", attrs = c(label=name, "xmlns:dc"="http://purl.org/dc/elements/1.1/", "xmlns:xlink"="http://www.w3.org/1999/xlink", "xmlns:rdf"="http://www.w3.org/1999/02/22-rdf-syntax-ns#", "xmlns:cy"="http://www.cytoscape.org", xmlns="http://www.cs.rpi.edu/XGMML"))
-    top <- append.xmlNode(top, xmlNode("att", attrs=c(name="documentVersion", value="1.1")))
+getGraphXmlString <- function(network, name) {
+    res <- c()
+    res <- c(res, '<?xml version="1.0"?>\n')
+    res <- c(res, '<graph label="net" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cy="http://www.cytoscape.org" xmlns="http://www.cs.rpi.edu/XGMML">\n')
+    res <- c(res, '  <att name="documentVersion" value="1.1"/>\n')
+    res <- c(res, '  <att name="networkMetadata">\n')
+    res <- c(res, getRDFXmlString(network, name, indent="    "))
+    res <- c(res, '  </att>\n')
+    res <- c(res, getNodeXmlStrings(network, indent="  "))
+    res <- c(res, getEdgeXmlStrings(network, indent="  "))
+    res <- c(res, '</graph>\n')
     
-    d <- xmlNode("rdf:Description", attrs=c("rdf:about"="http://www.cytoscape.org/"))
-    d <- append.xmlNode(d,  xmlNode("dc:type", "Protein-Protein Interaction"))
-    d <- append.xmlNode(d,  xmlNode("dc:description", "N/A"))
-    d <- append.xmlNode(d,  xmlNode("dc:identifier", "N/A"))
-    d <- append.xmlNode(d,  xmlNode("dc:date", Sys.time()))
-    d <- append.xmlNode(d,  xmlNode("dc:title", name))
-    d <- append.xmlNode(d,  xmlNode("dc:format", "BioNet-Cytoscape-XGMML"))
-    
-    c <- xmlNode("att", attrs=c(name="networkMetadata"), xmlNode("rdf:RDF", d))
-    top <- append.xmlNode(top, c)
-    return(top)
+    paste(res, collapse="")
 }
 
-# internal method for the addition of nodes to xml
-#' @importFrom igraph get.vertex.attribute
-.XGMML.nodes <- function(network)
-{
-    # create node-nodes
-    c.node <- rep("node", length(V(network)-1))
-    nodes <- lapply(c.node, xmlNode)
+xmlNodeString <- function(name, text) {
+    paste0("<", name, ">", text, "</", name, ">")
+}
+
+getRDFXmlString <- function(network, name, indent="") {
+    res <- c()
+    res <- c(res, paste0("<rdf:RDF>\n"))
+    res <- c(res, paste0("  ", "<rdf:Description rdf:about=\"http://www.cytoscape.org/\">\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:type", "Protein-Protein Interaction"), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:description", "N/A"), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:identifier", "N/A"), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:date", Sys.time()), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:title", name), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:format", "BioNet-Cytoscape-XGMML"), "\n"))
+    res <- c(res, paste0("  ", "</rdf:Description>\n"))
+    res <- c(res, paste0("</rdf:RDF>\n"))
     
-    # create node attributes
-    attrib <- list.vertex.attributes(network)
-    node.attribs <- matrix(data=NA, nrow=length(attrib), ncol=length(V(network)))
-    for(i in 1:length(attrib))
-    {
-        attrib.values <- get.vertex.attribute(network, attrib[i])
-        if(is(attrib.values)[1] == "character") {
+    res <- paste0(indent, res)
+    paste(res, collapse="")
+}
+
+
+getAttrXmlStrings <- function(attr.values, indent="") {
+    attr.xmlStrings <- list() 
+    attr.names <- names(attr.values)
+    for(i in seq_along(attr.values)) {
+        attr.rtype <- is(attr.values[[i]])[1]
+        if (attr.rtype == "character") {
             type <- "string"
-        } else if(is(attrib.values)[1] == "integer") {
+        } else if(attr.rtype == "integer") {
             type <- "integer"
-        } else if(is(attrib.values)[1] == "numeric") {
+        } else if(attr.rtype == "numeric") {
             type <- "real"
         } else {
             type <- "string"
-            attrib.values <- as.character(attrib.values)
+            attr.values[[i]] <- as.character(attr.values[[i]])
         }
-        node.attribs[i,] <- paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", attrib.values, "\"", sep="")
-        node.attribs[i, is.na(attrib.values)] <- NA
+        
+        attr.xmlStrings[[i]] <- paste0(indent, "<att type=", "\"", type, "\"", " name=", "\"", attr.names[i], "\"", " value=", "\"", attr.values[[i]], "\"/>\n")
+        attr.xmlStrings[[i]][is.na(attr.values[[i]])] <- NA
     }
-    node.attribs.tmp <- matrix(lapply(node.attribs, xmlNode), nrow = length(attrib), ncol = length(V(network)))
-    node.attribs.tmp[is.na(node.attribs)] <- NA
-    node.attribs <- node.attribs.tmp
+    names(attr.xmlStrings) <- attr.names
+    do.call("cbind", attr.xmlStrings)
+}
+
+getNodeXmlStrings <- function(network, indent="") {
+    attr.values <- get.vertex.attributes(network)
+    attr.xmlStrings <- getAttrXmlStrings(attr.values, paste0(indent, "  "))
+    
     if(is.null(V(network)$name))
     {
         V(network)$name <- as.character(V(network))
     }
     node.label <- V(network)$name
     node.id <- as.vector(V(network))
-    
-    # append node attributes
-    for(i in 1:length(V(network)))
-    {
-        nodes[[i]] <- addAttributes(nodes[[i]], label = node.label[i], id=node.id[i])
-        nodes[[i]] <- append.xmlNode(nodes[[i]], node.attribs[,i][!is.na(node.attribs[,i])])
-    }
-    
-    return(nodes)
+    xmlHeaders <- paste0(indent, 
+                         "<node",
+                         " label=", "\"", node.label, "\"", 
+                         " id=", "\"", node.id, "\"", 
+                         ">\n")
+    xmlFooter <- paste0(indent, "</node>\n")
+    xmlStrings <- paste0(xmlHeaders,
+                              apply(attr.xmlStrings, 1, function(x) paste(na.omit(x), collapse="")),
+                              xmlFooter)
+                                    
+    xmlStrings
 }
 
-# internal method for the addition of edges to XGMML
-#' @importFrom igraph get.edge.attribute get.edgelist list.edge.attributes
-.XGMML.edges <- function(network)
-{
-    # create edge-nodes
-    c.edge <- rep("edge", length(E(network)-1))
-    edges <- lapply(c.edge, xmlNode)
+getEdgeXmlStrings <- function(network, indent="") {
+    attr.values <- get.edge.attributes(network)
+    attr.xmlStrings <- getAttrXmlStrings(attr.values, paste0(indent, "  "))
     
     edgelist.names <- get.edgelist(network, names=TRUE)
     edgelist.names <- paste(edgelist.names[,1], edgelist.names[,2], sep=" (pp) ")
     edgelist.ids <- get.edgelist(network, names=FALSE)
     
-    # create edge attributes
-    attrib <- list.edge.attributes(network)
-    edge.attribs <- matrix(data=NA, nrow=length(attrib), ncol=length(E(network)))
-    for(i in 1:length(attrib))
-    {
-        attrib.values <- get.edge.attribute(network, attrib[i])
-        if(is(attrib.values)[1] == "character") {
-            type <- "string"
-        } else if(is(attrib.values)[1] == "integer") {
-            type <- "integer"
-        } else if(is(attrib.values)[1] == "numeric") {
-            type <- "real"
-        } else {
-            type <- "string"
-            attrib.values <- as.character(attrib.values)
-        }
-        edge.attribs[i,] <- paste("att type=", "\"", type, "\"", " name=", "\"", attrib[i], "\"", " value=", "\"", attrib.values, "\"", sep="")
-        edge.attribs[i, is.na(attrib.values)] <- NA
-    }
-    edge.attribs.tmp <- matrix(lapply(edge.attribs, xmlNode), nrow = length(attrib), ncol = length(E(network)))
-    edge.attribs.tmp[is.na(edge.attribs)] <- NA
-    edge.attribs <- edge.attribs.tmp
-    
-    # append edge attributes
-    for(i in 1:length(E(network)))
-    {
-        edges[[i]] <- addAttributes(edges[[i]], label=edgelist.names[i], source=edgelist.ids[i,1], target=edgelist.ids[i,2])
-        edges[[i]] <- append.xmlNode(edges[[i]], edge.attribs[,i][!is.na(edge.attribs[,i])])
-    }
-    
-    return(edges)
+    xmlHeaders <- paste0(indent, 
+                         "<edge",
+                         " label=", "\"", edgelist.names, "\"", 
+                         " source=", "\"", edgelist.ids[,1], "\"", 
+                         " target=", "\"", edgelist.ids[,2], "\"", 
+                         ">\n")
+    xmlFooter <- paste0(indent, "</edge>\n")
+    xmlStrings <- paste0(xmlHeaders,
+                              apply(attr.xmlStrings, 1, function(x) paste(na.omit(x), collapse="")),
+                              xmlFooter)
+                                    
+    xmlStrings
 }
 
     

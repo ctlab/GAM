@@ -132,7 +132,12 @@
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="0.5"/>
                 </continuousMapping>
             </visualProperty>
-            <visualProperty name="EDGE_LABEL_FONT_SIZE" default="10"/>
+            <visualProperty name="EDGE_LABEL_FONT_SIZE" default="12">
+                <continuousMapping attributeType="float" attributeName="logPval">
+                    <continuousMappingPoint lesserValue="40" greaterValue="40" equalValue="40" attrValue="-80"/>
+                    <continuousMappingPoint lesserValue="12" greaterValue="12" equalValue="12" attrValue="0.0"/>
+                </continuousMapping>
+            </visualProperty>
             <visualProperty name="EDGE_TRANSPARENCY" default="255"/>
             <visualProperty name="EDGE_SOURCE_ARROW_SHAPE" default="NONE"/>
             <visualProperty name="EDGE_BEND" default=""/>
@@ -283,7 +288,12 @@
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="2"/>
                 </continuousMapping>
             </visualProperty>
-            <visualProperty name="EDGE_LABEL_FONT_SIZE" default="10"/>
+            <visualProperty name="EDGE_LABEL_FONT_SIZE" default="12">
+                <continuousMapping attributeType="float" attributeName="logPval">
+                    <continuousMappingPoint lesserValue="40" greaterValue="40" equalValue="40" attrValue="-80"/>
+                    <continuousMappingPoint lesserValue="12" greaterValue="12" equalValue="12" attrValue="0.0"/>
+                </continuousMapping>
+            </visualProperty>
             <visualProperty name="EDGE_TRANSPARENCY" default="255"/>
             <visualProperty name="EDGE_SOURCE_ARROW_SHAPE" default="NONE"/>
             <visualProperty name="EDGE_BEND" default=""/>
