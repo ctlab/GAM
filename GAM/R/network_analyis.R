@@ -494,6 +494,45 @@ runHeinz <- function(subnet,
     return(res)
 }
 
+#' Solves MWCS using mwcs solver (it's under development) 
+#' @param mwcs Path to mwcs executable
+#' @param timeLimit Time limit for execution
+#' @return solver function
+#' @export
+mwcs.solver <- function(mwcs, timeLimit=-1) {
+    function(network) {
+        score.edges <- "score" %in% list.edge.attributes(network)
+        score.nodes <- "score" %in% list.vertex.attributes(network)
+        
+        graph.dir <- tempfile("graph")
+        dir.create(graph.dir)
+        edges.file <- paste(graph.dir, "edges.txt", sep="/")
+        nodes.file <- paste(graph.dir, "nodes.txt", sep="/")
+        
+        writeHeinzEdges(network, file=edges.file, use.score=score.edges)
+        
+        if (!score.nodes) {
+            # Hack to make writeHeinzeNodes working
+            V(subnet)$score <- 0
+        }
+        writeHeinzNodes(network, file=nodes.file, use.score=T)
+        
+        solution.file <- paste(graph.dir, "sol.txt", sep="/")
+        
+        system2(paste0(mwcs),
+                c("-n", nodes.file,
+                  "-e", edges.file,
+                  "-o", solution.file,
+                  "-v", 1,
+                  "-t", timeLimit))
+        
+        
+        res <- readHeinzGraph(node.file = solution.file,
+                              network = network, format="igraph")
+        return(res)
+    }
+}
+
 #' Solves MWCS using heinz
 #' @param heinz.py Path to heinz.py executable
 #' @param nModules Number of modules to search for
@@ -536,7 +575,9 @@ fastHeinz.solver <- function(network) {
     if (score.edges) {
         stop("Can't run fast heinz on network with scored edges")
     }
-    res <- list(runFastHeinz(network, V(net)$score))
+    scores <- V(network)$score
+    names(scores) <- V(network)$name
+    res <- list(runFastHeinz(network, scores))
 }
 
 #' Find significant module in the network

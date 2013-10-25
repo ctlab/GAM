@@ -101,7 +101,7 @@ window.onload = function() {
     // $('.help-popover').popover();
     $('.help-tooltip').tooltip({
         placement: "right",
-        delay: { show: 0, hide: 1000 }
+        delay: { show: 0, hide: 0 }
     });
 }
 
@@ -213,4 +213,13 @@ function loadGraph(container, graph) {
     });
 }
 
-
+function showFastHeinz(shouldShow) {
+    if (shouldShow) {
+        $("option[value='fastHeinz']").show();
+    } else {
+        $("option[value='fastHeinz']").hide();
+        if ($("#solver").val() == "fastHeinz") {
+            $("#solver").val("mwcs");
+        }
+    }
+}

@@ -14,7 +14,7 @@ data(gene.id.map)
 data(met.id.map)
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
-solver <- heinz.solver(heinz.py=heinz.py, timeLimit=60)
+mwcs.path <- "/usr/local/bin/mwcs"
 
 renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
     # Convert the expression + environment into a function
@@ -204,12 +204,16 @@ shinyServer(function(input, output) {
     
     output$networkParameters <- reactive({
         es <- esInput()
-        makeJsAssignments(
-            network.available = !is.null(es),
-            network.hasReactionsAsNodes = !is.null(es) && !es$reactions.as.edges,
-            network.hasReactionsAsEdges = !is.null(es) && es$reactions.as.edges,
-            network.usesRpairs = !is.null(es) && es$use.rpairs
-            )        
+        paste0(
+            makeJsAssignments(
+                network.available = !is.null(es),
+                network.hasReactionsAsNodes = !is.null(es) && !es$reactions.as.edges,
+                network.hasReactionsAsEdges = !is.null(es) && es$reactions.as.edges,
+                network.hasGenes = !is.null(es$fb.rxn),
+                network.usesRpairs = !is.null(es) && es$use.rpairs
+            ),
+            "showFastHeinz(network.hasReactionsAsNodes);"
+        )
     })
     
     output$showModulePanel <- renderJs({
@@ -218,6 +222,20 @@ shinyServer(function(input, output) {
         }
         # return("mp = $('#module-panel'); mp.hide();")
         return("")
+    })
+    
+    solver <- reactive({
+        solverName <- input$solver
+        if (solverName == "mwcs") {
+            solver <- mwcs.solver(mwcs.path, timeLimit=min(input$mwcsTimeLimit, 120))
+        } else if (solverName == "heinz") {
+            solver <- heinz.solver(heinz.py, timeLimit=max(input$heinzTimeLimit, 240))
+        } else if (solverName == "fastHeinz") {
+            solver <- fastHeinz.solver
+        } else {
+            stop(paste("There is no solver called", solverName))
+        }
+        solver
     })
     
     rawModuleInput <- reactive({
@@ -238,7 +256,7 @@ shinyServer(function(input, output) {
                     gene.fdr=gene.fdr,
                     absent.met.score=absent.met.score,
                     absent.rxn.score=absent.rxn.score,
-                    solver=solver)
+                    solver=isolate(solver()))
     })
     
     moduleInput <- reactive({
