@@ -131,7 +131,7 @@ splitMappingByConnectivity <- function(connections, from, to) {
 #' @param node.table Table with attribute values
 #' @param node.col Column (number of character) with vertex IDs
 #' @param name.as.label If TRUE rename "name" attribute to "label"
-#' @importFrom igraph set.vertex.attribute
+#' @import igraph
 addNodeAttributes <- function(graph, node.table, node.col=1, name.as.label=T) {
     if (class(node.table) == "list") {
         for (name in names(node.table)) {
@@ -164,7 +164,7 @@ moveColumnsToFront <- function(d, cols) {
     d[, c(cols, seq_along(d)[-cols])]
 }
 
-#' @importFrom igraph graph.edgelist simplify graph.data.frame
+#' @import igraph
 #' @importFrom plyr rbind.fill
 graph.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),

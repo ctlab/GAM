@@ -49,7 +49,7 @@ lazyData <- function(name, ...) {
 #' @param attr.shape Attribute to use for shape
 #' @param layout Layout to use
 #' @param ... Arguments for plot
-#' @importFrom igraph E V list.vertex.attributes layout.kamada.kawai layout.norm get.edges plot.igraph get.vertex.attribute
+#' @import igraph 
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
     network <- module
@@ -498,6 +498,7 @@ runHeinz <- function(subnet,
 #' @param mwcs Path to mwcs executable
 #' @param timeLimit Time limit for execution
 #' @return solver function
+#' @import igraph
 #' @export
 mwcs.solver <- function(mwcs, timeLimit=-1) {
     function(network) {
@@ -593,7 +594,7 @@ fastHeinz.solver <- function(network) {
 #' @param simplify If TRUE and only one module was found return just the module, not a list.
 #' @param ... Additional arguments for solver
 #' @return List of most significant modules
-#' @importFrom igraph V<- E<-
+#' @import igraph 
 #' @export 
 findModule <- function(es,                         
                        fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
@@ -671,7 +672,7 @@ findModule <- function(es,
 #' @param module Module to modify
 #' @param es Experiment set object
 #' @return Modified module
-#' @importFrom igraph add.edges delete.edges delete.vertices degree
+#' @import igraph 
 #' @export
 removeSimpleReactions <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -718,7 +719,7 @@ removeSimpleReactions <- function(module, es) {
 #' @param module Module to modify
 #' @param es Experiment set object
 #' @return Modified module
-#' @importFrom igraph add.vertices
+#' @import igraph 
 #' @export
 addMetabolitesForReactions<- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -760,7 +761,7 @@ addMetabolitesForReactions<- function(module, es) {
 #' @param module Module to work with
 #' @param es Experiment set object
 #' @return Module with interconnecting reactions
-#' @importFrom igraph induced.subgraph
+#' @import igraph 
 #' @export
 addInterconnections <- function(module, es) {
     met.nodes <- V(module)[nodeType == "met"]$name
@@ -775,7 +776,7 @@ addInterconnections <- function(module, es) {
 #' Copy attributes from reaction node to adjacent edges
 #' @param module Module do work with
 #' @return Module with attributes copied
-#' @importFrom igraph set.edge.attribute
+#' @import igraph 
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
     res <- module

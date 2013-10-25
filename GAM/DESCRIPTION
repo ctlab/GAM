@@ -6,7 +6,7 @@ Date: 2013-08-31
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: More about what it does (maybe more than one line)
-Imports: BioNet (>= 1.20), igraph, plyr, XML, graph, data.table
+Imports: BioNet (>= 1.20), igraph, plyr, graph, data.table
 Depends: R (>= 2.10)
 License: GPL (>=2)
 VignetteBuilder: knitr
