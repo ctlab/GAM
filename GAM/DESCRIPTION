@@ -1,13 +1,31 @@
 Package: GAM
 Type: Package
 Title: Package for integrated network analysis of genomic and metabolomic data
-Version: 0.1.18
+Version: 0.1.19
 Date: 2013-08-31
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: More about what it does (maybe more than one line)
-Imports: BioNet (>= 1.20), igraph, plyr, graph, data.table
-Depends: R (>= 2.10)
+Imports:
+    BioNet (>= 1.20),
+    igraph,
+    plyr,
+    data.table
+Depends:
+    R (>= 2.10)
 License: GPL (>=2)
 VignetteBuilder: knitr
-Suggests: knitr, biomaRt, rjson, DESeq, limma, markdown
+Suggests:
+    knitr,
+    biomaRt,
+    rjson,
+    DESeq,
+    limma,
+    markdown
+Collate:
+    'diff_expr.R'
+    'GAM-package.R'
+    'io.R'
+    'network_analyis.R'
+    'network_construct.R'
+    'transformations.R'

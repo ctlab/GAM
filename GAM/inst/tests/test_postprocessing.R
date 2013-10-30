@@ -1,7 +1,7 @@
 context("Post-processing")
 
 test_that("addNormLogFC works", {
-    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
+    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, Inf), stringsAsFactors=F)
     rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
     
     et <- data.frame(
@@ -9,7 +9,7 @@ test_that("addNormLogFC works", {
         v=c("R01", "R02", "R01", "R02"), 
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
     g1 <- addNormLogFC(g)
     

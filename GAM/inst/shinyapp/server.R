@@ -2,16 +2,12 @@ library(shiny)
 library(data.table)
 library(igraph)
 library(GAM)
-library(markdown)
 
 data(kegg.mouse.network)
 data(kegg.human.network)
 networks <- list(
     "Mouse musculus"=kegg.mouse.network,
     "Homo sapiens"=kegg.human.network)
-
-data(gene.id.map)
-data(met.id.map)
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 mwcs.path <- "/usr/local/bin/mwcs"
@@ -25,11 +21,12 @@ renderGraph <- function(expr, env=parent.frame(), quoted=FALSE) {
         if (is.null(val)) {
             return(list(nodes=list(), links=list()));
         }
+        print(module2list(val))
         module2list(val)
     }
 }
 
-necessary.de.fields <- c("ID", "pval", "logFC")
+necessary.de.fields <- c("ID", "pval")
 
 vector2html <- function(v) {
     paste0("<ul>\n",
@@ -50,6 +47,11 @@ renderJs <- function(expr, env=parent.frame(), quoted=FALSE) {
 
 toJsLiteral <- function(x) {
     if (is(x, "numeric")) {
+        if (x == Inf) {
+            return("Infinity")
+        } else {
+            return("-Infinity")
+        }
         return(as.character(x))
     } else if (is(x, "character")) {
         return(shQuote(x));
@@ -88,6 +90,7 @@ shinyServer(function(input, output) {
         if (is.null(data)) {
             return(NULL)
         }
+        GAM:::lazyData("gene.id.map")
         res <- getIdsType(data$ID, gene.id.map)
         if (length(res) != 1) {
             stop("Can't determine type of IDs for genes")
@@ -136,6 +139,7 @@ shinyServer(function(input, output) {
         if (is.null(data)) {
             return(NULL)
         }
+        GAM:::lazyData("met.id.map")
         res <- getIdsType(data$ID, met.id.map)
         if (length(res) != 1) {
             stop("Can't determine type of IDs for metabolites")
@@ -260,6 +264,7 @@ shinyServer(function(input, output) {
     })
     
     moduleInput <- reactive({
+        print("moduleInput: stat")
         module <- rawModuleInput()
         if (is.null(module)) {
             return(NULL)
@@ -279,6 +284,8 @@ shinyServer(function(input, output) {
             if (input$addInterconnections) {
                 module <- addInterconnections(module, es)
             }
+            
+            if ("logFC" %in% list.vertex.attributes(module))
             module <- addNormLogFC(module)
             
             if (input$removeHangingNodes) {
@@ -291,15 +298,19 @@ shinyServer(function(input, output) {
             module <- expandReactionNodeAttributesToEdges(module)
         }
             
+        print("moduleInput: finish")
+        print(module)
         module
     })
     
     output$moduleSummary <- reactive({
+        print("moduleSummary: start")
         module <- moduleInput()
         if (is.null(module)) {
             return("There is no module yet")
         }
         
+        print("moduleSummary: finish")
         vector2html(c(
             "number of nodes" = length(V(module)),
             "number of edges" = length(E(module))
@@ -313,9 +324,9 @@ shinyServer(function(input, output) {
             )        
     })
     
-    output$module <- renderGraph({
-        moduleInput()
-    })
+     output$module <- renderGraph({
+         moduleInput()
+     })
     
     output$downloadNetwork <- downloadHandler(
         filename = "network.xgmml",

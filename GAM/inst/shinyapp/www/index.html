@@ -67,7 +67,7 @@
                                           <option value="Homo sapiens">Homo sapiens</option>
                                       </select>
                                       <label>
-                                          Upload a TSV-file with gene P-values: 
+                                          Upload a TSV-file with gene p-values: 
                                           <a id="upload-gene-data-tooltip" class="help-tooltip" href="#" 
                                               title='File with gene differential expression data shoud be tab-separated with header and contain columns "ID", "pval" and "logFC".'>
                                               <i class="icon-question-sign"></i>
@@ -75,7 +75,7 @@
                                       </label>
                                       <input id="geneDE" type="file" accept="text/tab-separated-values"/>
                                       <label>
-                                          Select a TSV-file with metabolite P-values:
+                                          Select a TSV-file with metabolite p-values:
                                           <a id="upload-met-data-tooltip" class="help-tooltip" href="#" 
                                               title='File with metabolic differential expression data shoud be tab-separated with header and contain columns "ID", "pval" and "logFC".'>
                                               <i class="icon-question-sign"></i>
@@ -279,7 +279,7 @@
                                   </p>
 
                                   <p>
-                                  Upload downloaded files as TSV-files with gene and metabolite P-values correspondingly.
+                                  Upload downloaded files as TSV-files with gene and metabolite p-values respectively.
                                   You'll see a summary of the data:
                                   </p>
 
@@ -406,7 +406,7 @@
                                   Columns should include "ID", "pval" and
                                   "logFC": identifier (RefSeq mRNA
                                   transcript ID or Entrez ID for genes and HMDB 
-                                  or KEGG ID for metabolites), P-value and 
+                                  or KEGG ID for metabolites), p-value and 
                                   a logarithm of a fold-change.
                                   As you upload your files you can see summary
                                   of them appear, so you can check that it was parsed
@@ -417,9 +417,9 @@
                                   <p>
                                   After uploading gene DE data it's converted
                                   to reaction DE data by selecting a gene
-                                  coding enzyme for a reaction with minimal P-value.
+                                  coding enzyme for a reaction with minimal p-value.
                                   If there is a gene DE data then all reactions
-                                  without P-values or discarded as having no
+                                  without p-values or discarded as having no
                                   expressed enzymes. We recommend to exclude
                                   genes with low expression prior uploading.
                                   </p>
@@ -432,11 +432,11 @@
                                   the network is constructed in a
                                   following way. For each pair of metabolites
                                   with multiple reaction connections between
-                                  them only one with a minimal P-value is kept.
+                                  them only one with a minimal p-value is kept.
                                   Then all the remaining reactions and
                                   metabolites that take part in these reactions
                                   are combined into a network as edges and nodes
-                                  correspondingly. A possible option is to
+                                  respectively. A possible option is to
                                   consider not all cross-connections between
                                   substrates and products for a reaction, but
                                   only those that make up a KEGG reaction pair
@@ -469,9 +469,9 @@
                                   connected module that contains the most
                                   significantly changed genes and reactions.
                                   Internally this is done by firstly scoring nodes
-                                  and edges based on their P-values such that
+                                  and edges based on their p-values such that
                                   positive scores correspond to significant
-                                  P-values and negative scores correspond to
+                                  p-values and negative scores correspond to
                                   insignificant changes. Then the problem
                                   of finding a connected subgraph with maximum
                                   summary weight (MWCS problem) is solved. 

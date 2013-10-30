@@ -57,7 +57,6 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
     if (is.null(V(network)$name)) {
         V(network)$name <- as.character(V(network))
     }
-    # Hack for coloring
     
     if ("logFC.norm" %in% list.vertex.attributes(network)) {
         de <- V(network)$logFC.norm
@@ -69,6 +68,7 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
     de[is.na(de)] <- 0
     
     
+    # Hack for coloring
     de[de < 0] <- de[de < 0] - 1
     de[de > 0] <- de[de > 0] + 1
     
@@ -171,6 +171,7 @@ addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm
     for (node.type in node.types) {
         module.type.nodes <- V(module)[get.vertex.attribute(module, group.by) == node.type]
         module.type.de <- get.vertex.attribute(module, logFC.attr, module.type.nodes)
+        module.type.de <- fixInf(module.type.de)
         module.type.norm.de <- module.type.de / max(abs(na.omit(module.type.de)))
         module <- set.vertex.attribute(module, logFC.norm.attr, module.type.nodes, module.type.norm.de)
     }
@@ -197,7 +198,10 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     if (!is.null(es$gene.de)) {
         print("Processing gene p-values...")
-        es$gene.de$logFC <- fixInf(es$gene.de$logFC)
+        
+        if (!is.null(es$gene.de$logFC)) {
+            es$gene.de$logFC <- fixInf(es$gene.de$logFC)
+        }
         if (!is.null(gene.ids)) {
             lazyData("gene.id.map")
             gene.id.map <- get("gene.id.map")
@@ -213,7 +217,9 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     
     if (!is.null(es$met.de)) {
         print("Processing metabolite p-values...")
-        es$met.de$logFC <- fixInf(es$met.de$logFC)        
+        if (!is.null(es$met.de$logFC)) {
+            es$met.de$logFC <- fixInf(es$met.de$logFC)        
+        }
         if (!is.null(met.ids)) {
             lazyData("met.id.map")
             met.id.map <- get("met.id.map")
@@ -277,7 +283,9 @@ makeExperimentSet <- function(network,
     
     if (!is.null(es$rxn.de)) {
         print("Processing reaction p-values...")
-        es$rxn.de$logFC <- fixInf(es$rxn.de$logFC)                        
+        if (!is.null(es$rxn.de$logFC)) {
+            es$rxn.de$logFC <- fixInf(es$rxn.de$logFC)                        
+        }
         if ("origin" %in% colnames(es$rxn.de)) {
             
             es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
@@ -388,9 +396,7 @@ makeExperimentSet <- function(network,
             rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
             
             #rxn.de.origin.split <- es$rxn.de$origin
-            print("before split")
-            es$rxn.de.origin.split <- GAM:::splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
-            print("after split")
+            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
             
             t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
             #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
@@ -403,18 +409,15 @@ makeExperimentSet <- function(network,
                 return(paste(u, collapse="+"))
             }
             
-            print("before fixing")
             cols.to.fix <- setdiff(c(colnames(es$network$rxn2name), "rxns"), c("rxn", "name"))
             f <- as.formula(paste0("cbind(", paste0(cols.to.fix, collapse=","), ") ~ ID"))
             cols.fixed <- aggregate(f , es$rxn.de.ext, uniqueJoin)
-            print("after fixing")
             
             es$rxn.de.ext <- unique(es$rxn.de.ext[, !names(es$rxn.de.ext) %in% cols.to.fix])
             es$rxn.de.ext <- merge(es$rxn.de.ext, cols.fixed)
             
             edges$rxn <- es$rxn.de.origin.split[edges$rxn]
             edges <- unique(edges)
-            print("Done collapsing")
         }
         
         es$edges <- edges

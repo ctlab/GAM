@@ -130,7 +130,7 @@ fixInf <- function(dm) {
 #' @param use.deseq Use DESeq for analysis
 #' @return Table with p-values for differential expression and log-fold changes
 #' @export
-diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F) {
+diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F, min.expr=5) {
     expression_matrix<-as.matrix(exprs)
     
     
@@ -156,13 +156,13 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
         cds <- estimateSizeFactors(cds)
         cds <- estimateDispersions(cds)
         res <- nbinomTest(cds, state1, state2)
-        res <- res[res$baseMean > 5,]
+        res <- res[res$baseMean > min.expr,]
         res <- res[order(res$baseMean, decreasing=T),]        
         res <- res[1:top,]
         res <- res[order(res$pval),]
         res <- na.omit(res)
-        res <- res[, c("id", "pval", "log2FoldChange")]
-        colnames(res) <- c("ID", "pval", "logFC")
+        res <- res[, c("id", "pval", "log2FoldChange", "baseMean")]
+        colnames(res) <- c("ID", "pval", "logFC", "baseMean")
     } else {
         if (!require(limma)) {
             stop("use.deseq=FALSE needs limma package to work")
