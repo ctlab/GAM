@@ -4,6 +4,7 @@ graphOutputBinding.find = function(scope) {
 };
 
 graphOutputBinding.renderValue = function(el, data) {
+    initContainer(el);
     loadGraph(el, data);
 }
 
@@ -21,9 +22,6 @@ jsOutputBinding.renderValue = function(el, data) {
 
 Shiny.outputBindings.register(jsOutputBinding, "alserg.jsOutputBinding");
 
-
-var svg;
-var force;
 
 positiveFCScale = d3.scale.linear().clamp(true).domain([0,2]).range(["#cccccc","#ff0000"]);
 negativeFCScale = d3.scale.linear().clamp(true).domain([0,-2]).range(["#cccccc","#00ff00"]);
@@ -47,6 +45,7 @@ function getSize(d) {
 }
 
 function initContainer(container) {
+    container.innerHTML = "";
     var width = $(container).width(),
         height = $(window).height();
 

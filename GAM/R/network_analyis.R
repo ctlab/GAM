@@ -179,13 +179,6 @@ addNormLogFC <- function(module, logFC.attr="logFC", logFC.norm.attr="logFC.norm
     module
 }
 
-# Scores p-value by fitted BUM-model
-# This is a helper function based on BioNet::scoreFunction()
-scoreValue <- function (fb, pval, fdr = 0.01) 
-{
-    return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
-}
-
 
 #' Preprocess experiment set's differential expression data for genes and metabolites
 #' 
@@ -489,7 +482,12 @@ runHeinz <- function(subnet,
     
     res <- list()
     for (i in 0:(nModules-1)) {
-        module.graph <- readHeinzGraph(node.file = paste(nodes_file, i, "hnz", sep="."), 
+        sol.file <- paste(nodes_file, i, "hnz", sep=".")
+        if (!file.exists(sol.file)) {
+            warning("Solution file not found")
+            return(NULL)
+        }
+        module.graph <- readHeinzGraph(node.file = sol.file,
                                       network = subnet, format="igraph")
         res <- appendModule(res, module.graph)
         
@@ -531,6 +529,10 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
                   "-t", timeLimit))
         
         
+        if (!file.exists(solution.file)) {
+            warning("Solution file not found")
+            return(NULL)
+        }
         res <- readHeinzGraph(node.file = solution.file,
                               network = network, format="igraph")
         return(res)
@@ -584,7 +586,15 @@ fastHeinz.solver <- function(network) {
     res <- list(runFastHeinz(network, scores))
 }
 
-#' Find significant module in the network
+
+# Scores p-value by fitted BUM-model
+# This is a helper function based on BioNet::scoreFunction()
+scoreValue <- function (fb, pval, fdr = 0.01) 
+{
+    return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
+}
+
+#' Assign scores to network's nodes and edges
 #' @param es Experiment set object
 #' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and gene.fdr aren't used
 #' @param met.fdr FDR for metabolites only
@@ -592,21 +602,14 @@ fastHeinz.solver <- function(network) {
 #' @param absent.met.score Score for metabolites absent from data
 #' @param absent.rxn.score Score for reactions when there is no genomic data
 #' @param score.separately Score metabolites and reactions separately
-#' @param solver Solver function of MWCS problem to use, first argument should be a network,
-#'               result should be a module or list of modules
-#' @param simplify If TRUE and only one module was found return just the module, not a list.
-#' @param ... Additional arguments for solver
-#' @return List of most significant modules
+#' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @export 
-findModule <- function(es,                         
+scoreNetwork <- function(es,                         
                        fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
                        absent.met.score=NULL,
                        absent.rxn.score=0,
-                       score.separately=T,
-                       solver = fastHeinz.solver,
-                       simplify=T,
-                       ...) {
+                       score.separately=T) {
     
     net <- es$subnet
     
@@ -655,7 +658,96 @@ findModule <- function(es,
     }
     
     
-    res <- solver(net, ...)
+    
+    es$subnet.scored <- net
+    return(es)
+}
+
+
+#' @export
+scoreNetworkWithoutBUM <- function(es,
+                                   met.pval.threshold=1e-5,
+                                   met.pval.default=NULL,
+                                   rxn.pval.threshold=1e-5,
+                                   rxn.pval.default=NULL
+                                   ) {
+    
+    net <- es$subnet
+    
+            
+    met.scores <- NULL    
+    if (!is.null(es$fb.met) && !is.null(met.pval.threshold)) {            
+        met.scores <- -log(es$met.de.ext$pval) + log(met.pval.threshold)
+        names(met.scores) <- es$met.de.ext$ID
+        met.scores <- na.omit(met.scores)
+    }
+    
+    
+    rxn.scores <- NULL
+    if (!is.null(es$fb.rxn) && !is.null(rxn.pval.threshold)) {
+        rxn.scores <- -log(es$rxn.de.ext$pval) + log(rxn.pval.threshold)
+        names(rxn.scores) <- es$rxn.de.ext$ID
+        rxn.scores <- na.omit(rxn.scores)
+    }
+    
+    
+    if (is.null(met.pval.default)) {
+        absent.met.score <- mean(met.scores)
+    } else {
+        absent.met.score <- -log(met.pval.default) + log(met.pval.threshold)
+    }
+        
+    absent.met.scores <- sapply(V(net)[nodeType == "met"]$name, function(x) absent.met.score)
+    met.scores <- c(met.scores, absent.met.scores[!names(absent.met.scores) %in% names(met.scores)])
+    
+    met.scores <- met.scores[names(met.scores) %in% V(net)$name]
+    V(net)[names(met.scores)]$score <- met.scores
+    
+    if (is.null(rxn.pval.default)) {
+        absent.rxn.score <- mean(rxn.scores)
+    } else {
+        absent.rxn.score <- -log(rxn.pval.default) + log(rxn.pval.threshold)
+    }
+    
+    absent.rxn.scores <- sapply(es$rxn.de$ID, function(x) absent.rxn.score)
+    rxn.scores <- c(rxn.scores, absent.rxn.scores[!names(absent.rxn.scores) %in% names(rxn.scores)])
+    
+    if (es$reactions.as.edges) {
+        
+        E(net)$score <- rxn.scores[E(net)$rxn]
+    } else {
+        rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
+        V(net)[names(rxn.scores)]$score <- rxn.scores
+    }
+    
+    
+    
+    es$subnet.scored <- net
+    return(es)
+}
+
+
+#' Find significant module in the network
+#' @param es Experiment set object
+#' @param solver Solver function of MWCS problem to use, first argument should be a network,
+#'               result should be a module or list of modules
+#' @param score.function Function to score network (is applied only if the network wasn't scored previously)
+#' @param simplify If TRUE and only one module was found return just the module, not a list.
+#' @param ... Additional arguments for scoring function
+#' @return List of most significant modules
+#' @import igraph 
+#' @export 
+findModule <- function(es,                         
+                       solver = fastHeinz.solver,
+                       simplify=T,
+                       score.function=scoreNetwork,
+                       ...) {
+    
+    if (is.null(es$subnet.scored)) {
+        es <- score.function(es, ...)
+    }
+    
+    res <- solver(es$subnet.scored)
     
     if (simplify && is(res, "list") && length(res) == 1) {
         return(res[[1]])

@@ -3,6 +3,8 @@ library(data.table)
 library(igraph)
 library(GAM)
 
+
+options(shiny.error=traceback)
 data(kegg.mouse.network)
 data(kegg.human.network)
 networks <- list(
@@ -233,7 +235,7 @@ shinyServer(function(input, output) {
         if (solverName == "mwcs") {
             solver <- mwcs.solver(mwcs.path, timeLimit=min(input$mwcsTimeLimit, 120))
         } else if (solverName == "heinz") {
-            solver <- heinz.solver(heinz.py, timeLimit=max(input$heinzTimeLimit, 240))
+            solver <- heinz.solver(heinz.py, timeLimit=min(input$heinzTimeLimit, 240))
         } else if (solverName == "fastHeinz") {
             solver <- fastHeinz.solver
         } else {
@@ -255,12 +257,17 @@ shinyServer(function(input, output) {
             return(NULL)
         }
 
-        findModule(es,
+        res <- findModule(es,
                     met.fdr=met.fdr,
                     gene.fdr=gene.fdr,
                     absent.met.score=absent.met.score,
                     absent.rxn.score=absent.rxn.score,
                     solver=isolate(solver()))
+        
+        if (is.null(res) || length(V(res)) == 0) {
+            stop("No module found")
+        }
+        res
     })
     
     moduleInput <- reactive({
@@ -269,6 +276,7 @@ shinyServer(function(input, output) {
         if (is.null(module)) {
             return(NULL)
         }
+        
         es <- isolate(esInput())
         
         if (es$reactions.as.edges) {
