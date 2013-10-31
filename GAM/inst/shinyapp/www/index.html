@@ -48,13 +48,14 @@
                   <ul class="nav nav-tabs" id="tab-panel-main">
                       <li class="active"> <a href="#tab-main" data-toggle="tab">Work</a> </li>
                       <li> <a href="#tab-help" data-toggle="tab">Help</a> </li>
-                      <li> <a href="#tab-about" data-toggle="tab">About</a> </li>
+                      <li> <a href="#tab-ahtml" data-toggle="tab">About</a> </li>
                   </ul>
                   <div class="tab-content">
                       <div class="tab-pane active" id="tab-main">
                           <div class="row">
                               <div class="span3">
                                   <form class="well">
+                                      <p class="form-header">Construct a network</p>
                                       <label class="control-label" for="network">
                                           Select an organism: 
                                           <a id="select-organism-tooltip" class="help-tooltip" href="#" 
@@ -67,17 +68,17 @@
                                           <option value="Homo sapiens">Homo sapiens</option>
                                       </select>
                                       <label>
-                                          Upload a TSV-file with gene p-values: 
+                                          File with gene DE data: 
                                           <a id="upload-gene-data-tooltip" class="help-tooltip" href="#" 
-                                              title='File with gene differential expression data shoud be tab-separated with header and contain columns "ID", "pval" and "logFC".'>
+                                              title='File with gene differential expression data shoud be tab-separated with header and contain columns "ID" and "pval".'>
                                               <i class="icon-question-sign"></i>
                                           </a>
                                       </label>
                                       <input id="geneDE" type="file" accept="text/tab-separated-values"/>
                                       <label>
-                                          Select a TSV-file with metabolite p-values:
+                                          File with metabolic DE data: 
                                           <a id="upload-met-data-tooltip" class="help-tooltip" href="#" 
-                                              title='File with metabolic differential expression data shoud be tab-separated with header and contain columns "ID", "pval" and "logFC".'>
+                                              title='File with metabolic differential expression data shoud be tab-separated with header and contain columns "ID" and "pval".'>
                                               <i class="icon-question-sign"></i>
                                           </a>
                                       </label>
@@ -143,6 +144,7 @@
                           <div id="module-panel" class="row top-buffer">
                               <div class="span3">
                                   <form class="well">
+                                      <p class="form-header">Discover modules</p>
                                       <div data-display-if="network.hasGenes">
                                           <label for="geneFDR">FDR for reactions
                                               <a id="geneFDR-tooltip" class="help-tooltip" href="#" 
@@ -181,24 +183,34 @@
 
                                       <label class="control-label" for="solver">Select a solver:
                                           <a id="selectSolver-tooltip" class="help-tooltip" href="#" 
-                                              title='MWCS is recommended for fast interactive exploring as it outputs the best solution found before hitting time limit. Heinz solver decides faster when solution it found is the best possible. Heuristic search is available only for reactions as nodes.'>
+                                              title='Multiple MWCS solvers can be used to find modules. Check the help page for details.'>
                                               <i class="icon-question-sign"></i>
                                           </a>
                                       </label>
 
                                       <select id="solver">
-                                          <option value="mwcs" selected="selected">MWCS (under development)</option>
-                                          <option value="heinz">Heinz</option>
+                                          <option value="heinz" selected="selected">Heinz</option>
+                                          <option value="mwcs">MWCS (under development)</option>
                                           <option value="fastHeinz">Heuristic search</option>
                                       </select>
 
                                       <div data-display-if="$('#solver').val() == 'mwcs'">
-                                          <label for="mwcsTimeLimit">MWCS solver time limit (seconds):</label>
+                                          <label for="mwcsTimeLimit">MWCS solver time limit (seconds):
+                                          <a id="selectSolver-tooltip" class="help-tooltip" href="#" 
+                                              title="It's an approximate maximum time MWCS solver is allowed to run. After hitting the time limit it will print the best solurion found so far.">
+                                              <i class="icon-question-sign"></i>
+                                          </a>
+                                      </label>
                                           <input id="mwcsTimeLimit" type="number" value="10" min="0" max="120"/>
                                       </div>
 
                                       <div data-display-if="$('#solver').val() == 'heinz'">
-                                          <label for="heinzTimeLimit">Heinz time limit (seconds):</label>
+                                          <label for="heinzTimeLimit">Heinz time limit (seconds):
+                                          <a id="selectSolver-tooltip" class="help-tooltip" href="#" 
+                                              title="It's an approximate maximum time heinz solver is allowed to run. After hitting the time limit it will just stop searching outputing no module.">
+                                              <i class="icon-question-sign"></i>
+                                          </a>
+                                      </label>
                                           <input id="heinzTimeLimit" type="number" value="60" min="0" max="240"/>
                                       </div>
                                       <button id="find" type="button" class="btn action-button">Find module</button>
@@ -474,23 +486,25 @@
                                   p-values and negative scores correspond to
                                   insignificant changes. Then the problem
                                   of finding a connected subgraph with maximum
-                                  summary weight (MWCS problem) is solved. 
+                                  summary weight (maximum-weight connected subgraph —
+                                  MWCS — problem) is solved. 
                                   </p>
 
                                   <p>
                                   This site supports three solvers: 
                                   <ul>
-                                      <li>Using MWCS solver provides more interactive
-                                      experience, as when reaching time limit it
-                                      outputs the best solution found.</li>
-                                      <li>On hard instances 
-                                      <a href='http://www.mi.fu-berlin.de/w/LiSA/Heinz'>Heinz solver</a> faster
-                                      makes decision that solution it found is
-                                      globally optiomal.</li>
+                                      <li><a href='http://www.mi.fu-berlin.de/w/LiSA/Heinz'>Heinz solver</a> 
+                                      is a default solver, as it works for both 
+                                      interpretation of reactions.</li>
+                                      <li>Using MWCS solver can provide more interactive
+                                      experience because when reaching time limit it
+                                      outputs the best solution found. </li>
                                       <li>Heuristic search is solver from R-package 
-                                      BioNet. It works only when bot reactions 
-                                      and metabolites are nodes.</li> 
+                                      BioNet.</li> 
                                   </ul>
+                                  As the last two solvers don't support edge scores
+                                  they are not available when reactions are
+                                  interpreted as edges.
                                   </p>
 
                                   <p>
@@ -541,7 +555,7 @@
                                   <p> By Alexey Sergushichev (<a href="mailto:asergushichev@wustl.edu">asergushichev@wustl.edu</a>)</p>
                                   <p> This site must not be used for commercial purposes.<p>
                                   <p> You can find source code of this site <a href="https://bitbucket.org/assaron/gam">here</a>.</p>
-                                  <p> GAM version: </p>
+                                  <div id="GAMVersion" class="shiny-html-output"></div>
                                   <p> Links <p>
                                   <p> Powered by Shiny. </p>
                               </div>

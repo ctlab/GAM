@@ -212,13 +212,16 @@ function loadGraph(container, graph) {
     });
 }
 
-function showFastHeinz(shouldShow) {
+function showFastHeinzAndMWCS(shouldShow) {
     if (shouldShow) {
         $("option[value='fastHeinz']").show();
+        $("option[value='mwcs']").show();
     } else {
         $("option[value='fastHeinz']").hide();
-        if ($("#solver").val() == "fastHeinz") {
-            $("#solver").val("mwcs");
+        $("option[value='mwcs']").hide();
+        if ($("#solver").val() == "fastHeinz" || 
+            $("#solver").val() == "fastHeinz") {
+            $("#solver").val("heinz");
         }
     }
 }

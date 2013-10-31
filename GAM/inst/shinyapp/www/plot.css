@@ -48,3 +48,10 @@ svg {
     border: 1px solid #888;
     border-radius: 5px;
 }
+
+.form-header {
+    font-size: 20px;
+    border-bottom-width: 1px;
+    border-bottom-color: #888;
+    border-bottom-style: solid;
+}

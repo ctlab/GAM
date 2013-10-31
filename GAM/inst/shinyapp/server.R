@@ -100,17 +100,20 @@ shinyServer(function(input, output) {
         res
     })
     
-    output$geneDESummary <- reactive({
+    output$geneDESummary <- renderUI({
         gene.de <- geneDEInput()
         ids.type <- geneIdsType()
         if (is.null(gene.de)) {
             return("There is no genomic data")
         }
         
-        vector2html(c(
-            "length" = nrow(gene.de),
-            "ID type" = ids.type
-            ))
+        div(
+            HTML(
+                vector2html(c(
+                    "length" = nrow(gene.de),
+                    "ID type" = ids.type
+                ))),
+            p("Top 6 DE genes:"))
     })
     
     output$geneDETable <- renderTable({
@@ -149,17 +152,20 @@ shinyServer(function(input, output) {
         res
     })
     
-    output$metDESummary <- reactive({
+    output$metDESummary <- renderUI({
         met.de <- metDEInput()
         ids.type <- metIdsType()
         if (is.null(met.de)) {
             return("There is no metabolic data")
         }
         
-        vector2html(c(
-            "length" = nrow(met.de),
-            "ID type" = ids.type
-            ))
+        div(
+            HTML(
+                vector2html(c(
+                    "length" = nrow(met.de),
+                    "ID type" = ids.type
+                ))),
+            p("Top 6 DE metabolites:"))
     })
     
     output$metDETable <- renderTable({
@@ -209,7 +215,11 @@ shinyServer(function(input, output) {
     })
     
     output$networkParameters <- reactive({
-        es <- esInput()
+        es <- NULL
+        tryCatch({
+            es <- esInput()
+        }, error=function(e) {})
+        
         paste0(
             makeJsAssignments(
                 network.available = !is.null(es),
@@ -218,7 +228,7 @@ shinyServer(function(input, output) {
                 network.hasGenes = !is.null(es$fb.rxn),
                 network.usesRpairs = !is.null(es) && es$use.rpairs
             ),
-            "showFastHeinz(network.hasReactionsAsNodes);"
+            "showFastHeinzAndMWCS(network.hasReactionsAsNodes);"
         )
     })
     
@@ -326,7 +336,10 @@ shinyServer(function(input, output) {
     })
     
     output$moduleParameters <- reactive({
-        m <- moduleInput()
+        m <- NULL
+        tryCatch({
+            m <- moduleInput()
+        }, error=function(e) {})
         makeJsAssignments(
             module.available = !is.null(m)
             )        
@@ -347,4 +360,8 @@ shinyServer(function(input, output) {
         content = function(file) {
             saveModuleToXgmml(moduleInput(), "module", file)
         })
+    
+    output$GAMVersion <- renderUI({
+        p(paste("GAM version:", sessionInfo()$otherPkgs$GAM$Version))
+    })
 })
