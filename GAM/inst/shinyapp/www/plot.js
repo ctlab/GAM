@@ -89,7 +89,48 @@ $(".graph-output").each(function(i) {
         initContainer(this);
     };
 })
+
+if (typeof String.prototype.startsWith != 'function') {
+  String.prototype.startsWith = function (str){
+    return this.slice(0, str.length) == str;
+  };
+}
+
+$(document).ready(function() {
+    var hash = document.location.hash;
+    var prefix="#tab-";
+    if (hash) {
+        if (hash.startsWith(prefix)) {
+            hash = hash.replace(prefix, "#");
+        }
+    } else {
+        hash = "#home";
+    }
+    document.location.hash = hash;
+    $('.nav-tabs a[href='+hash.replace("#", prefix)+']').tab('show') ;
+
+    // Change hash for page-reload
+    $('.nav-tabs a').on('shown', function (e) {
+        window.location.hash = e.target.hash.replace(prefix, "#");
+    })
+})
+
+$(window).on("popstate", function() {
+    var hash = document.location.hash;
+    var prefix="#tab-";
+    if (hash) {
+        if (hash.startsWith(prefix)) {
+            hash = hash.replace(prefix, "#");
+        }
+        $('.nav-tabs a[href='+hash.replace("#", prefix)+']').tab('show') ;
+    } else {
+        $('.nav-tabs a[href="#tab-home"]').tab('show') ;
+
+    }
+})
+
 window.onload = function() {
+
     // d3.select(window).on("resize", sizeChange);
 
     // sizeChange();
@@ -225,4 +266,4 @@ function showFastHeinzAndMWCS(shouldShow) {
         }
     }
 }
-$('.selectpicker').selectpicker();
+
