@@ -55,3 +55,11 @@ svg {
     border-bottom-color: #888;
     border-bottom-style: solid;
 }
+
+input {
+    max-width: 100%;
+}
+
+select {
+    max-width: 100%;
+}
