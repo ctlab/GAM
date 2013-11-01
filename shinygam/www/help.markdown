@@ -1,19 +1,13 @@
-<h3>Quick start</h3>
+### Quick start
 
-<p>
 Reload the page, so that all parameters will be set to default.
-</p>
 
-<p>
 Download example
 data for <a href="/publications/supp_materials/GAM/gene.de.M1.M2.tsv">genes</a>
 and <a href="/publications/supp_materials/GAM/met.de.M1.M2.tsv">metabolites</a>.
-</p>
 
-<p>
 Upload downloaded files as TSV-files with gene and metabolite p-values respectively.
 You'll see a summary of the data:
-</p>
 
 <div class="row">
     <div class="span8">
@@ -59,13 +53,11 @@ You'll see a summary of the data:
         </div>
     </div>
 </div>
-<br>
 
-<p>
 Click "Make network" button and wait a few seconds till the network is constructed.
 When it happens you'll be automatically scrolled down to a next panel.
 You can scroll back up and check network summary or download it in XGMML:
-</p>
+
 <div class="row">
     <div class="span3">
         <div class="example-panel bottom-buffer">
@@ -79,18 +71,13 @@ You can scroll back up and check network summary or download it in XGMML:
         </div>
     </div>
 </div>
-<br>
 
-<p>
+
 Click "Find module" button to find a module in the network. You can preview it on the right panel:
-</p>
-<div><img src="module.png"/></div>
+<div><img src="img/module.png"/></div>
 
-<br>
-
-<p>
 Click "Download XGMML" button in the "Module summary section" to download the module in XGMML format for further analysis in Cytoscape:
-</p>
+
 <div class="row">
     <div class="span3">
         <div class="example-panel bottom-buffer">
@@ -105,32 +92,26 @@ Click "Download XGMML" button in the "Module summary section" to download the mo
     </div>
 </div>
 
-<h3>Details</h3>
-<p>
+### Details
+
 This application is a web-interface to R-package 
 <a href="bioconductor/GAM" target="_blank">GAM</a> and
 provides a way to analyse transcriptional and/or 
 metabolic differential expression data 
 in a context of biochemical reactions.
-</p>
 
-<p>
 Analysis consists of creating a network 
 describing connections between
 metabolites and reactions specific
 to the data and finding a connected module
 that contains most significant changes.
-</p>
 
-<h4>Constructing a network</h4>
+#### Constructing a network
 
-<p>
 To construct a network you first have to select 
 an organism, so that only reactions possible
 in the organism are used.
-</p>
 
-<p>
 Available data (gene and/or
 metabolite DE data) should 
 be in a tab-separated format. The first line of these
@@ -144,9 +125,7 @@ As you upload your files you can see summary
 of them appear, so you can check that it was parsed
 correctly. Even if you have only one type
 of data it's still possible to do an analysis.
-</p>
 
-<p>
 After uploading gene DE data it's converted
 to reaction DE data by selecting a gene
 coding enzyme for a reaction with minimal p-value.
@@ -154,9 +133,7 @@ If there is a gene DE data then all reactions
 without p-values or discarded as having no
 expressed enzymes. We recommend to exclude
 genes with low expression prior uploading.
-</p>
 
-<p>
 Then you should select an interpretation of 
 reactions in the network: either as 
 edges or as nodes.  For
@@ -173,9 +150,7 @@ consider not all cross-connections between
 substrates and products for a reaction, but
 only those that make up a KEGG reaction pair
 (RPAIR, see <a href=http://www.genome.jp/kegg/reaction/>KEGG REACTION</a> for details).
-</p>
 
-<p>
 If reaction are interpreted as nodes then
 both metabolites and reactions are added as
 nodes to the network. Edges
@@ -185,18 +160,14 @@ Then, as an option, groups of reactions
 having at least one common metabolite and the
 same most significant gene can be collapsed
 into single nodes.
-</p>
 
-<p>
 Generally, all this options lead to similar 
 results. We recommend to use default option
 values as this make a network simpler and analysis
 faster.
-</p>
 
-<h4>Finding a module</h4>
+#### Finding a module
 
-<p>
 After making a network you can find a
 connected module that contains the most
 significantly changed genes and reactions.
@@ -208,61 +179,49 @@ insignificant changes. Then the problem
 of finding a connected subgraph with maximum
 summary weight (maximum-weight connected subgraph —
 MWCS — problem) is solved. 
-</p>
 
-<p>
 This site supports three solvers: 
-<ul>
-    <li><a href='http://www.mi.fu-berlin.de/w/LiSA/Heinz'>Heinz solver</a> 
+* <a href='http://www.mi.fu-berlin.de/w/LiSA/Heinz'>Heinz solver</a> 
     is a default solver, as it works for both 
-    interpretation of reactions.</li>
-    <li>Using MWCS solver can provide more interactive
+    interpretation of reactions.
+* Using MWCS solver can provide more interactive
     experience because when reaching time limit it
-    outputs the best solution found. </li>
-    <li>Heuristic search is solver from R-package 
-    BioNet.</li> 
-</ul>
+    outputs the best solution found.
+* Heuristic search is solver from R-package 
+    BioNet.
+
 As the last two solvers don't support edge scores
 they are not available when reactions are
 interpreted as edges.
-</p>
 
-<p>
 By changing FDR values and scores for absent
 metabolites and reactions you can control
 size of the module. We recommend to start
 from default values and then gradually change
 them depending on the results. 
-</p>
 
-<p>
 There are couple of post-processing steps that 
 are available. If in the network reactions are
 edges and RPAIRs are used then trans- 
 connections can be added. When reactions are
 nodes following operations could be applied:
-<ul>
-    <li> Adding all metabolites that are part
-    of any reaction in the module. </li>
+* Adding all metabolites that are part
+    of any reaction in the module.
 
-    <li> Adding all reactions that aren't present
+* Adding all reactions that aren't present
     in the module but are directly connected
-    to two metabolites from the module.</li>
+    to two metabolites from the module.
 
-    <li> Removing all metabolites with no data
-    and only one connection in the module. </li>
+* Removing all metabolites with no data
+    and only one connection in the module. 
 
-    <li> Replacing reaction nodes with edges 
+* Replacing reaction nodes with edges 
     for reactions that connect only two
     metabolites in the module and these two
     metabolites are on different sides of 
-    the reaction. </li>
-</ul>
-</p>
+    the reaction.
 
-<p>
 You can download the module in a XGMML
 format and, for example, explore it in Cytoscape.
 You can download GAM's VizMap style for Cytoscape
 <a href="/publications/supp_materials/GAM/GAM_VizMap.xml">here</a>.
-</p>
