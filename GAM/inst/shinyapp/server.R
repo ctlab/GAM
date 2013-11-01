@@ -113,7 +113,7 @@ shinyServer(function(input, output) {
                     "length" = nrow(gene.de),
                     "ID type" = ids.type
                 ))),
-            p("Top 6 DE genes:"))
+            p("Top DE genes:"))
     })
     
     output$geneDETable <- renderTable({
@@ -165,7 +165,7 @@ shinyServer(function(input, output) {
                     "length" = nrow(met.de),
                     "ID type" = ids.type
                 ))),
-            p("Top 6 DE metabolites:"))
+            p("Top DE metabolites:"))
     })
     
     output$metDETable <- renderTable({
