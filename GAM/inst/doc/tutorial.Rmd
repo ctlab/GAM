@@ -47,7 +47,7 @@ necessary to find modules. It is done by calling a function
 available differential expression data, and type of IDs that is
 used in this data. One part of preprocessing is to fir p-values distribution
 to beta-uniform model, by default `makeEXperimentSet` makes histogram and QQ-plot,
-so one can check if it fits good enough.
+so you can check if it fits good enough.
 ```{r chache=TRUE, error=FALSE, message=FALSE, fig.width=5, fig.height=5}
 es <- makeExperimentSet(network=kegg.mouse.network,
                         met.de=mouse.macrophages$met.de.M1.M2,
@@ -108,7 +108,7 @@ module <- addTransEdges(module, es)
 plotNetwork(module)
 ```
 
-After that one can save resulting module into pdf, XGMML
+After that, you can save resulting module into pdf, XGMML
 or few other formats.
 ```{r error=FALSE}
 saveModule(module,
@@ -274,7 +274,7 @@ Some of metabolites, e.g. anomeric ones, can be collaps into one node.
 head(kegg.db$mets2collapse)
 ```
 
-From all this data one can make a network for a specific organism with
+You can make a network for a specific organism from all this data with
 `makeKeggNetwork` function:
 ```{r cache=TRUE}
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
