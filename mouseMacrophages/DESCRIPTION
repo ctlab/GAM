@@ -1,0 +1,10 @@
+Package: mouseMacrophages
+Type: Package
+Title: Transcriptional and metabolic profiling data for mouse macrophages
+Version: 1.0
+Date: 2013-08-31
+Author: Abhishek Jha, Ching-Cheng Huang, Alexey Sergushichev, Yulia Ivanova, Karina Chmielewski, Kelly Stewart, Bart Everts, Juliet Ashall, Edward J. Pearce, Edward M. Driggers, Maxim N. Artyomov
+Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
+Description: This package provides RNA-seq based transcript expression data and MS-data for metabolites for mouse macrophages under different treatments.
+Depends: R (>= 2.10), Biobase
+License: GPL (>=2)
