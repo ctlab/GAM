@@ -7,71 +7,94 @@ require(knitr)
 opts_chunk$set(error=F, cache=T, dev="svg")
 ```
 
-Genomic and metabolomic integrated analysis tutorial
-====================================================
-This is a small tutorial that describes how having metabolic mass-spectrometry
-data and genomic expression data for two conditions one can find the most
-significant changed module in the metabolite reactions network.
+# Genomic and metabolomic integrated analysis tutorial
 
-Quick start
-----------------------------------------------------
+This is a tutorial that describes how 
+to find the most
+significant changed module between two states in the cellular reaction network
+having metabolic mass spectrometry
+and gene expression data.
 
-This section shows basics of the GAM package using genomic and metabolic data
-for mouse macrophages under different treatments. Package includes both these data
-and already constructed mouse network   
+## Quick start
+
+This section shows the basics of the GAM package.
+
+First, load packages and data. Package `igraph` contains methods to print summary for networks.
+Package `mouseMacrophages` contains data from experiment that we will use as an example.
 
 ```{r message=FALSE}
 library("GAM")
 library("igraph")
-data("mouse.macrophages")
-data("kegg.mouse.network")
+library("mouseMacrophages")
+data(mmpData)
 ```
 
-The data contains precalculated differential expression values between M1 and M2 
+
+Mouse macrophages data consists of two ExpressionSet objects with gene and metabolite expressions.
 states:
 ```{r}
-head(mouse.macrophages$gene.de.M1.M2)
-head(mouse.macrophages$met.de.M1.M2)
+mmpGeneSet
+mmpMetSet
 ```
 
-Mouse network is actually a list of triples `met.x`, `rxn` and `met.y`,
-each of its elements says that compounds `met.x`
-and `met.y` are on different sides of the reaction `rxn`.
+Construct a mouse-specific network with command `makeKeggNetowrk`, but first load 
+KEGG reaction data (part of `GAM`) and mouse annotation package. See section 
+[Constructing network](#constructing-network) for details.
+
 ```{r}
-head(kegg.mouse.network$graph.raw)
+data("kegg.db")
+library("org.Mm.eg.db")
+kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
+
+Make differential expressions analysis between M1 and M2 polarizations. The `GAM` package
+contains helper functions do make it in one command, but you can do it manually, see documentation
+for `limma` and `DESeq` packages.
+
+```{r}
+state1 <- "MandLPSandIFNg"
+state2 <- "MandIL4"
+gene.de.M1.M2 <- diffExpr(
+    exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
+    state1=state1, state2=state2, 
+    use.deseq=T, top=Inf, min.expr=5)
+met.de.M1.M2 <- diffExpr(
+    exprs=exprs(mmpMetSet), conditions.vector=pData(mmpMetSet)$condition,
+    state1=state1, state2=state2, 
+    log2=F, quantile=F, use.deseq=F, top=Inf)
+head(gene.de.M1.M2)
+head(met.de.M1.M2)
+```
+
 
 Next step is to make an experiment set that contains all the data 
-necessary to find modules. It is done by calling a function
+necessary to find modules. You can do it by calling a function
 `makeExperimentSet` which accepts as arguments network,
 available differential expression data, and type of IDs that is
-used in this data. One part of preprocessing is to fir p-values distribution
+used in this data. One part of preprocessing is to fit p-values distribution
 to beta-uniform model, by default `makeEXperimentSet` makes histogram and QQ-plot,
 so you can check if it fits good enough.
-```{r chache=TRUE, error=FALSE, message=FALSE, fig.width=5, fig.height=5}
-es <- makeExperimentSet(network=kegg.mouse.network,
-                        met.de=mouse.macrophages$met.de.M1.M2,
-                        gene.de=mouse.macrophages$gene.de.M1.M2,
-                        met.ids=mouse.macrophages$met.ids, 
-                        gene.ids=mouse.macrophages$gene.ids,
-                        reactions.as.edges=T)
+```{r chache=TRUE, error=FALSE, message=FALSE, fig.width=4, fig.height=4}
+es.re <- makeExperimentSet(network=kegg.mouse.network,
+                           met.de=met.de.M1.M2,
+                           gene.de=gene.de.M1.M2,
+                           reactions.as.edges=T)
 ```
 
 Result contains gene and metabolite differential expression with
 converted IDs, p-values for reactions and subnetwork with only
 those reactions that have expressed genes for enzymes.
 ```{r}
-head(es$gene.de)
-head(es$met.de)
-head(es$rxn.de)
-es$subnet
+head(es.re$gene.de)
+head(es.re$met.de)
+head(es.re$rxn.de)
+es.re$subnet
 ```
-
 
 To be able to find modules `GAM` need a solver for maximum-wight
 connected subgraph problem. [Heinz](http://www.mi.fu-berlin.de/w/LiSA/Heinz) 
 is used for this purpose. Directory with heinz should also contain a license file
-for CPLEX.
+for CPLEX. See section [MWCS solvers](#mwcs-solvers) for additional information.
 ```{r}
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 list.files(dirname(heinz.py))
@@ -89,30 +112,27 @@ absent.met.score=c(-20)
 
 And now we can finally find most significant module in our network.
 ```{r chache=TRUE, error=FALSE}
-module <- findModule(es,
-                     met.fdr=met.fdr,
-                     gene.fdr=gene.fdr,
-                     absent.met.score=absent.met.score,
-                     solver=solver)
-module
+module.re <- findModule(es.re,
+                        met.fdr=met.fdr,
+                        gene.fdr=gene.fdr,
+                        absent.met.score=absent.met.score,
+                        solver=solver)
+module.re
 ```
 
-One can plot this module using command `plotNetwork`.
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-plotNetwork(module)
+You can plot this module using command `plotNetwork`.
+```{r fig.width=8,fig.height=8,error=FALSE,message=FALSE}
+plotNetwork(module.re)
 ```
 
-One can add edges for trans- pairs of metabolites in reactions:
-```{r fig.width=12,fig.height=16,error=FALSE,message=FALSE}
-module <- addTransEdges(module, es)
-plotNetwork(module)
-```
+There are a few functions available for post-processing, see section [Postprocessing](#postprocessing).
+
 
 After that, you can save resulting module into pdf, XGMML
 or few other formats.
 ```{r error=FALSE}
-saveModule(module,
-           paste0("module.M1.M2", 
+saveModule(module.re,
+           paste0("module.M1.M2.re", 
                   ".mf=", met.fdr,
                   ".rf=", gene.fdr,
                   ".ms=", absent.met.score),
@@ -126,115 +146,48 @@ for visualization:
 system.file("GAM_VizMap.xml", package="GAM")
 ```
      
-Interpreting reactions as nodes
-----------------------------------------
+## Interpreting reactions as nodes
 
 Alternative approach is to represent both metabolites and reactions as nodes.
 In this case, metabolite and reaction are connected if the metabolite takes part
 in the reaction.
 
 ```{r chache=TRUE, error=FALSE, message=FALSE}
-es <- makeExperimentSet(network=kegg.mouse.network,
-                        met.de=mouse.macrophages$met.de.M1.M2,
-                        gene.de=mouse.macrophages$gene.de.M1.M2,
-                        met.ids=mouse.macrophages$met.ids, 
-                        gene.ids=mouse.macrophages$gene.ids,
-                        reactions.as.edges=F,
-                        plot=F)
-es$subnet
+es.rn <- makeExperimentSet(network=kegg.mouse.network,
+                           met.de=met.de.M1.M2,
+                           gene.de=gene.de.M1.M2,
+                           reactions.as.edges=F,
+                           plot=F)
+es.rn$subnet
 ```
 
 FDRs should be set a little stricter:
 ```{r}
-met.fdr=c(1e-6)
-gene.fdr=c(1e-6)
+met.fdr=c(2e-7)
+gene.fdr=c(2e-7)
 absent.met.score=c(-20)
 ```
 
 And finding modules:
 ```{r chache=TRUE, error=FALSE}
-module <- findModule(es,
-                     met.fdr=met.fdr,
-                     gene.fdr=gene.fdr,
-                     absent.met.score=absent.met.score,
-                     solver=solver)
-module
+module.rn <- findModule(es.rn,
+                        met.fdr=met.fdr,
+                        gene.fdr=gene.fdr,
+                        absent.met.score=absent.met.score,
+                        solver=solver)
+module.rn
 ```
 
 Module:
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-plotNetwork(module)
+```{r fig.width=8, fig.height=8, error=FALSE,message=FALSE}
+plotNetwork(module.rn)
 ```
 
-One can do some post-processing steps that will help with representation.
-These steps include adding all metabolites taking part in every reaction:
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-module <- addMetabolitesForReactions(module, es)
-plotNetwork(module)
-```
+Again, for available post-processing functions see section [Postprocessing](#postprocessing)
 
-Adding all reactions that connect any metabolites in the module.
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-module <- addInterconnections(module, es)
-plotNetwork(module)
-```
+## Constructing network <a name="constructing-network"></a>
 
-Adding attribute for log-fold change normalized across nodes of the
-same type. Thist attribute is used in `plotNetwork` function and 
-Cytoscape vizual style.
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-module <- addNormLogFC(module)
-plotNetwork(module)
-```
-
-Removing hanging nodes without p-values.
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-module <- removeHangingNodes(module)
-plotNetwork(module)
-```
-
-Replacing reaction nodes for simple one-to-one reactions with
-edges and copying reaction attributes for edges adjacent to 
-reaction nodes.
-```{r fig.width=16,fig.height=16,error=FALSE,message=FALSE}
-module <- removeSimpleReactions(module, es)
-module <- expandReactionNodeAttributesToEdges(module)
-plotNetwork(module)
-```
- 
-Computing differential expression
---------------------------------------------------
-
-The package have functions to ease computing differential expression using DESeq or limma packages.
-
-```{r cache=TRUE, error=FALSE}
-str(as.matrix(mouse.macrophages$gene.exprs))
-str(mouse.macrophages$gene.conditions.vector)
-
-str(as.matrix(mouse.macrophages$met.exprs))
-str(mouse.macrophages$met.conditions.vector)
-
-state1 <- "MandLPSandIFNg"
-state2 <- "MandIL4"
-
-gene.de.M1.M2 <- diffExpr(
-    exprs=mouse.macrophages$gene.exprs, conditions.vector=mouse.macrophages$gene.conditions.vector,
-    state1=state1, state2=state2, use.deseq=T, top=20000)
-
-head(gene.de.M1.M2)
-
-met.de.M1.M2 <- diffExpr(
-    exprs=mouse.macrophages$met.exprs, conditions.vector=mouse.macrophages$met.conditions.vector,
-    state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=F, top=Inf)
-
-head(met.de.M1.M2)
-```
-
-Constructing network
--------------------------------------------------
-
-Network construction heavily uses KEGG database. `GAM` package goes with
+Network construction uses KEGG database. `GAM` package goes with
 neccessary parts of KEGG in `kegg.db` object:
 
 ```{r}
@@ -280,6 +233,13 @@ You can make a network for a specific organism from all this data with
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
 
+Mouse network is actually a list of triples `met.x`, `rxn` and `met.y`,
+each of its elements says that compounds `met.x`
+and `met.y` are on different sides of the reaction `rxn`.
+```{r}
+head(kegg.mouse.network$graph.raw)
+```
+
 All of these data can be modified for specific needs. For example,
 one can add reaction converting cis-Aconitate to Itaconate which
 was not present in KEGG as for September 2013:
@@ -289,4 +249,72 @@ kegg.db$rxn2enz <- rbind(kegg.db$rxn2enz, c("RXIRG1", "Irg1"))
 kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
-     
+
+
+## Postprocessing <a name="postprocessing"></a>
+
+Postprocessing options depend on what interpretation of reactions was used.
+
+#### Reactions as edges
+
+You can add edges for trans- pairs of metabolites in reactions:
+```{r}
+module.re <- addTransEdges(module.re, es.re)
+```
+
+#### Reactions as nodes
+
+You can add all metabolites taking part in every reaction in the module:
+```{r}
+module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+```
+
+Add all reactions that connect any metabolites in the module:
+```{r}
+module <- addInterconnections(module.rn, es.rn)
+```
+
+Add attribute for log-fold change normalized across nodes of the
+same type. Thist attribute is used in `plotNetwork` function and 
+Cytoscape visual style.
+```{r}
+module.rn <- addNormLogFC(module.rn)
+```
+
+Remove hanging nodes without p-values:
+```{r}
+module.rn <- removeHangingNodes(module.rn)
+```
+
+Replace reaction nodes for simple one-to-one reactions with
+edges:
+```{r}
+module.rn <- removeSimpleReactions(module.rn, es.rn)
+```
+
+Copy reaction attributes for edges adjacent to 
+reaction nodes:
+```{r}
+module.rn <- expandReactionNodeAttributesToEdges(module.rn)
+```
+
+## MWCS solvers <a name="mwcs-solvers"></a>
+
+For now `GAM` supports three solvers: `heinz.solver`, `mwcs.solver` and `fastHeinz.solver`.
+
+**Heinz solver.** `GAM` was tested with *heinz-1.63*. You can download it from 
+[here](www.mi.fu-berlin.de/w/LiSA/Heinz). It may be hard to make it working as it
+requires file IBM CPLEX Licence and IBM doesn't issues them anymore. You can try
+to make *heinz-1.67* working, it's dynamicly linked with CPLEX library, so you
+can download academic version of CPLEX studio and use, but we didn't managed to do this.
+
+There is **MWCS solver** that is under development. It's not publicly available yet, but
+you can try to ask Gunnar W. Klau to send it to you. For now, MWCS solver can't be used
+when reactions are edges.
+
+`GAM` also can use **heuristic`fastHeinz` solver** which is part of the `BioNet` package. Its results
+can be significantly worse than other solver's, but it doesn't have any external
+dependencies. It's also can be used only when reactions are nodes.
+
+If you have probles making this solvers work, you can try to use a `GAM` web-interface at
+http://artyomovlab.wustl.edu/shiny/gam.

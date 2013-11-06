@@ -120,7 +120,7 @@ fixInf <- function(dm) {
 }
 
 #' Make differential expression analysis using limma or DESeq
-#' @param exprs Table with expressions
+#' @param exprs Table or matrix with expressions
 #' @param conditions.vector Vector of conditions for exprs columns
 #' @param state1 First condition to compare
 #' @param state2 Second condition to compare
@@ -131,72 +131,63 @@ fixInf <- function(dm) {
 #' @return Table with p-values for differential expression and log-fold changes
 #' @export
 diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F, min.expr=5) {
-    expression_matrix<-as.matrix(exprs)
+    exprs <-as.matrix(exprs)
     
     
-    classes_vector <- as.character(conditions.vector)
-    
-    
-    unique_classes_vector<-unique(classes_vector)
-    unique_classes_vector
-    number_samples<-ncol(expression_matrix)
-    number_classes<-length(unique_classes_vector)
-    print(paste('Number of samples:',number_samples,'      Number of Cell Types:',number_classes))
-    
-    
-    ####################
+    conditions.vector <- as.character(conditions.vector)
     
     if (use.deseq) {
         if (!require(DESeq)) {
             stop("use.deseq=TRUE needs DESeq package to work")
         }
-        counts <- expression_matrix
-                
-        cds <- newCountDataSet(round(counts), classes_vector)
+        cds <- newCountDataSet(round(exprs), conditions.vector)
         cds <- estimateSizeFactors(cds)
         cds <- estimateDispersions(cds)
         res <- nbinomTest(cds, state1, state2)
         res <- res[res$baseMean > min.expr,]
         res <- res[order(res$baseMean, decreasing=T),]        
-        res <- res[1:top,]
+        res <- head(res, n=top)
         res <- res[order(res$pval),]
         res <- na.omit(res)
         res <- res[, c("id", "pval", "log2FoldChange", "baseMean")]
-        colnames(res) <- c("ID", "pval", "logFC", "baseMean")
+        rownames(res) <- seq_len(nrow(res))
+        colnames(res) <- c("ID", "pval", "log2FC", "baseMean")
     } else {
         if (!require(limma)) {
             stop("use.deseq=FALSE needs limma package to work")
         }
-        log_expression_matrix<-normalizeExpressions(expression_matrix, zero.rm=T, log2=log2, quantile=quantile)
-        group_names<-classes_vector
         
-        names(group_names)<-group_names
-        group_names<-factor(group_names)
+        exprs.normalized <- normalizeExpressions(exprs, zero.rm=T, log2=log2, quantile=quantile)
         
-        design<-model.matrix(~0+group_names)
-        colnames(design)<-levels(group_names)
+        names(conditions.vector) <- conditions.vector
+        conditions.vector <- factor(conditions.vector)
         
-        colnames(log_expression_matrix)<-group_names
+        design <- model.matrix(~0 + conditions.vector)
+        colnames(design) <- levels(conditions.vector)
         
-        fit<-lmFit(log_expression_matrix, design)
-        j = which(unique_classes_vector == state1)
+        colnames(exprs.normalized) <- conditions.vector
+        
+        conditions.levels <- unique(conditions.vector)
+        
+        fit <- lmFit(exprs.normalized, design)
+        j <- which(conditions.levels == state1)
         if (length(j) != 1) {
             stop(c("invalied state '", state1, "'", sep=""))
         }
-        jj = which(unique_classes_vector == state2)
+        jj <- which(conditions.levels == state2)
         if (length(jj) != 1) {
             stop(c("invalied state '", state2, "'", sep=""))
         }
         
-        contr.str<-paste(unique_classes_vector[j],unique_classes_vector[jj],sep="-")
-        contr.mat<-makeContrasts(contrasts=contr.str, levels=group_names)
+        contr.str <- paste(conditions.levels[j], conditions.levels[jj], sep="-")
+        contr.mat <- makeContrasts(contrasts=contr.str, levels=conditions.vector)
         
-        fit2<-contrasts.fit(fit,contr.mat)
-        fit2<-eBayes(fit2)
+        fit2 <- contrasts.fit(fit,contr.mat)
+        fit2 <- eBayes(fit2)
         
-        f.top<-topTable(fit2, sort.by="B", number=top, resort.by="P")
+        f.top <- topTable(fit2, sort.by="AveExpr", number=top, resort.by="P")
         ids <- if ("ID" %in% names(f.top)) f.top$ID else rownames(f.top)
-        res = data.frame(ID=ids, pval=f.top$adj.P.Val, logFC=-f.top$logFC, stringsAsFactors=F)        
+        res <- data.frame(ID=ids, pval=f.top$adj.P.Val, log2FC=-f.top$logFC, baseMean=f.top$AveExpr, stringsAsFactors=F)        
     }
     return(res)
 }
