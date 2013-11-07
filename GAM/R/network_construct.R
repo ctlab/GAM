@@ -23,7 +23,7 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
     res
 }
 
-#' Get KEGG network for specified organism
+#' Make KEGG reaction network for a specified organism
 #' @param kegg.db object with KEGG mappings
 #' @param organism Organism (MMU or HSA)
 #' @return Network for the organism usable for an analysis

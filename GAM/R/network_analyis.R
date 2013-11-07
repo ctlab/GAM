@@ -2,16 +2,15 @@
 NULL
 
 
-
-
-#' Preprocess experiment set's differential expression data for genes and metabolites
-#' 
-#' Convert metabolite and gene IDs to be the same as in network. Computes
-#' reaction differential expression data.
-#' @param es Experiment set with DE data
-#' @param met.ids Type of IDs used in metabolite DE data (see met.id.map for possible values)
-#' @param gene.ids Type of IDs used in gene DE data (see colnames(es$gene.id.map) for possible values)
-#' @param plot If TRUE plot BUM fit
+# Preprocess experiment set's differential expression data for genes and metabolites
+# 
+# Converts metabolite and gene IDs to be the same as in network. Computes
+# reaction differential expression data.
+# 
+# @param es Experiment set with DE data
+# @param met.ids Type of IDs used in metabolite DE data (see met.id.map for possible values)
+# @param gene.ids Type of IDs used in gene DE data (see colnames(es$gene.id.map) for possible values)
+# @param plot If TRUE plot BUM fit
 preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     if (!is.null(es$gene.de)) {
         print("Processing gene p-values...")
@@ -58,24 +57,26 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     return(es)
 }
 
-#' Make preprocessing necessary for findModule function
-#' Converts gene and metabolite ids, makes an actual to work with.
+#' Make preprocessing necessary for \code{findModule} function
+#' 
+#' Converts gene and metabolite ids, makes an actual network to work with.
+#' 
 #' @param network Network object
 #' @param met.de Differential expression data for metabolites
 #' @param gene.de Differential expression data for genes
-#' @param rxn.de Differential expression data for reactions
+#' @param rxn.de Differential expression data for reactions (can be supplied instead of gene DE)
 #' @param met.ids Type of IDs used in met.de, if NULL it will be determined automatically
 #' @param gene.ids Type of IDs used in gene.de, if NULL it will be determined automatically
-#' @param reactions.as.edges If TRUE represent reaction as edges betwen metabolites,
+#' @param reactions.as.edges If TRUE, represent reaction as edges betwen metabolites,
 #'                          otherwise represent them as nodes with connections to
 #'                          compounds
-#' @param collapse.reactions If TRUE collapse reaction nodes if they share enzyme
-#'                           and at least one metabolite
-#' @param use.rpairs If TRUE only rpairs will be used as reaction edges
+#' @param collapse.reactions If TRUE, collapse reaction nodes if they share an enzyme
+#'                           and at least one metabolite (only when reactions are nodes)
+#' @param use.rpairs If TRUE, only rpairs will be used as reaction edges (only when reactions are edges)
 #' @param plot If TRUE plot BUM-models
-#' @export
 #' @importFrom plyr rename
 #' @import data.table
+#' @export
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
@@ -344,7 +345,16 @@ scoreNetwork <- function(es,
 }
 
 
-#' @export
+#' Assign scores to network's nodes and edges without using BUM-model
+#' Score for node or edge is log(pval)-log(pval.threshold)
+#' @param es Experiment set object
+#' @param met.pval.threshold Threshold so metabolic p-values
+#' @param met.pval.default P-value for metabolites without provided p-value
+#' @param rxn.pval.threshold Threshold so reaction p-values
+#' @param rxn.pval.default P-value for reactions without provided p-value
+#' @return Experiment set object with scored network subnet.scored field
+#' @import igraph 
+#' @export 
 scoreNetworkWithoutBUM <- function(es,
                                    met.pval.threshold=1e-5,
                                    met.pval.default=NULL,
@@ -407,7 +417,7 @@ scoreNetworkWithoutBUM <- function(es,
 }
 
 
-#' Find significant module in the network
+#' Find significant module in a network
 #' @param es Experiment set object
 #' @param solver Solver function of MWCS problem to use, first argument should be a network,
 #'               result should be a module or list of modules

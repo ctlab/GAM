@@ -1,6 +1,10 @@
 #' Convert IDs in differential expression data using BioMart database
+#' 
+#' Converts IDs in differential expression data using BioMart database.
 #' When there is multiple entries with the same after conversion 
-#' only one with minimal p-value is kept.
+#' only one with minimal p-value is kept. Expects \code{ID} and \code{pval}
+#' columns.
+#' 
 #' @param pval Table to covnert
 #' @param from Mart attribute for original IDs
 #' @param to Mart attribute for result IDs
@@ -18,11 +22,10 @@ convertPvalBiomart <- function(pval, from, to, mart) {
     convertPval(pval, map$from, map$to)
 }
 
-#' Get possible ID type  of IDs from a vector
-#' @param ids Vector of IDs
-#' @param id.map Map between different type of IDs
-#' @return Vector of possible IDs
-#' @export
+# Get possible ID type  of IDs from a vector
+# @param ids Vector of IDs
+# @param id.map Map between different type of IDs
+# @return Vector of possible IDs
 getIdsType <- function(ids, id.map) {
     res <- c()
     for (id.type in names(id.map)) {
@@ -34,8 +37,11 @@ getIdsType <- function(ids, id.map) {
 }
 
 #' Convert IDs in differential expression data
+#' 
+#' Converts IDs in differential expression data with provided mapping.
 #' When there is multiple entries with the same after conversion 
-#' only one with minimal p-value is kept.
+#' only one with minimal p-value is kept. Expects \code{ID} and \code{pval}
+#' columns.
 #' @param pval Table to covnert
 #' @param from Vector of IDs to convert from
 #' @param to Vector of IDs to convert to 
@@ -43,18 +49,6 @@ getIdsType <- function(ids, id.map) {
 #' @importFrom plyr rename
 #' @export
 convertPval <- function(pval, from, to) {
-# implementation using data.table (slower because of sorting)
-# {
-#     pval.table <- data.table(pval, key="ID")
-#     map <- data.table(ID=from, to=to, key="ID")
-#     pval.ext <- merge(map, pval, by="ID")
-#     pval.ext[,origin:=ID]
-#     pval.ext[,ID:=to]
-#     pval.ext$to <- NULL
-#     res <- pval.ext
-#     res <- merge(res[,list(pval=min(pval)), by=ID], res, by=c("ID", "pval"))
-#     res <- res[!duplicated(res$ID),]
-# }
     map <- data.frame(ID=from, to=to, stringsAsFactors=F)
     pval.ext <- merge(map, pval, by="ID")
     if ("origin" %in% colnames(pval)) {
@@ -70,12 +64,11 @@ convertPval <- function(pval, from, to) {
     res
 }
 
-#' Normalize expression table
-#' @param exprs Table with expressions
-#' @param zero.rm If TRUE removes genes with zero expression in all samples
-#' @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
-#' @param quantile If TRUE applies quantile normalization
-#' @export
+# Normalize expression table
+# @param exprs Table with expressions
+# @param zero.rm If TRUE removes genes with zero expression in all samples
+# @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
+# @param quantile If TRUE applies quantile normalization
 normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     if (zero.rm) {
         # removing unexpressed genes
@@ -107,12 +100,12 @@ normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
     return(exprs)
 }
 
-#' Replace infinities with real numbers
-#' This function replaces +Inf with maximal value + 1 and
-#' -Inf with minimal value - 1
-#' @param dm Vector of nummbers
-#' @return Vector of numbers withoud infinities
-#' @export
+# Replace infinities with real numbers
+
+# This function replaces +Inf with maximal value + 1 and
+# -Inf with minimal value - 1
+# @param dm Vector of nummbers
+# @return Vector of numbers withoud infinities
 fixInf <- function(dm) {    
     dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
     dm[dm == Inf] <- max(dm[dm != Inf]) + 1
@@ -128,9 +121,10 @@ fixInf <- function(dm) {
 #' @param log2 If TRUE apply log2 transformation (zeros replaced with minimal value in column)
 #' @param quantile Apply quantile normalisation
 #' @param use.deseq Use DESeq for analysis
+#' @param min.expr Minimal mean expression for a feature to be kept
 #' @return Table with p-values for differential expression and log-fold changes
 #' @export
-diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F, quantile=F, use.deseq=F, min.expr=5) {
+diffExpr <- function(exprs, conditions.vector, state1, state2, top=Inf, log2=F, quantile=F, use.deseq=F, min.expr=0) {
     exprs <-as.matrix(exprs)
     
     
@@ -144,13 +138,7 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
         cds <- estimateSizeFactors(cds)
         cds <- estimateDispersions(cds)
         res <- nbinomTest(cds, state1, state2)
-        res <- res[res$baseMean > min.expr,]
-        res <- res[order(res$baseMean, decreasing=T),]        
-        res <- head(res, n=top)
-        res <- res[order(res$pval),]
-        res <- na.omit(res)
         res <- res[, c("id", "pval", "log2FoldChange", "baseMean")]
-        rownames(res) <- seq_len(nrow(res))
         colnames(res) <- c("ID", "pval", "log2FC", "baseMean")
     } else {
         if (!require(limma)) {
@@ -185,9 +173,15 @@ diffExpr <- function(exprs, conditions.vector, state1, state2, top=10000, log2=F
         fit2 <- contrasts.fit(fit,contr.mat)
         fit2 <- eBayes(fit2)
         
-        f.top <- topTable(fit2, sort.by="AveExpr", number=top, resort.by="P")
+        f.top <- topTable(fit2, number=Inf)
         ids <- if ("ID" %in% names(f.top)) f.top$ID else rownames(f.top)
         res <- data.frame(ID=ids, pval=f.top$adj.P.Val, log2FC=-f.top$logFC, baseMean=f.top$AveExpr, stringsAsFactors=F)        
     }
+    res <- res[res$baseMean > min.expr,]
+    res <- res[order(res$baseMean, decreasing=T),]        
+    res <- head(res, n=top)
+    res <- res[order(res$pval),]
+    res <- na.omit(res)
+    rownames(res) <- seq_len(nrow(res))
     return(res)
 }

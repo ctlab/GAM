@@ -1,10 +1,11 @@
 #' Package for integrated analyses of genomic and metabolomic data.
 #' 
-#' Detailed description goes here :ToDo:
+#' This package provides functions for integrated metabolic and
+#' transcriptional data analisys based on a reaction network.
 #' @name GAM-package
 #' @aliases GAM
 #' @docType package
-#' @author Alexey Sergushichev \email{alsergbox@@gmail.com}
+#' @author Alexey Sergushichev \email{asergushichev@@wustl.edu}
 NULL
 
 #' Table with mapping between metabolite IDs

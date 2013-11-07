@@ -22,8 +22,9 @@ Suggests:
     rjson,
     DESeq,
     limma,
-    org.Hs.eg,
-    org.Mm.eg,
+    AnnotationDbi,
+    org.Hs.eg.db,
+    org.Mm.eg.db,
     knitr
 Collate:
     'diff_expr.R'

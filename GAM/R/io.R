@@ -1,44 +1,3 @@
-networkFromSif <- function(file.basename) {
-    print("Loading network...")
-    network <- newEmptyObject()
-    class(network) <- "network"
-    network$edges <- read.table(paste(file.basename, "sif", sep="."), header=FALSE, colClasses=c("character", "factor", "character"), comment.char="#", col.names=c("u", "e", "v"))
-    
-    for (f in list.files(dirname(file.basename), paste(basename(file.basename), "_\\w+.NA", sep=""), full.names=T)) {
-        meta_type.cur <- sub(paste("^", file.basename, "_(\\w+).NA", sep=""), "\\1", f)        
-        print(paste("Loading attribute", meta_type.cur))
-        meta_temp <- unique(read.table(f, skip=1, comment.char="#", colClasses="character"))
-        meta.cur <- data.frame(meta_temp[,1], meta_temp[,3], stringsAsFactors=F)
-        colnames(meta.cur) <- c("v", meta_type.cur)
-        if (is.null(network$meta)) {
-            network$meta <- meta.cur
-        } else {
-            network$meta <- merge(network$meta, meta.cur, by="v", all=T)
-        }        
-    }
-    
-    return(network)
-}
-
-networkToSif <- function(network, file.basename) {
-    write.table(network$edges[,c("u", "e", "v")], paste(file.basename, "sif", sep="."),
-                col.names=F, row.names=F, quote=F, sep="\t")
-    for (m in colnames(network$meta)) {
-        if (m != "v") {
-            x <- network$meta[,m, drop=F]
-            rownames(x) <- network$meta$v
-            x <- na.omit(x)
-            f <- paste(file.basename, "_", colnames(x), ".NA", sep="")
-            write.table(x, f, row.names=T, quote=T, col.names=T, sep=" = ")
-        }
-    }
-}
-
-networkToTab <- function(edges, file.name) {
-    write.table(edges[,c("u", "v")], file.name, col.names=F, row.names=F, quote=F, sep="\t")
-}
-
-
 #' Plot a module to PDF
 #' @param module Module to save
 #' @param file File to save plot to
@@ -82,9 +41,9 @@ get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attribute
            USE.NAMES=T)
 }
 
-#' Converts a module from igraph to list of nodes and links
+#' Converts a module from igraph to a list of nodes and links
 #' @param module igraph module 
-#' @return list of two elements: list of nodes and list of links (edges)
+#' @return list of two elements: list of nodes and list of edges
 #' @export
 module2list <- function(module) {
     getNodeObject <- function(i) {
@@ -102,12 +61,12 @@ module2list <- function(module) {
     
     graphObject <- list(
         nodes=lapply(V(module), getNodeObject),
-        links=lapply(E(module), getEdgeObject)
+        edges=lapply(E(module), getEdgeObject)
         )
     graphObject
 }
 
-#' Get json string of a module
+#' Get json string for a module
 #' @param module Module to convert to JSONstring
 #' @export
 getModuleJsonString <- function(module) {
@@ -152,12 +111,12 @@ getRDFXmlString <- function(network, name, indent="") {
     res <- c()
     res <- c(res, paste0("<rdf:RDF>\n"))
     res <- c(res, paste0("  ", "<rdf:Description rdf:about=\"http://www.cytoscape.org/\">\n"))
-    res <- c(res, paste0("    ", xmlNodeString("dc:type", "Protein-Protein Interaction"), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:type", "N/A"), "\n"))
     res <- c(res, paste0("    ", xmlNodeString("dc:description", "N/A"), "\n"))
     res <- c(res, paste0("    ", xmlNodeString("dc:identifier", "N/A"), "\n"))
     res <- c(res, paste0("    ", xmlNodeString("dc:date", Sys.time()), "\n"))
     res <- c(res, paste0("    ", xmlNodeString("dc:title", name), "\n"))
-    res <- c(res, paste0("    ", xmlNodeString("dc:format", "BioNet-Cytoscape-XGMML"), "\n"))
+    res <- c(res, paste0("    ", xmlNodeString("dc:format", "Cytoscape-XGMML"), "\n"))
     res <- c(res, paste0("  ", "</rdf:Description>\n"))
     res <- c(res, paste0("</rdf:RDF>\n"))
     
@@ -241,17 +200,12 @@ getEdgeXmlStrings <- function(network, indent="") {
 #' @param types Vector of file types, "pdf" or one of the supported by BioNet::saveNetwork function
 #' @export
 saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
-    # :ToDO: fix saving to XGMML (NAs, escaping, trivial modules)
     outdir <- dirname(outputFilePrefix)
     
     if (!file.exists(outdir)) {
         dir.create(outdir)
     }
     
-    
-    #module <- subNetwork(nodes(module), network=subnet)
-    module    
-
     
     for (type in types) {
         if (type == "pdf") {
@@ -263,6 +217,4 @@ saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
         }
         
     }
-    
-    
 }
