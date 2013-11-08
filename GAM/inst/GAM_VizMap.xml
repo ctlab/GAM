@@ -95,7 +95,7 @@
             <visualProperty name="NODE_CUSTOMGRAPHICS_2" default="org.cytoscape.ding.customgraphics.NullCustomGraphics,0,[ Remove Graphics ],"/>
             <visualProperty name="NODE_CUSTOMGRAPHICS_SIZE_1" default="50.0"/>
             <visualProperty name="NODE_FILL_COLOR" default="#00acad">
-                <continuousMapping attributeType="float" attributeName="logFC.norm">
+                <continuousMapping attributeType="float" attributeName="log2FC.norm">
                     <continuousMappingPoint lesserValue="#00ff00" greaterValue="#00ff00" equalValue="#00ff00" attrValue="-0.5"/>
                     <continuousMappingPoint lesserValue="#cccccc" greaterValue="#cccccc" equalValue="#cccccc" attrValue="0.0"/>
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="0.5"/>
@@ -126,7 +126,7 @@
             <visualProperty name="EDGE_VISIBLE" default="true"/>
             <visualProperty name="EDGE_SELECTED_PAINT" default="#ff0000"/>
             <visualProperty name="EDGE_STROKE_UNSELECTED_PAINT" default="#333333">
-                <continuousMapping attributeType="float" attributeName="logFC.norm">
+                <continuousMapping attributeType="float" attributeName="log2FC.norm">
                     <continuousMappingPoint lesserValue="#00ff00" greaterValue="#00ff00" equalValue="#00ff00" attrValue="-0.5"/>
                     <continuousMappingPoint lesserValue="#cccccc" greaterValue="#cccccc" equalValue="#cccccc" attrValue="0"/>
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="0.5"/>
@@ -251,7 +251,7 @@
             <visualProperty name="NODE_CUSTOMGRAPHICS_2" default="org.cytoscape.ding.customgraphics.NullCustomGraphics,0,[ Remove Graphics ],"/>
             <visualProperty name="NODE_CUSTOMGRAPHICS_SIZE_1" default="50.0"/>
             <visualProperty name="NODE_FILL_COLOR" default="#00acad">
-                <continuousMapping attributeType="float" attributeName="logFC">
+                <continuousMapping attributeType="float" attributeName="log2FC">
                     <continuousMappingPoint lesserValue="#00ff00" greaterValue="#00ff00" equalValue="#00ff00" attrValue="-2"/>
                     <continuousMappingPoint lesserValue="#cccccc" greaterValue="#cccccc" equalValue="#cccccc" attrValue="0"/>
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="2"/>
@@ -282,7 +282,7 @@
             <visualProperty name="EDGE_VISIBLE" default="true"/>
             <visualProperty name="EDGE_SELECTED_PAINT" default="#ff0000"/>
             <visualProperty name="EDGE_STROKE_UNSELECTED_PAINT" default="#333333">
-                <continuousMapping attributeType="float" attributeName="logFC">
+                <continuousMapping attributeType="float" attributeName="log2FC">
                     <continuousMappingPoint lesserValue="#00ff00" greaterValue="#00ff00" equalValue="#00ff00" attrValue="-2"/>
                     <continuousMappingPoint lesserValue="#999999" greaterValue="#999999" equalValue="#999999" attrValue="0"/>
                     <continuousMappingPoint lesserValue="#ff0000" greaterValue="#ff0000" equalValue="#ff0000" attrValue="2"/>
