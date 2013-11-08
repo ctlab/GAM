@@ -136,6 +136,7 @@ getAttrXmlStrings <- function(attr.values, indent="") {
             type <- "integer"
         } else if(attr.rtype == "numeric") {
             type <- "real"
+            attr.values[[i]] <- sub("Inf", "Infinity", as.character(attr.values[[i]]), fixed=T)
         } else {
             type <- "string"
             attr.values[[i]] <- as.character(attr.values[[i]])
