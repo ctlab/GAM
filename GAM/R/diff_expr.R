@@ -22,18 +22,25 @@ convertPvalBiomart <- function(pval, from, to, mart) {
     convertPval(pval, map$from, map$to)
 }
 
-# Get possible ID type  of IDs from a vector
-# @param ids Vector of IDs
-# @param id.map Map between different type of IDs
-# @return Vector of possible IDs
+#' Get possible ID type  of IDs from a vector
+#' 
+#' Checks to which coulmn of id.map the biggest number 
+#' of IDs is matched.
+#' 
+#' @param ids Vector of IDs
+#' @param id.map Map between different type of IDs
+#' @return Type of IDs in a vector or NULL if no suitable type was found
+#' @export
 getIdsType <- function(ids, id.map) {
-    res <- c()
-    for (id.type in names(id.map)) {
-        if (any(ids %in% id.map[, id.type])) {
-            res <- c(res, id.type)
-        }
+    counts <- sapply(names(id.map), function(id.type) {
+        sum(ids %in% id.map[, id.type])    
+    })
+    
+    if (max(counts) == 0) {
+        return(NULL)
     }
-    res
+    
+    names(counts[which.max(counts)])
 }
 
 #' Convert IDs in differential expression data
