@@ -255,14 +255,6 @@ makeExperimentSet <- function(network,
     }
     
     
-    
-    es$all.pval <- c(es$rxn.pval, es$met.pval)
-    
-    es$fb.all <- fitBumModel(es$all.pval, plot=F)
-    if (plot) {
-        hist(es$fb.all, main="Histogram of all p-values")
-        plot(es$fb.all, main="QQ-Plot for joint BUM-model")
-    }
     return(es)
 }
 
@@ -282,15 +274,13 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 #' @param gene.fdr FDR for genes/reactions only
 #' @param absent.met.score Score for metabolites absent from data
 #' @param absent.rxn.score Score for reactions when there is no genomic data
-#' @param score.separately Score metabolites and reactions separately
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @export 
 scoreNetwork <- function(es,                         
                        fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
                        absent.met.score=NULL,
-                       absent.rxn.score=0,
-                       score.separately=T) {
+                       absent.rxn.score=0) {
     
     net <- es$subnet
     
@@ -302,7 +292,7 @@ scoreNetwork <- function(es,
             
     met.scores <- NULL    
     if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
-        fb <- if (score.separately) es$fb.met else es$fb.all
+        fb <- es$fb.met
         met.scores <- scoreValue(fb, na.omit(es$met.de.ext$pval), met.fdr)
         names(met.scores) <- es$met.de.ext$ID[!is.na(es$met.de.ext$pval)]
     }
@@ -310,7 +300,7 @@ scoreNetwork <- function(es,
     
     rxn.scores <- NULL
     if (!is.null(es$fb.rxn) && !is.null(gene.fdr)) {
-        fb <- if (score.separately) es$fb.rxn else es$fb.all
+        fb <- es$fb.rxn 
         rxn.scores <- scoreValue(fb, na.omit(es$rxn.de.ext$pval), gene.fdr)
         names(rxn.scores) <- es$rxn.de.ext$ID[!is.na(es$rxn.de.ext$pval)]
     }
