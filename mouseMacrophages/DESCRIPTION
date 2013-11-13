@@ -1,7 +1,7 @@
 Package: mouseMacrophages
 Type: Package
 Title: Transcriptional and metabolic profiling data for mouse macrophages
-Version: 1.0
+Version: 0.99
 Date: 2013-08-31
 Author: Abhishek Jha, Ching-Cheng Huang, Alexey Sergushichev, Yulia Ivanova, Karina Chmielewski, Kelly Stewart, Bart Everts, Juliet Ashall, Edward J. Pearce, Edward M. Driggers, Maxim N. Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
