@@ -188,7 +188,11 @@ getEdgeXmlStrings <- function(network, indent="") {
                          ">\n")
     xmlFooter <- paste0(indent, "</edge>\n")
     xmlStrings <- paste0(xmlHeaders,
-                              apply(attr.xmlStrings, 1, function(x) paste(na.omit(x), collapse="")),
+                              if (is.null(attr.xmlStrings)) {
+                                  NULL
+                              } else {
+                                  apply(attr.xmlStrings, 1, function(x) paste(na.omit(x), collapse=""))
+                              },
                               xmlFooter)
                                     
     xmlStrings
