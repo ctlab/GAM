@@ -11,9 +11,9 @@ kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
 kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "730249", "HSA"))
 
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
-# not compressing now for faster load
-save(kegg.mouse.network, file="kegg.mouse.network.rda", compress=F)
+save(kegg.mouse.network, file="kegg.mouse.network.rda", compress="xz")
 
 kegg.human.network <- makeKeggNetwork(kegg.db, "HSA")
-save(kegg.human.network, file="kegg.human.network.rda", compress=F)
+save(kegg.human.network, file="kegg.human.network.rda", compress="xz")
+
 

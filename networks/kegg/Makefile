@@ -1,6 +1,6 @@
 GAM="../../GAM"
 
-kegg.mouse.network.rda data/kegg.human.network.rda: \
+kegg.mouse.network.rda kegg.human.network.rda: \
 		kegg.db.rda \
 		make_networks.R
 	./make_networks.R

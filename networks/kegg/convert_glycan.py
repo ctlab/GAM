@@ -6,7 +6,7 @@ with open("./glycan") as f:
 
 descriptions = text.split("///\n")
 
-m2name = ["met\tname\tpathway"]
+m2name = ["met\tname\tformula\tpathway"]
 
 for description in descriptions:
     if description == "":
@@ -33,18 +33,21 @@ for description in descriptions:
     met_id = d["ENTRY"].split()[0]
 
     escaped_name = ""
+    formula = ""
     if "NAME" in d:
         escaped_name = d["NAME"].replace("\n", " ") \
                                 .replace('"', '\\"') \
                                 .replace("<","") \
                                 .replace(">","")
+        if "FORMULA" in d:
+            formula = d["FORMULA"]
 
 
     pathways = ""
     if "PATHWAY" in d:
         pathways = "+".join([p.split()[0] for p in d["PATHWAY"].split("\n")])
 
-    m2name.append('%s\t"%s"\t"%s"' % (met_id, escaped_name, pathways))
+    m2name.append('%s\t"%s"\t"%s"\t"%s"' % (met_id, escaped_name, formula, pathways))
 
 with open("gly2name.tsv", "w") as f:
     f.write("%s\n" % "\n".join(m2name))
