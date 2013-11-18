@@ -9,6 +9,35 @@
 #' @param logFC.norm.attr Name of a new attribute
 #' @param group.by Attribute by which node grouping shoud happen
 #' @return Modified module with normalized log-foldchange node attribute
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.norm", group.by="nodeType") {
     node.types <- unique(na.omit(get.vertex.attribute(module, group.by)))
@@ -35,6 +64,35 @@ addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.no
 #' @param es Experiment set object
 #' @return Modified module
 #' @import igraph 
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 simplifyReactionNodes <- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -86,6 +144,35 @@ simplifyReactionNodes <- function(module, es) {
 #' @param es Experiment set object
 #' @return Modified module
 #' @import igraph 
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 addMetabolitesForReactions<- function(module, es) {
     stopifnot(!es$reactions.as.edges)
@@ -131,6 +218,35 @@ addMetabolitesForReactions<- function(module, es) {
 #' @param es Experiment set object
 #' @return Module with interconnecting reactions
 #' @import igraph 
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 addInterconnections <- function(module, es) {
     met.nodes <- V(module)[nodeType == "met"]$name
@@ -151,6 +267,35 @@ addInterconnections <- function(module, es) {
 #' @param module Module do work with
 #' @return Module with attributes copied
 #' @import igraph 
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 expandReactionNodeAttributesToEdges <- function(module) {
     res <- module
@@ -174,6 +319,35 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' 
 #' @param module Module to work with
 #' @return Module with hanging nodes removed
+#' @examples
+#' library("mouseMacrophages")
+#' data("examples")
+#' 
+#' data("kegg.mouse.network")
+#' 
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=FALSE,
+#'                            plot=FALSE)
+#'     
+#' \dontrun{
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' module.rn <- findModule(es.rn,
+#'                         met.fdr=1e-6,
+#'                         gene.fdr=1e-6,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.rn <- addMetabolitesForReactions(module.rn, es.rn)
+#' module.rn <- addInterconnections(module.rn, es.rn)
+#' module.rn <- addNormLogFC(module.rn)
+#' module.rn <- removeHangingNodes(module.rn)
+#' module.rn <- simplifyReactionNodes(module.rn, es.rn)
+#' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 removeHangingNodes <- function(module) {
     res <- module
@@ -189,6 +363,29 @@ removeHangingNodes <- function(module) {
 #' @param module Module to work with
 #' @param es Experiment set object
 #' @return Modified module
+#' @examples
+#' data("kegg.mouse.network")
+#' data("examples")
+#' library("mouseMacrophages")
+#' data("mmpData")
+#' 
+#' heinz.py <- "/usr/local/lib/heinz/heinz.py"
+#' solver <- heinz.solver(heinz.py)
+#' 
+#' es.re <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=TRUE)
+#' 
+#' \dontrun{
+#' module.re <- findModule(es.re,
+#'                         met.fdr=3e-05,
+#'                         gene.fdr=3e-05,
+#'                         absent.met.score=-20,
+#'                         solver=solver)
+#' }
+#' 
+#' module.re <- addTransEdges(module.re, es.re)
 #' @export
 addTransEdges <- function(module, es) {
     edges.keep <- es$net.edges.ext.all$rptype %in% c("main", "trans")

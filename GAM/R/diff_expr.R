@@ -10,6 +10,14 @@
 #' @param to Mart attribute for result IDs
 #' @param mart Mart to use
 #' @return Table with IDs converted
+#' @examples
+#' \dontrun{
+#' data(examples)
+#' if (require(biomarRt)) {
+#'     mart <- useMart("ensembl",dataset="mmusculus_gene_ensembl")
+#'     gene.de.M1.M2.entrez <- convertPvalBiomart(gene.de.M1.M2, "refseq_mrna", "entrezgene", mart)
+#' }
+#' }
 #' @export
 convertPvalBiomart <- function(pval, from, to, mart) {
     if (!require(biomaRt)) {
@@ -30,8 +38,11 @@ convertPvalBiomart <- function(pval, from, to, mart) {
 #' @param ids Vector of IDs
 #' @param id.map Map between different type of IDs
 #' @return Type of IDs in a vector or NULL if no suitable type was found
+#' @examples
+#' data(met.id.map)
+#' id.type <- getIdType(c("HMDB00001", "HMDB02092"), met.id.map)
 #' @export
-getIdsType <- function(ids, id.map) {
+getIdType <- function(ids, id.map) {
     counts <- sapply(names(id.map), function(id.type) {
         sum(ids %in% id.map[, id.type])    
     })
@@ -54,6 +65,10 @@ getIdsType <- function(ids, id.map) {
 #' @param to Vector of IDs to convert to 
 #' @return Table with IDs converted
 #' @importFrom plyr rename
+#' @examples
+#' data(met.id.map)
+#' data(examples)
+#' met.de.M1.M2.kegg <- convertPval(met.de.M1.M2, met.id.map$HMDB, met.id.map$KEGG)
 #' @export
 convertPval <- function(pval, from, to) {
     map <- data.frame(ID=from, to=to, stringsAsFactors=F)
@@ -130,6 +145,16 @@ fixInf <- function(dm) {
 #' @param use.deseq Use DESeq for analysis
 #' @param min.expr Minimal mean expression for a feature to be kept
 #' @return Table with p-values for differential expression and log-fold changes
+#' @examples
+#' \dontrun{
+#' if (require(mouseMacrophages) && require(DESeq)) {
+#'     data(mmpData)
+#'     gene.de.M1.M2 <- diffExpr(
+#'         exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
+#'         state1="MandLPSandIFNg", state2="MandIL4", 
+#'         use.deseq=T, top=Inf, min.expr=5)
+#' }
+#' }
 #' @export
 diffExpr <- function(exprs, conditions.vector, state1, state2, top=Inf, log2=F, quantile=F, use.deseq=F, min.expr=0) {
     exprs <-as.matrix(exprs)

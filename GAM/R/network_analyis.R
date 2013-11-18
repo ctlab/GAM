@@ -87,11 +87,11 @@ makeExperimentSet <- function(network,
     if (is.null(met.ids) && !is.null(met.de)) {
         lazyData("met.id.map")
         met.id.map <- get("met.id.map")
-        met.ids <- getIdsType(met.de$ID, met.id.map)
+        met.ids <- getIdType(met.de$ID, met.id.map)
     }
     
     if (is.null(gene.ids) && !is.null(gene.de)) {
-        gene.ids <- getIdsType(gene.de$ID, network$gene.id.map)
+        gene.ids <- getIdType(gene.de$ID, network$gene.id.map)
     }
     
     es <- newEmptyObject()

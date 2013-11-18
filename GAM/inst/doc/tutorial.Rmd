@@ -27,6 +27,7 @@ library("GAM")
 library("igraph")
 library("mouseMacrophages")
 data("mmpData")
+data("examples")
 ```
 
 
@@ -43,25 +44,6 @@ section [Constructing network](#constructing-network) for details.
 
 ```{r}
 data("kegg.mouse.network")
-```
-
-Make differential expressions analysis between M1 and M2 polarizations. The `GAM` package
-contains helper functions do make it in one command, but you can do it manually, see documentation
-for `limma` and `DESeq` packages.
-
-```{r}
-state1 <- "MandLPSandIFNg"
-state2 <- "MandIL4"
-gene.de.M1.M2 <- diffExpr(
-    exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
-    state1=state1, state2=state2, 
-    use.deseq=T, top=Inf, min.expr=5)
-met.de.M1.M2 <- diffExpr(
-    exprs=exprs(mmpMetSet), conditions.vector=pData(mmpMetSet)$condition,
-    state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=F, top=Inf)
-head(gene.de.M1.M2)
-head(met.de.M1.M2)
 ```
 
 
@@ -103,8 +85,8 @@ Set FDRs and score for absent metabolites. Using these parameters size of the mo
 can be controlled: larger FDRs make larger modules. Score for absnet metabolites controls
 how many such metabolites will be in the module.
 ```{r}
-met.fdr=c(1e-5)
-gene.fdr=c(1e-5)
+met.fdr=c(1e-4)
+gene.fdr=c(1e-4)
 absent.met.score=c(-20)
 ```
 
@@ -247,6 +229,31 @@ kegg.db$rxn2enz <- rbind(kegg.db$rxn2enz, c("RXIRG1", "Irg1"))
 kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
+
+## Differential expression
+
+The `GAM` package
+contains helper functions do make DE in one command, but you can do it manually, see documentation
+for `limma` and `DESeq` packages.
+
+```{r}
+state1 <- "MandLPSandIFNg"
+state2 <- "MandIL4"
+
+gene.de.M1.M2 <- diffExpr(
+    exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
+    state1=state1, state2=state2, 
+    use.deseq=T, top=Inf, min.expr=5)
+
+met.de.M1.M2 <- diffExpr(
+    exprs=exprs(mmpMetSet), conditions.vector=pData(mmpMetSet)$condition,
+    state1=state1, state2=state2, 
+    log2=F, quantile=F, use.deseq=F, top=Inf)
+
+head(gene.de.M1.M2)
+head(met.de.M1.M2)
+```
+
 
 
 ## Postprocessing <a name="postprocessing"></a>

@@ -19,3 +19,12 @@ NULL
 #' @name kegg.db
 NULL
 
+#' Mouse reactions network based on KEGG
+#' @docType data
+#' @name kegg.mouse.network
+NULL
+
+#' Human reactions network based on KEGG
+#' @docType data
+#' @name kegg.human.network
+NULL

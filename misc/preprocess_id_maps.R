@@ -20,4 +20,4 @@ head(kegg2name)
 
 met.id.map <- merge(hmdb2kegg, kegg2name, all.x=T)
 head(met.id.map)
-save(met.id.map, file="met.id.map.rda", compress=F)
+save(met.id.map, file="met.id.map.rda")
