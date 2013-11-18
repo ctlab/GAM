@@ -26,7 +26,7 @@ Package `mouseMacrophages` contains data from experiment that we will use as an 
 library("GAM")
 library("igraph")
 library("mouseMacrophages")
-data(mmpData)
+data("mmpData")
 ```
 
 
@@ -37,14 +37,12 @@ mmpGeneSet
 mmpMetSet
 ```
 
-Construct a mouse-specific network with command `makeKeggNetowrk`, but first load 
-KEGG reaction data (part of `GAM`) and mouse annotation package. See section 
-[Constructing network](#constructing-network) for details.
+Load network for mouse. The package contains prebuilt networks for mouse and
+human (`kegg.human.network`). For details, how networks can be constructed see
+section [Constructing network](#constructing-network) for details.
 
 ```{r}
-data("kegg.db")
-library("org.Mm.eg.db")
-kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
+data("kegg.mouse.network")
 ```
 
 Make differential expressions analysis between M1 and M2 polarizations. The `GAM` package
