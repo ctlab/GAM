@@ -13,7 +13,7 @@ NULL
 # @param plot If TRUE plot BUM fit
 preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     if (!is.null(es$gene.de)) {
-        print("Processing gene p-values...")
+        message("Processing gene p-values...")
         
         if (!is.null(es$gene.de$log2FC)) {
             es$gene.de$log2FC <- fixInf(es$gene.de$log2FC)
@@ -25,13 +25,13 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
                                        to=gene.id.map[,es$network$gene.ids])
         }    
         es$gene.de$origin <- NULL
-        print("Converting gene p-values to reactions...")
+        message("Converting gene p-values to reactions...")
         es$rxn.de <- convertPval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
         
     }
     
     if (!is.null(es$met.de)) {
-        print("Processing metabolite p-values...")
+        message("Processing metabolite p-values...")
         if (!is.null(es$met.de$log2FC)) {
             es$met.de$log2FC <- fixInf(es$met.de$log2FC)        
         }
@@ -116,7 +116,7 @@ makeExperimentSet <- function(network,
     es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids, plot=plot)
     
     if (!is.null(es$rxn.de)) {
-        print("Processing reaction p-values...")
+        message("Processing reaction p-values...")
         if (!is.null(es$rxn.de$log2FC)) {
             es$rxn.de$log2FC <- fixInf(es$rxn.de$log2FC)                        
         }
@@ -153,7 +153,7 @@ makeExperimentSet <- function(network,
         es$rxn.pval <- NULL
     }
         
-    print("Building network")    
+    message("Building network")    
     
     if (is.null(es$met.de)) {
         es$met.de <- data.frame(
@@ -222,7 +222,7 @@ makeExperimentSet <- function(network,
                        rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
         
         if (collapse.reactions && "origin" %in% names(rxn.de.ext)) {
-            print("Collapsing reactions by common most significant enzymes")
+            message("Collapsing reactions by common most significant enzymes")
             
             edges.dt <- data.table(edges, key="met")
             rxn.net <- merge(rename(edges.dt, c("rxn"="rxn.x")), rename(edges.dt, c("rxn" = "rxn.y")), by="met", allow.cartesian=T)
@@ -323,7 +323,7 @@ scoreNetwork <- function(es,
     
     if (is.null(absent.met.score)) {
         absent.met.score <- mean(met.scores[met.scores < 0])
-        print(paste0("absent.met.score <- ", absent.met.score))
+        message(paste0("absent.met.score <- ", absent.met.score))
     }
         
     absent.met.scores <- sapply(V(net)[nodeType == "met"]$name, function(x) absent.met.score)

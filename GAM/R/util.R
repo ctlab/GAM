@@ -6,7 +6,7 @@ setdiff.data.frame <-
 #' @param ... Additional arguments for data()
 lazyData <- function(name, ...) {
     if (!name %in% ls(envir=.GlobalEnv)) {
-        print(paste0("No ", name, ", loading"))
+        message(paste0("No ", name, ", loading"))
         do.call(data, list(name, ...))
     }
 }

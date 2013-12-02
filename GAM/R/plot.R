@@ -111,7 +111,7 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
     es <- get.edges(network, E(network))
     #es <- es + 1 # :ToDo: remove when moving from igraph0
     
-    #print(paste("par:", par("pin")))
+    #message(paste("par:", par("pin")))
     scale <- scale * min(par("pin")) / 10
     
     if (nrow(es) > 0) {
@@ -125,11 +125,11 @@ plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeTyp
         
         
         dist.avg <- dist.sum / nrow(es)
-        #print(paste("average distance:", dist.avg))
+        #message(paste("average distance:", dist.avg))
         scale <- scale * dist.avg * 10
     }
     
-    #print(cex)
+    #message(cex)
     
     vertex.size2 <- vertex.size2 * scale
     cex <- cex * scale
