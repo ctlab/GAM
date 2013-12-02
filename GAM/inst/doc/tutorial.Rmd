@@ -27,7 +27,7 @@ library("GAM")
 library("igraph")
 library("mouseMacrophages")
 data("mmpData")
-data("examples")
+data("examplesGAM")
 ```
 
 
@@ -85,18 +85,20 @@ Set FDRs and score for absent metabolites. Using these parameters size of the mo
 can be controlled: larger FDRs make larger modules. Score for absnet metabolites controls
 how many such metabolites will be in the module.
 ```{r}
-met.fdr=c(1e-4)
-gene.fdr=c(1e-4)
-absent.met.score=c(-20)
+met.fdr <- 3e-5
+gene.fdr <- 3e-5
+absent.met.score <- -20
 ```
 
-And now we can finally find most significant module in our network.
-```{r chache=TRUE, error=FALSE}
+And now we can finally find most significant module in our network (if heinz is installed).
+```{r chache=TRUE, error=FALSE, eval=FALSE}
 module.re <- findModule(es.re,
                         met.fdr=met.fdr,
                         gene.fdr=gene.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
+```
+```{r chache=TRUE, error=FALSE}
 module.re
 ```
 
@@ -149,12 +151,15 @@ absent.met.score=c(-20)
 ```
 
 And finding modules:
-```{r chache=TRUE, error=FALSE}
+```{r eval=FALSE}
 module.rn <- findModule(es.rn,
                         met.fdr=met.fdr,
                         gene.fdr=gene.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
+```
+
+```{r}
 module.rn
 ```
 

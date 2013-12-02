@@ -1,9 +1,16 @@
 #' Plot a module to PDF
 #' @param module Module to save
 #' @param file File to save plot to
+#' @param width Width of a page (in inches)
+#' @param height Height of a page (in inches)
+#' @examples
+#' data(examplesGAM)
+#' \dontrun{
+#' saveModuleToPdf(module.re, "module.re.pdf")
+#' }
 #' @export
-saveModuleToPdf <- function(module, file) {
-    pdf(file, width=15, height=15)
+saveModuleToPdf <- function(module, file, width=15, height=15) {
+    pdf(file, width, height)
     plotNetwork(module, attr.label="label", vertex.size=2)
     dev.off()
 }
@@ -20,6 +27,9 @@ saveModuleToJson <- function(module, outputFilePrefix) {
 #' @param index Vertices to select
 #' @param attrs Vector of attribute names
 #' @return List of vectors of attribute values, one element per attribute
+#' @examples
+#' data(examplesGAM)
+#' vertex.attributes <- get.vertex.attributes(module.re)
 #' @export
 get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attributes(graph)) {
     sapply(attrs,
@@ -33,6 +43,8 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
 #' @param index Edges to select
 #' @param attrs Vector of attribute names
 #' @return List of vectors of attribute values, one element per attribute
+#' data(examplesGAM)
+#' edge.attributes <- get.edge.attributes(module.re)
 #' @export
 get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph)) {
     sapply(attrs, 
@@ -44,6 +56,8 @@ get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attribute
 #' Converts a module from igraph to a list of nodes and links
 #' @param module igraph module 
 #' @return list of two elements: list of nodes and list of edges
+#' data(examplesGAM)
+#' graph.list <- module2list(module.re)
 #' @export
 module2list <- function(module) {
     getNodeObject <- function(i) {
@@ -68,6 +82,8 @@ module2list <- function(module) {
 
 #' Get json string for a module
 #' @param module Module to convert to JSONstring
+#' data(examplesGAM)
+#' graph.json <- getModuleJsonString2list(module.re)
 #' @export
 getModuleJsonString <- function(module) {
     if (!require(rjson)) {
@@ -82,6 +98,11 @@ getModuleJsonString <- function(module) {
 #' @param network Network to save
 #' @param name Name of the network
 #' @param file File to save to
+#' @examples
+#' data(examplesGAM)
+#' \dontrun{
+#' saveModuleToXgmml(module.re, "M1 vs M2", "module.re.xgmml")
+#' }
 #' @export
 saveModuleToXgmml <- function(network, name, file) {
     s <- getGraphXmlString(network, name)
@@ -203,6 +224,11 @@ getEdgeXmlStrings <- function(network, indent="") {
 #' @param module Module to save
 #' @param outputFilePrefix Path to save to (without extension)
 #' @param types Vector of file types, "pdf" or one of the supported by BioNet::saveNetwork function
+#' @examples
+#' data(examplesGAM)
+#' \dontrun{
+#' saveModuleToPdf(module.re, "module.re", types=c("pdf", "XGMML"))
+#' }
 #' @export
 saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
     outdir <- dirname(outputFilePrefix)

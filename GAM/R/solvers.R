@@ -65,6 +65,8 @@ runHeinz <- function(subnet,
 #' @param timeLimit Time limit for execution
 #' @return solver function
 #' @import igraph
+#' @exampls 
+#' solver <- mwcs.solver("/usr/local/bin/mwcs")
 #' @export
 mwcs.solver <- function(mwcs, timeLimit=-1) {
     function(network) {
@@ -111,6 +113,8 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
 #' @param subopt_diff subopt_diff parameter for heinz
 #' @param timeLimit Time limit for execution
 #' @return solver function
+#' @exampls 
+#' solver <- heinz.solver("/usr/local/lib/heinz/heinz.py")
 #' @export
 heinz.solver <- function(heinz.py,
                          nModules=1,
@@ -140,6 +144,14 @@ heinz.solver <- function(heinz.py,
 #' Solves MWCS instance with BioNet::runFastHeinz algorithm
 #' @param network Netowrk to find module in
 #' @return Module
+#' @exampls 
+#' data(kegg.mouse.network)
+#' data(examples)
+#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=F)
+#' module.rn <- findModule(es.rn, solver=fastHeinz.solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
 #' @export
 fastHeinz.solver <- function(network) {
     score.edges <- "score" %in% list.edge.attributes(network) && !all(E(network)$score == 0)

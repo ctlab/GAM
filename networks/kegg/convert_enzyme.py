@@ -9,6 +9,7 @@ descriptions = text.split("///\n")
 organisms = ["MMU", "HSA"]
 
 e2g = ["enz\tgene\torganism"]
+e2g_all = ["enz\tgene\torganism"]
 
 for description in descriptions:
     if description == "":
@@ -43,12 +44,16 @@ for description in descriptions:
             continue
 
         (organism, organism_genes) = organism_genes.split(":", 1)
-        if not organism in organisms:
-            continue
         organism_genes = organism_genes.split(" ")
         genes_entrez = map(lambda s: re.sub("(.*)\\(.*\\)", "\\1", s), organism_genes)
-        e2g.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
+        if organism in organisms:
+            e2g.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
+        e2g_all.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
 
 
 with open("enz2gene.tsv", "w") as f:
     f.write("%s\n" % "\n".join(e2g))
+
+with open("enz2gene.all.tsv", "w") as f:
+    f.write("%s\n" % "\n".join(e2g_all))
+

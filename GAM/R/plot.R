@@ -34,6 +34,11 @@
 #' @param layout Layout to use
 #' @param ... Arguments for plot
 #' @import igraph 
+#' @examples
+#' data(examplesGAM)
+#' \dontrun{
+#' plotNetwork(module.re)
+#' }
 #' @export
 plotNetwork <- function(module, scale=1, attr.label="label", attr.shape="nodeType", layout=layout.kamada.kawai, ...) {
     network <- module

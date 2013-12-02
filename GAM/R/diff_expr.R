@@ -12,7 +12,7 @@
 #' @return Table with IDs converted
 #' @examples
 #' \dontrun{
-#' data(examples)
+#' data(examplesGAM)
 #' if (require(biomarRt)) {
 #'     mart <- useMart("ensembl",dataset="mmusculus_gene_ensembl")
 #'     gene.de.M1.M2.entrez <- convertPvalBiomart(gene.de.M1.M2, "refseq_mrna", "entrezgene", mart)
@@ -67,7 +67,7 @@ getIdType <- function(ids, id.map) {
 #' @importFrom plyr rename
 #' @examples
 #' data(met.id.map)
-#' data(examples)
+#' data(examplesGAM)
 #' met.de.M1.M2.kegg <- convertPval(met.de.M1.M2, met.id.map$HMDB, met.id.map$KEGG)
 #' @export
 convertPval <- function(pval, from, to) {
@@ -152,11 +152,17 @@ fixInf <- function(dm) {
 #'     gene.de.M1.M2 <- diffExpr(
 #'         exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
 #'         state1="MandLPSandIFNg", state2="MandIL4", 
-#'         use.deseq=T, top=Inf, min.expr=5)
+#'         use.deseq=TRUE, top=Inf, min.expr=5)
 #' }
 #' }
 #' @export
-diffExpr <- function(exprs, conditions.vector, state1, state2, top=Inf, log2=F, quantile=F, use.deseq=F, min.expr=0) {
+diffExpr <- function(exprs, 
+                     conditions.vector,
+                     state1, state2,
+                     top=Inf,
+                     log2=FALSE, quantile=FALSE,
+                     use.deseq=FALSE,
+                     min.expr=0) {
     exprs <-as.matrix(exprs)
     
     

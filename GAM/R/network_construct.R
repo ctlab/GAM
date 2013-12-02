@@ -25,11 +25,16 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
 
 #' Make KEGG reaction network for a specified organism
 #' @param kegg.db object with KEGG mappings
-#' @param organism Organism (MMU or HSA)
+#' @param organism.kegg Organism KEGG ID (only MMU or HSA by default)
+#' @param organism.annotation Genome wide annotation package to use (without ".db" suffix)
 #' @return Network for the organism usable for an analysis
+#' data(kegg.db)
+#' if (require(org.Mm.eg)) {
+#'     kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
+#' }
 #' @export
-makeKeggNetwork <- function(kegg.db, organism) {
-    enz2gene <- kegg.db$enz2gene[kegg.db$enz2gene$organism == organism, c("enz", "gene")]
+makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism.id.map$Annotation[organism.id.map$KEGG == organism.kegg]) {
+    enz2gene <- kegg.db$enz2gene[kegg.db$enz2gene$organism == organism.kegg, c("enz", "gene")]
     rxn2enz <- kegg.db$rxn2enz
     rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
     
@@ -54,7 +59,7 @@ makeKeggNetwork <- function(kegg.db, organism) {
     met2name$name <- gsub(";.*$", "", met2name$name)
     rxn2name$name <- gsub(";.*$", "", rxn2name$name)
     
-    gene.id.map <- makeGeneIdMap(organism.id.map$Annotation[organism.id.map$KEGG == organism], 
+    gene.id.map <- makeGeneIdMap(organism.annotation, 
                                  c("REFSEQ", "SYMBOL"))
     colnames(gene.id.map) <- c("Entrez", "RefSeq", "Symbol")
     
@@ -77,7 +82,7 @@ makeKeggNetwork <- function(kegg.db, organism) {
     kegg.network$gene.ids <- "Entrez"
     kegg.network$met2name <- met2name
     kegg.network$rxn2name <- rxn2name
-    kegg.network$organism <- organism
+    kegg.network$organism <- organism.kegg
     kegg.network$gene.id.map <- gene.id.map
     return(kegg.network)
 }

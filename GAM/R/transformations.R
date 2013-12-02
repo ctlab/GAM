@@ -44,7 +44,7 @@ splitMappingByConnectivity <- function(connections, from, to) {
 #' @param node.col Column (number of character) with vertex IDs
 #' @param name.as.label If TRUE rename "name" attribute to "label"
 #' @import igraph
-addNodeAttributes <- function(graph, node.table, node.col=1, name.as.label=T) {
+addNodeAttributes <- function(graph, node.table, node.col=1, name.as.label=TRUE) {
     if (class(node.table) == "list") {
         for (name in names(node.table)) {
             node.table[[name]]$nodeType <- name

@@ -11,7 +11,7 @@
 #' @return Modified module with normalized log-foldchange node attribute
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -66,7 +66,7 @@ addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.no
 #' @import igraph 
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -146,7 +146,7 @@ simplifyReactionNodes <- function(module, es) {
 #' @import igraph 
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -220,7 +220,7 @@ addMetabolitesForReactions<- function(module, es) {
 #' @import igraph 
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -269,7 +269,7 @@ addInterconnections <- function(module, es) {
 #' @import igraph 
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -321,7 +321,7 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' @return Module with hanging nodes removed
 #' @examples
 #' library("mouseMacrophages")
-#' data("examples")
+#' data("examplesGAM")
 #' 
 #' data("kegg.mouse.network")
 #' 
@@ -365,7 +365,7 @@ removeHangingNodes <- function(module) {
 #' @return Modified module
 #' @examples
 #' data("kegg.mouse.network")
-#' data("examples")
+#' data("examplesGAM")
 #' library("mouseMacrophages")
 #' data("mmpData")
 #' 

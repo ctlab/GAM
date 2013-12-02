@@ -76,14 +76,21 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
 #' @param plot If TRUE plot BUM-models
 #' @importFrom plyr rename
 #' @import data.table
+#' @examples 
+#' data(kegg.mouse.network)
+#' data(examplesGAM)
+#' es.re <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=TRUE)
 #' @export
 makeExperimentSet <- function(network, 
                               met.de=NULL, gene.de=NULL, rxn.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
-                              reactions.as.edges=T,
-                              collapse.reactions=T,
-                              use.rpairs=T,
-                              plot=T) {
+                              reactions.as.edges=TRUE,
+                              collapse.reactions=TRUE,
+                              use.rpairs=TRUE,
+                              plot=TRUE) {
     if (is.null(met.ids) && !is.null(met.de)) {
         lazyData("met.id.map")
         met.id.map <- get("met.id.map")
@@ -276,6 +283,14 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 #' @param absent.rxn.score Score for reactions when there is no genomic data
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
+#' @examples
+#' data(kegg.mouse.network)
+#' data(examplesGAM)
+#' es.re <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=TRUE)
+#' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, gene.fdr=3e-5, absent.met.score=-20)
 #' @export 
 scoreNetwork <- function(es,                         
                        fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
@@ -344,6 +359,17 @@ scoreNetwork <- function(es,
 #' @param rxn.pval.default P-value for reactions without provided p-value
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
+#' @examples
+#' data(kegg.mouse.network)
+#' data(examplesGAM)
+#' es.re <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=TRUE)
+#' es.re.scored <- scoreNetworkWithoutBUM(es.re,
+#'                                        met.pval.threshold=1e-5,
+#'                                        met.pval.default=1,
+#'                                        rxn.pval.threshold=1e-5)
 #' @export 
 scoreNetworkWithoutBUM <- function(es,
                                    met.pval.threshold=1e-5,
@@ -408,7 +434,7 @@ scoreNetworkWithoutBUM <- function(es,
 
 
 #' Find significant module in a network
-#' @param es Experiment set object
+#' @param es Experiment set object (scored or not)
 #' @param solver Solver function of MWCS problem to use, first argument should be a network,
 #'               result should be a module or list of modules
 #' @param score.function Function to score network (is applied only if the network wasn't scored previously)
@@ -416,10 +442,21 @@ scoreNetworkWithoutBUM <- function(es,
 #' @param ... Additional arguments for scoring function
 #' @return List of most significant modules
 #' @import igraph 
+#' @examples
+#' data(kegg.mouse.network)
+#' data(examplesGAM)
+#' es.re <- makeExperimentSet(network=kegg.mouse.network,
+#'                            met.de=met.de.M1.M2,
+#'                            gene.de=gene.de.M1.M2,
+#'                            reactions.as.edges=TRUE)
+#' solver <- heinz.solver("/usr/local/lib/heinz/heinz.py")
+#' \dontrun{
+#' module.re <- findModule(es.re, solver, met.fdr=3e-5, gene.fdr=3e-5, absent.met.score=-20)
+#' }
 #' @export 
 findModule <- function(es,                         
                        solver = fastHeinz.solver,
-                       simplify=T,
+                       simplify=TRUE,
                        score.function=scoreNetwork,
                        ...) {
     

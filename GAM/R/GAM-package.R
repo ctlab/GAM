@@ -28,3 +28,35 @@ NULL
 #' @docType data
 #' @name kegg.human.network
 NULL
+
+#' Gene differential expression data for mouse macrophages between M1 and M2 states
+#' @docType data
+#' @name gene.de.M1.M2
+NULL
+
+#' Metabolite differential expression data for mouse macrophages between M1 and M2 states
+#' @docType data
+#' @name met.de.M1.M2
+NULL
+
+#' Example of a module for M1 vs. M2 comparison whith reactions as edges
+#' 
+#' met.fdr = 3e-5
+#' gene.fdr = 3e-5
+#' absent.met.score = -20
+#' 
+#' @docType data
+#' @name module.re
+NULL
+
+
+
+#' Example of a module for M1 vs. M2 comparison whith reactions as nodes
+#' 
+#' met.fdr = 2e-7
+#' gene.fdr = 2e-7
+#' absent.met.score = -20
+#' 
+#' @docType data
+#' @name module.rn
+NULL
