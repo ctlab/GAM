@@ -129,8 +129,13 @@ normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
 # @param dm Vector of nummbers
 # @return Vector of numbers withoud infinities
 fixInf <- function(dm) {    
-    dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
-    dm[dm == Inf] <- max(dm[dm != Inf]) + 1
+    
+    if (any(na.omit(dm == -Inf))) {
+        dm[dm == -Inf] <- min(dm[dm != -Inf]) - 1
+    }
+    if (any(na.omit(dm == Inf))) {
+        dm[dm == Inf] <- max(dm[dm != Inf]) + 1
+    }
     dm
 }
 

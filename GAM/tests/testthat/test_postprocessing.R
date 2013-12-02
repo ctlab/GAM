@@ -1,8 +1,11 @@
+library(igraph)
+library(BioNet)
+
 context("Post-processing")
 
 test_that("addNormLogFC works", {
-    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, Inf), stringsAsFactors=F)
-    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    met.nt <- data.frame(ID=c("C01", "C02"), log2FC=c(1, Inf), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), log2FC=c(3, 12), stringsAsFactors=F)
     
     et <- data.frame(
         u=c("C01", "C01", "C02", "C02"), 
@@ -13,22 +16,22 @@ test_that("addNormLogFC works", {
     
     g1 <- addNormLogFC(g)
     
-    expect_equal(V(g1)["C01"]$logFC.norm, 0.5)
-    expect_equal(V(g1)["C02"]$logFC.norm, 1)
-    expect_equal(V(g1)["R01"]$logFC.norm, 0.25)
-    expect_equal(V(g1)["R02"]$logFC.norm, 1)
+    expect_equal(V(g1)["C01"]$log2FC.norm, 0.5)
+    expect_equal(V(g1)["C02"]$log2FC.norm, 1)
+    expect_equal(V(g1)["R01"]$log2FC.norm, 0.25)
+    expect_equal(V(g1)["R02"]$log2FC.norm, 1)
 })
 
 test_that("addInterconnections works", {
-    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
-    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    met.nt <- data.frame(ID=c("C01", "C02"), log2FC=c(1, 2), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), log2FC=c(3, 12), stringsAsFactors=F)
     
     et <- data.frame(
         u=c("C01", "C01", "C02", "C02"), 
         v=c("R01", "R02", "R01", "R02"), 
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     es <- newEmptyObject()
     es$subnet <- g
     es$graph.raw <- data.frame(met.x=c("C01", "C01"), rxn=c("R01", "R02"), met.y=c("C02", "C02"), stringsAsFactors=F)
@@ -42,20 +45,20 @@ test_that("addInterconnections works", {
 })
 
 test_that("expandReactionNodeAttributesToEdges works", {
-    met.nt <- data.frame(ID=c("C01", "C02"), logFC=c(1, 2), stringsAsFactors=F)
-    rxn.nt <- data.frame(ID=c("R01", "R02"), logFC=c(3, 12), stringsAsFactors=F)
+    met.nt <- data.frame(ID=c("C01", "C02"), log2FC=c(1, 2), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), log2FC=c(3, 12), stringsAsFactors=F)
     
     et <- data.frame(
         u=c("C01", "C01", "C02", "C02"), 
         v=c("R01", "R02", "R01", "R02"), 
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
     g1 <- expandReactionNodeAttributesToEdges(g)
     
-    expect_true("logFC" %in% list.edge.attributes(g1))
-    expect_equal(E(g1, P=c("C01", "R01"))$logFC, 3)
+    expect_true("log2FC" %in% list.edge.attributes(g1))
+    expect_equal(E(g1, P=c("C01", "R01"))$log2FC, 3)
 })
 
 test_that("removeHangingNodes works", {
@@ -67,7 +70,7 @@ test_that("removeHangingNodes works", {
         v=c("R01", "R02", "R01"), 
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
     g1 <- removeHangingNodes(g)
     
@@ -84,7 +87,7 @@ test_that("addTransEdges works", {
         pval=c(1e-12, 1e-42, 1e-4),
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
     
     es <- newEmptyObject()
     es$met.de.ext <- met.nt

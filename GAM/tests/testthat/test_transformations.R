@@ -1,3 +1,5 @@
+library(igraph)
+
 context("Transformations")
 
 test_that("graph.from.tables works", {
@@ -11,7 +13,7 @@ test_that("graph.from.tables works", {
         name=paste0("Connection", 1:4),
         stringsAsFactors=F)
     
-    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
     expect_equal(is.directed(g), F)
     expect_equal(length(V(g)), nrow(met.nt) + nrow(rxn.nt))

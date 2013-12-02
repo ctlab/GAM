@@ -22,73 +22,61 @@ if (file.exists(heinz.py)) {
 }
 
 data("kegg.mouse.network")
-data("mouse.macrophages")
+library(mouseMacrophages)
+data(examplesGAM)
+data(mmpData)
+
 
 test_that("makeExperimentSet works with full data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  met.de=met.de.M1.M2,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=T, plot=F)
 
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  met.de=met.de.M1.M2,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=F, plot=F)
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  met.de=met.de.M1.M2,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  met.de=met.de.M1.M2,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
 test_that("makeExperimentSet works without metabolic data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=T, plot=F)
 
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=F, plot=F)
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  gene.de=mouse.macrophages$gene.de.M1.M2,
-                                  gene.ids=mouse.macrophages$gene.ids,
+                                  gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
 test_that("makeExperimentSet works without genomic data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
+                                  met.de=met.de.M1.M2,
                                   reactions.as.edges=F, plot=F)
 
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
+                                  met.de=met.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=mouse.macrophages$met.de.M1.M2,
-                                  met.ids=mouse.macrophages$met.ids, 
+                                  met.de=met.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })

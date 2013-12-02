@@ -1,7 +1,7 @@
 Package: GAM
 Type: Package
 Title: Package for integrated network analysis of genomic and metabolomic data
-Version: 0.1.21
+Version: 0.1.22
 Date: 2013-08-31
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
@@ -25,6 +25,7 @@ Suggests:
     AnnotationDbi,
     org.Hs.eg.db,
     org.Mm.eg.db,
+    testthat,
     knitr
 Collate:
     'diff_expr.R'
