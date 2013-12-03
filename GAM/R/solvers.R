@@ -9,45 +9,45 @@ runHeinz <- function(subnet,
                       score.nodes=T,                      
                       nModules=1, 
                       tolerance=10,
-                      subopt_diff=100,
+                      subopt.diff=100,
                       cplexTimeLimit=1e+75) {
     
     graph.dir <- tempfile("graph")
     dir.create(graph.dir)
-    edges_file <- paste(graph.dir, "edges.txt", sep="/")
-    nodes_file <- paste(graph.dir, "nodes.txt", sep="/")
+    edges.file <- file.path(graph.dir, "edges.txt")
+    nodes.file <- file.path(graph.dir, "nodes.txt")
     
-    writeHeinzEdges(subnet, file=edges_file, use.score=score.edges)
+    writeHeinzEdges(subnet, file=edges.file, use.score=score.edges)
     
     if (!score.nodes) {
         # Hack to make writeHeinzeNodes working
         V(subnet)$score <- 0
     }
-    writeHeinzNodes(subnet, file=nodes_file, use.score=T)
+    writeHeinzNodes(subnet, file=nodes.file, use.score=T)
     
     
     wd.bak <- getwd()
     heinz.dir <- dirname(heinz.py)
     setwd(heinz.dir)
     heinz.tmpdir <- tempfile("heinztmp")
-    system2(paste0("./", basename(heinz.py)),
-            c("-n", nodes_file,
-              "-e", edges_file,
+    system2(file.path(".", basename(heinz.py)),
+            c("-n", nodes.file,
+              "-e", edges.file,
               "-N", if (score.nodes) "True" else "False",
               "-E", if (score.edges) "True" else "False",              
               "-s", nModules,
               "--tolerance", tolerance,
-              "--subopt_diff", subopt_diff,
+              "--subopt_diff", subopt.diff,
               "--heinztmp", heinz.tmpdir,
               "--additional", paste0("'cplexTimeLimit ", cplexTimeLimit, "'"),
               "-v"),
-            env="ILOG_LICENSE_FILE=./access.ilm")
+            env="ILOG_LICENSE_FILE=access.ilm")
     setwd(wd.bak)
     
     
     res <- list()
     for (i in 0:(nModules-1)) {
-        sol.file <- paste(nodes_file, i, "hnz", sep=".")
+        sol.file <- paste(nodes.file, i, "hnz", sep=".")
         if (!file.exists(sol.file)) {
             warning("Solution file not found")
             return(NULL)
@@ -75,8 +75,8 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
         
         graph.dir <- tempfile("graph")
         dir.create(graph.dir)
-        edges.file <- paste(graph.dir, "edges.txt", sep="/")
-        nodes.file <- paste(graph.dir, "nodes.txt", sep="/")
+        edges.file <- file.path(graph.dir, "edges.txt")
+        nodes.file <- file.path(graph.dir, "nodes.txt")
         
         writeHeinzEdges(network, file=edges.file, use.score=score.edges)
         
@@ -86,7 +86,7 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
         }
         writeHeinzNodes(network, file=nodes.file, use.score=T)
         
-        solution.file <- paste(graph.dir, "sol.txt", sep="/")
+        solution.file <- file.path(graph.dir, "sol.txt")
         
         system2(paste0(mwcs),
                 c("-n", nodes.file,
@@ -110,7 +110,7 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
 #' @param heinz.py Path to heinz.py executable
 #' @param nModules Number of modules to search for
 #' @param tolerance tolerance parameter for heinz
-#' @param subopt_diff subopt_diff parameter for heinz
+#' @param subopt.diff subopt_diff parameter for heinz
 #' @param timeLimit Time limit for execution
 #' @return solver function
 #' @exampls 
@@ -119,7 +119,7 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
 heinz.solver <- function(heinz.py,
                          nModules=1,
                          tolerance=10,
-                         subopt_diff=100,
+                         subopt.diff=100,
                          timeLimit=1e+75
                          ) {
     
@@ -135,7 +135,7 @@ heinz.solver <- function(heinz.py,
             score.nodes=score.nodes,
             nModules=nModules, 
             tolerance=tolerance,
-            subopt_diff=subopt_diff,
+            subopt.diff=subopt.diff,
             cplexTimeLimit=timeLimit
             )        
     }

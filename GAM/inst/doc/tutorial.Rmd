@@ -332,7 +332,7 @@ http://artyomovlab.wustl.edu/shiny/gam.
 ## References
 
 1. Beisser, D.; Klau, G. W.; Dandekar, T.; Mueller, T. and Dittrich, M. (2009). BioNet an R-package for the Functional Analysis of Biological Networks. Bioinformatics 26, 1129-1130.
-2. Dittrich, Marcus T., et al. "Identifying functional modules in protein–protein interaction networks: an integrated exact approach." Bioinformatics 24.13 (2008): i223-i231.
+2. Dittrich, Marcus T., et al. "Identifying functional modules in protein-protein interaction networks: an integrated exact approach." Bioinformatics 24.13 (2008): i223-i231.
 3. Beisser, Daniela, et al. "Integrated pathway modules using time-course metabolic profiles and EST data from Milnesium tardigradum." BMC systems biology 6.1 (2012): 72.
 4. Csardi, Gabor, and Tamas Nepusz. "The igraph software package for complex network research." InterJournal, Complex Systems 1695.5 (2006).
 5. Shannon, Paul, et al. "Cytoscape: a software environment for integrated models of biomolecular interaction networks." Genome research 13.11 (2003): 2498-2504.
