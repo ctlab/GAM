@@ -6,5 +6,7 @@ Date: 2013-12-03
 Author: Abhishek Jha, Ching-Cheng Huang, Alexey Sergushichev, Yulia Ivanova, Karina Chmielewski, Kelly Stewart, Bart Everts, Juliet Ashall, Edward J. Pearce, Edward M. Driggers, Maxim N. Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: This package provides RNA-seq based transcript expression data and MS-data for metabolites for mouse macrophages under different treatments.
+biocViews: HighThroughputSequencingData, MassSpectrometryData, RNAseqData
 Depends: R (>= 2.10), Biobase
 License: GPL (>=2)
+

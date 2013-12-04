@@ -1,12 +1,14 @@
 Package: GAM
 Type: Package
 Title: Package for integrated network analysis of genomic and metabolomic data
-Version: 0.1.22
+Version: 0.99
 Date: 2013-12-03
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@wustl.edu>
 Description: This package provides functions for integrated metabolic and
     transcriptional data analisys based on a reaction network.
+biocViews: Metabolomics, Microarray, GraphsAndNetworks, NetworkAnalysis,
+        GeneExpression, DifferentialExpression, MassSpectrometry
 Imports:
     BioNet (>= 1.20),
     igraph,
