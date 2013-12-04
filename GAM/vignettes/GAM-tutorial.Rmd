@@ -2,7 +2,7 @@
 %\VignetteIndexEntry{Genomic and metabolomic integrated analysis tutorial}
 %\VignetteEngine{knitr::knitr}
 -->
-```{r eval=TRUE, echo=FALSE}
+```{r eval=TRUE, echo=FALSE, message=FALSE}
 require(knitr)
 opts_chunk$set(error=F, cache=T, dev="svg")
 ```
