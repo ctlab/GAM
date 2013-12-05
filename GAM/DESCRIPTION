@@ -33,7 +33,7 @@ Collate:
     'diff_expr.R'
     'GAM-package.R'
     'io.R'
-    'network_analyis.R'
+    'network_analysis.R'
     'network_construct.R'
     'transformations.R'
     'plot.R'
