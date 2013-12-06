@@ -171,7 +171,7 @@ makeExperimentSet <- function(network,
     
     
     if (is.null(es$rxn.de)) {
-        es$rxn.de <- data.frame(ID=es$graph.raw$rxn, pval=NA, log2FC=NA, stringsAsFactors=F)
+        es$rxn.de <- data.frame(ID=unique(es$graph.raw$rxn), pval=NA, log2FC=NA, stringsAsFactors=F)
     }
     
     rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=F)
@@ -220,6 +220,7 @@ makeExperimentSet <- function(network,
         
         edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
                        rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
+        edges <- unique(edges)
         
         if (collapse.reactions && "origin" %in% names(rxn.de.ext)) {
             message("Collapsing reactions by common most significant enzymes")

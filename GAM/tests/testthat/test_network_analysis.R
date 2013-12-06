@@ -13,9 +13,9 @@ if (file.exists(heinz.py)) {
             score=c(1, -10),
             stringsAsFactors=F)
         
-        g <- graph.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
+        g <- GAM:::graph.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
         
-        module <- runHeinz(g, heinz.py, score.nodes=T, score.edges=T)[[1]]
+        module <- GAM:::runHeinz(g, heinz.py, score.nodes=T, score.edges=T)[[1]]
         
         expect_equivalent(V(module)$name, c("C01", "C02"))
     })
@@ -25,6 +25,7 @@ data("kegg.mouse.network")
 library(mouseMacrophages)
 data(examplesGAM)
 data(mmpData)
+library(igraph)
 
 
 test_that("makeExperimentSet works with full data", {
@@ -71,6 +72,9 @@ test_that("makeExperimentSet works without genomic data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
                                   met.de=met.de.M1.M2,
                                   reactions.as.edges=F, plot=F)
+    
+    expect_equal(1, length(E(es.M1.M2$subnet)[adj("C05528")]))
+    
 
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
                                   met.de=met.de.M1.M2,
