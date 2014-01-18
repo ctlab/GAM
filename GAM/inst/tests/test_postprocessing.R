@@ -97,3 +97,10 @@ test_that("addTransEdges works", {
     expect_true("R03" %in% E(g1)$rxn)
     
 })
+
+
+test_that("addMetabolitesForReactions works", { # :ToDo: 
+})
+
+test_that("simplifyReactionNodes works", { # :ToDo: 
+})
