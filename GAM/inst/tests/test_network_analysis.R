@@ -1,6 +1,7 @@
 context("Network analysis")
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
+mwcs <- "/usr/local/bin/mwcs"
 
 if (file.exists(heinz.py)) {
     test_that("runHeinz works", {
@@ -13,9 +14,9 @@ if (file.exists(heinz.py)) {
             score=c(1, -10),
             stringsAsFactors=F)
         
-        g <- graph.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
+        g <- GAM:::graph.from.tables(node.table=list(met=met.nt), edge.table=et, directed=F)
         
-        module <- runHeinz(g, heinz.py, score.nodes=T, score.edges=T)[[1]]
+        module <- GAM:::runHeinz(g, heinz.py, score.nodes=T, score.edges=T)[[1]]
         
         expect_equivalent(V(module)$name, c("C01", "C02"))
     })
