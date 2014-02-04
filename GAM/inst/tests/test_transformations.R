@@ -30,23 +30,27 @@ test_that("graph.from.tables works", {
     expect_equal(E(g, P=c("C02", "R01"))$label, "Connection3")
 })
 
-test_that("module2list works", { # :ToDo:
+test_that("module2list works", {
+    met.nt <- data.frame(
+        ID=c( "C01", "C02", "C03"), 
+        pval=c(1e-5,    NA,  1e-6), stringsAsFactors=F)
+    et <- data.frame(
+        met.x=c("C01", "C02", "C01"),
+        met.y=c("C02", "C03", "C03"),
+        rxn=c("R01", "R02", "R03"),
+        rptype=c("main", "main", "trans"),
+        pval=c(1e-12, 1e-42, 1e-4),
+        stringsAsFactors=F)
+    
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
+    l <- module2list(g)
+    expect_equal(l$nodes[[1]]$pval, 1e-5)
+    expect_equal(l$edges[[1]]$rxn, "R01")
 })
 
 test_that("plotNetwork works", { # :ToDo:
 })
 
-test_that("saveModule works", { # :ToDo:
-})
-
-test_that("saveModuleToPdf works", { # :ToDo:
-})
-
-test_that("saveModuleToXgmml works", { # :ToDo:
-})
-
-test_that("getModuleJsonString works", { # :ToDo:
-})
 
 test_that("get.edge.attributes works", { # :ToDo:
 })
