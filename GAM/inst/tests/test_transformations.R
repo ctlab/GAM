@@ -48,12 +48,41 @@ test_that("module2list works", {
     expect_equal(l$edges[[1]]$rxn, "R01")
 })
 
+test_that("get.edge.attributes works", {
+    met.nt <- data.frame(
+        ID=c( "C01", "C02"), 
+        pval=c(1e-5,    NA), stringsAsFactors=F)
+    et <- data.frame(
+        met.x=c("C01"),
+        met.y=c("C02"),
+        rxn=c("R01"),
+        stringsAsFactors=F)
+    
+    g <- GAM:::graph.from.tables(
+        node.table=list(met=met.nt),
+        edge.table=et, directed=F)
+    
+    ea <- get.edge.attributes(g)
+    expect_equal(ea$rxn[1], et$rxn[1])
+})
+
+test_that("get.vertex.attributes works", {
+    met.nt <- data.frame(
+        ID=c( "C01", "C02"), 
+        pval=c(1e-5,    NA), stringsAsFactors=F)
+    et <- data.frame(
+        met.x=c("C01"),
+        met.y=c("C02"),
+        rxn=c("R01"),
+        stringsAsFactors=F)
+    
+    g <- GAM:::graph.from.tables(
+        node.table=list(met=met.nt),
+        edge.table=et, directed=F)
+    
+    va <- get.vertex.attributes(g)
+    expect_equal(va$pval[1], met.nt$pval[1])
+})
+
 test_that("plotNetwork works", { # :ToDo:
-})
-
-
-test_that("get.edge.attributes works", { # :ToDo:
-})
-
-test_that("get.vertex.attributes works", { # :ToDo:
 })
