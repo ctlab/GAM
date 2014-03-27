@@ -78,7 +78,9 @@ test_that("removeHangingNodes works", {
 })
 
 test_that("addTransEdges works", {
-    met.nt <- data.frame(ID=c("C01", "C02", "C03"), pval=c(1e-5, NA, 1e-6), stringsAsFactors=F)
+    met.nt <- data.frame(
+        ID=c( "C01", "C02", "C03"), 
+        pval=c(1e-5,    NA,  1e-6), stringsAsFactors=F)
     et <- data.frame(
         met.x=c("C01", "C02", "C01"),
         met.y=c("C02", "C03", "C03"),
@@ -96,4 +98,59 @@ test_that("addTransEdges works", {
     g1 <- addTransEdges(g, es)
     expect_true("R03" %in% E(g1)$rxn)
     
+})
+
+
+test_that("addMetabolitesForReactions works", {
+    met.nt <- data.frame(ID=c("C01", "C02", "C03"), pval=c(1e-5, NA, 1e-3), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), pval=c(1e-12, 1e-42), stringsAsFactors=F) 
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02"), 
+        v=c("R01", "R02", "R01"), 
+        stringsAsFactors=F)
+    
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    
+    es <- newEmptyObject()
+    es$reactions.as.edges <- F
+    es$met.de.ext <- met.nt
+    es$network$graph.raw <- data.frame(
+        met.x = c("C01", "C01"),
+        rxn   = c("R01", "R02"),
+        met.y = c("C02", "C03"),
+        stringsAsFactors=F)
+    es$rxn.de.origin.split <- c("R01"="R01", "R02"="R02")
+    
+    g1 <- addMetabolitesForReactions(g, es)
+    
+    expect_true("C03" %in% V(g1)$name)
+    expect_equal(V(g1)["C03"]$pval, 1e-3)
+})
+
+test_that("simplifyReactionNodes works", {
+    met.nt <- data.frame(ID=c("C01", "C02"), pval=c(1e-5, NA), stringsAsFactors=F)
+    rxn.nt <- data.frame(ID=c("R01", "R02"), pval=c(1e-12, 1e-42), stringsAsFactors=F) 
+    
+    et <- data.frame(
+        u=c("C01", "C01", "C02"), 
+        v=c("R01", "R02", "R01"), 
+        stringsAsFactors=F)
+    
+    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    
+    es <- newEmptyObject()
+    es$reactions.as.edges <- F
+    es$met.de.ext <- met.nt
+    es$network$graph.raw <- data.frame(
+        met.x = c("C01", "C01"),
+        rxn   = c("R01", "R02"),
+        met.y = c("C02", "C03"),
+        stringsAsFactors=F)
+    es$rxn.de.origin.split <- c("R01"="R01", "R02"="R02")
+    
+    g1 <- simplifyReactionNodes(g, es)
+    expect_true(!"R01" %in% V(g1)$name)
+    expect_true("R01" %in% E(g1)$name)
+    expect_equal(E(g1)[which(E(g1)$name == "R01")]$pval, 1e-12)
 })

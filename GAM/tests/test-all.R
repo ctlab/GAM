@@ -1,4 +1,6 @@
-#!/usr/bin/env Rscript
 library(testthat)
 
-test_check("GAM")
+library(GAM)
+test_package("GAM")
+
+#test_check("GAM")

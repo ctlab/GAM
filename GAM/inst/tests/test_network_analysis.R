@@ -1,6 +1,7 @@
 context("Network analysis")
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
+mwcs <- "/usr/local/bin/mwcs"
 
 if (file.exists(heinz.py)) {
     test_that("runHeinz works", {
@@ -27,6 +28,7 @@ data(examplesGAM)
 data(mmpData)
 library(igraph)
 
+# :ToDo: check the result for makeExperimentSet tests
 
 test_that("makeExperimentSet works with full data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
@@ -84,3 +86,25 @@ test_that("makeExperimentSet works without genomic data", {
                                   met.de=met.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
+
+test_that("findModule works", { # :ToDo:
+})
+
+test_that("makeKeggNetwork works", { # :ToDo:
+})
+
+test_that("scoreNetwork works", { # :ToDo:
+})
+
+test_that("scoreNetworkWithoutBUM works", { # :ToDo:
+})
+
+test_that("fastHeinz.solver works", { # :ToDo:
+})
+
+test_that("heinz.solver works", { # :ToDo:
+})
+
+test_that("mwcs.solver works", { # :ToDo:
+})
+

@@ -112,7 +112,7 @@ saveModuleToXgmml <- function(network, name, file) {
 getGraphXmlString <- function(network, name) {
     res <- c()
     res <- c(res, '<?xml version="1.0"?>\n')
-    res <- c(res, '<graph label="', name, '" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cy="http://www.cytoscape.org" xmlns="http://www.cs.rpi.edu/XGMML">\n')
+    res <- c(res, paste0('<graph label="', name, '" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:cy="http://www.cytoscape.org" xmlns="http://www.cs.rpi.edu/XGMML">\n'))
     res <- c(res, '  <att name="documentVersion" value="1.1"/>\n')
     res <- c(res, '  <att name="networkMetadata">\n')
     res <- c(res, getRDFXmlString(network, name, indent="    "))
@@ -171,6 +171,9 @@ getAttrXmlStrings <- function(attr.values, indent="") {
 }
 
 getNodeXmlStrings <- function(network, indent="") {
+    if (length(V(network)) == 0) {
+        return(NULL)
+    }
     attr.values <- get.vertex.attributes(network)
     attr.xmlStrings <- getAttrXmlStrings(attr.values, paste0(indent, "  "))
     
@@ -194,6 +197,9 @@ getNodeXmlStrings <- function(network, indent="") {
 }
 
 getEdgeXmlStrings <- function(network, indent="") {
+    if (length(E(network)) == 0) {
+        return(NULL)
+    }
     attr.values <- get.edge.attributes(network)
     attr.xmlStrings <- getAttrXmlStrings(attr.values, paste0(indent, "  "))
     
