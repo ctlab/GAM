@@ -226,7 +226,7 @@ makeExperimentSet <- function(network,
             message("Collapsing reactions by common most significant enzymes")
             
             edges.dt <- data.table(edges, key="met")
-            rxn.net <- merge(rename(edges.dt, c("rxn"="rxn.x")), rename(edges.dt, c("rxn" = "rxn.y")), by="met", allow.cartesian=T)
+            rxn.net <- merge(edges.dt, edges.dt, by="met", allow.cartesian=T)
             rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
             
             #rxn.de.origin.split <- es$rxn.de$origin
