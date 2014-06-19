@@ -40,16 +40,16 @@ ligand:
 	wget -nH --cut-dirs=1 -r ftp://ftp.bioinformatics.jp/kegg/ligand
 
 glycan: ligand ligand/glycan.tar.gz
-	tar xzf ligand/glycan.tar.gz -C x glycan/glycan -O > glycan
+	tar xzf ligand/glycan.tar.gz glycan/glycan -O > glycan
 
 compound: ligand ligand/compound.tar.gz
-	tar xzf ligand/compound.tar.gz -C x compound/compound -O > compound
+	tar xzf ligand/compound.tar.gz compound/compound -O > compound
 
 enzyme: ligand ligand/enzyme.tar.gz
-	tar xzf ligand/enzyme.tar.gz -C x enzyme/enzyme -O > enzyme
+	tar xzf ligand/enzyme.tar.gz enzyme/enzyme -O > enzyme
 
 reaction: ligand ligand/reaction.tar.gz
-	tar xzf ligand/reaction.tar.gz -C x reaction/reaction -O > reaction
+	tar xzf ligand/reaction.tar.gz reaction/reaction -O > reaction
 
 install: \
 		kegg.mouse.network.rda \
