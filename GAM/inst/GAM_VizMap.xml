@@ -114,7 +114,7 @@
             <visualProperty name="EDGE_SELECTED" default="false"/>
             <visualProperty name="EDGE_WIDTH" default="2.0">
                 <continuousMapping attributeType="float" attributeName="logPval">
-                    <continuousMappingPoint lesserValue="1.0" greaterValue="300.0" equalValue="300.0" attrValue="-1000.0"/>
+                    <continuousMappingPoint lesserValue="30.0" greaterValue="30.0" equalValue="30.0" attrValue="-100.0"/>
                     <continuousMappingPoint lesserValue="4.0" greaterValue="1.0" equalValue="4.0" attrValue="0.0"/>
                 </continuousMapping>
             </visualProperty>
@@ -270,7 +270,7 @@
             <visualProperty name="EDGE_SELECTED" default="false"/>
             <visualProperty name="EDGE_WIDTH" default="2.0">
                 <continuousMapping attributeType="float" attributeName="logPval">
-                    <continuousMappingPoint lesserValue="1.0" greaterValue="300.0" equalValue="300.0" attrValue="-1000.0"/>
+                    <continuousMappingPoint lesserValue="30.0" greaterValue="30.0" equalValue="30.0" attrValue="-100.0"/>
                     <continuousMappingPoint lesserValue="4.0" greaterValue="1.0" equalValue="4.0" attrValue="0.0"/>
                 </continuousMapping>
             </visualProperty>
