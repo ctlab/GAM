@@ -71,7 +71,8 @@ for description in descriptions:
         for rpair in d["RPAIR"].split("\n"):
             if len(rpair) == 0:
                 continue
-            (rpair, mets, rptype) = rpair.split()
+            # :ToDo: grab reaction class too (4th field)
+            (rpair, mets, rptype) = rpair.split()[0:3]
             (metx, mety) = mets.split("_")
             rpairs.append("%s\t%s\t%s\t%s\t%s" % (rxn_id, rpair, metx, mety, rptype))
 
