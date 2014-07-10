@@ -104,7 +104,7 @@ simplifyReactionNodes <- function(module, es) {
     rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)
     rxn.edges[rxn.edges.types[,2] == "rxn"] <- rxn.edges[rxn.edges.types[,2] == "rxn", c(2, 1)]
     
-    simple.edges <-  data.frame(do.call(rbind, split(rxn.edges[,2], rxn.edges[,1])), stringsAsFactors=F)
+    simple.edges <-  data.frame(do.call(rbind, split(rxn.edges[,2], rxn.edges[,1])), stringsAsFactors=FALSE)
     colnames(simple.edges) <- c("met.x", "met.y")
     simple.edges$rxn <- rownames(simple.edges)
     
@@ -183,10 +183,10 @@ addMetabolitesForReactions<- function(module, es) {
     rxn.edges <- matrix(V(res)[rxn.edges]$name, ncol=2)
     rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)
     rxn.edges[rxn.edges.types[,2] == "rxn"] <- rxn.edges[rxn.edges.types[,2] == "rxn", c(2, 1)]
-    rxn.edges <- data.frame(rxn.edges, stringsAsFactors=F)
+    rxn.edges <- data.frame(rxn.edges, stringsAsFactors=FALSE)
     colnames(rxn.edges) <- c("rxn", "met")
     
-    new2old <- data.frame(new=es$rxn.de.origin.split, old=names(es$rxn.de.origin.split), stringsAsFactors=F)
+    new2old <- data.frame(new=es$rxn.de.origin.split, old=names(es$rxn.de.origin.split), stringsAsFactors=FALSE)
     new2old <- new2old[new2old$new %in% rxn.nodes,]
     
     all.rxn.edges <- merge(es$network$graph.raw, new2old, by.x="rxn", by.y="old")
@@ -249,6 +249,7 @@ addMetabolitesForReactions<- function(module, es) {
 #' module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 #' @export
 addInterconnections <- function(module, es) {
+    stopifnot(all(V(module)$name %in% V(es$subnet)$name))
     met.nodes <- V(module)[nodeType == "met"]$name
     interconnects <- es$graph.raw$rxn[es$graph.raw$met.x %in% met.nodes & es$graph.raw$met.y %in% met.nodes]
     interconnects <- unique(es$rxn.de.origin.split[interconnects])
@@ -394,6 +395,6 @@ addTransEdges <- function(module, es) {
         edge.table=es$net.edges.ext.all[edges.keep,],
         node.col="ID",
         edge.cols=c("met.x", "met.y"),
-        directed=F)
+        directed=FALSE)
     return(induced.subgraph(net.with.trans, V(module)$name))
 }

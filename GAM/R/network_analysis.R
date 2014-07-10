@@ -11,7 +11,7 @@ NULL
 # @param met.ids Type of IDs used in metabolite DE data (see met.id.map for possible values)
 # @param gene.ids Type of IDs used in gene DE data (see colnames(es$gene.id.map) for possible values)
 # @param plot If TRUE plot BUM fit
-preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
+preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=TRUE) {
     if (!is.null(es$gene.de)) {
         message("Processing gene p-values...")
         
@@ -45,7 +45,7 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
         
         es$met.pval <- es$met.de$pval
         names(es$met.pval) <- es$met.de$ID
-        es$fb.met <- fitBumModel(es$met.pval, plot=F)
+        es$fb.met <- fitBumModel(es$met.pval, plot=FALSE)
         if (plot) {
             hist(es$fb.met, main="Histogram of metabolite p-values")
             plot(es$fb.met, main="QQ-Plot for metabolite BUM-model")
@@ -55,6 +55,43 @@ preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=T) {
     }
     
     return(es)
+}
+
+
+processReactionDE <- function(es, plot) {
+    if (!is.null(es$rxn.de$log2FC)) {
+        es$rxn.de$log2FC <- fixInf(es$rxn.de$log2FC)                        
+    }
+    if ("origin" %in% colnames(es$rxn.de)) {
+        
+        es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
+        
+        gene.id.map <- es$network$gene.id.map
+        
+        unknown.rxn <- setdiff(es$rxn.de$ID, es$network$rxn2name$rxn)
+        unknown.rxn2name <- do.call(cbind,  c(
+            list(unknown.rxn), 
+            rep(list(rep("", length(unknown.rxn))), ncol(es$network$rxn2name) - 1)))
+        unknown.rxn2name <- as.data.frame(unknown.rxn2name, stringsAsFactors=FALSE)
+        colnames(unknown.rxn2name) <- colnames(es$network$rxn2name)
+        
+        es$network$rxn2name <- rbind(es$network$rxn2name, unknown.rxn2name)
+        
+        es$network$rxn2name$name[match(es$rxn.de$ID, es$network$rxn2name$rxn)] <-
+            gene.id.map$Symbol[match(es$rxn.de$origin, gene.id.map[,es$network$gene.ids])]            
+        
+        
+    }
+    
+    es$rxn.pval <- es$rxn.de$pval
+    names(es$rxn.pval) <- es$rxn.de$ID
+    
+    es$fb.rxn <- fitBumModel(es$rxn.pval, plot=FALSE)
+    if (plot) {
+        hist(es$fb.rxn, main="Histogram of gene p-values")
+        plot(es$fb.rxn, main="QQ-Plot for gene BUM-model")
+    }
+    es
 }
 
 #' Make preprocessing necessary for \code{findModule} function
@@ -117,38 +154,8 @@ makeExperimentSet <- function(network,
     
     if (!is.null(es$rxn.de)) {
         message("Processing reaction p-values...")
-        if (!is.null(es$rxn.de$log2FC)) {
-            es$rxn.de$log2FC <- fixInf(es$rxn.de$log2FC)                        
-        }
-        if ("origin" %in% colnames(es$rxn.de)) {
-            
-            es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
-            
-            gene.id.map <- es$network$gene.id.map
-            
-            unknown.rxn <- setdiff(es$rxn.de$ID, es$network$rxn2name$rxn)
-            unknown.rxn2name <- do.call(cbind,  c(
-                list(unknown.rxn), 
-                rep(list(rep("", length(unknown.rxn))), ncol(es$network$rxn2name) - 1)))
-            unknown.rxn2name <- as.data.frame(unknown.rxn2name, stringsAsFactors=F)
-            colnames(unknown.rxn2name) <- colnames(es$network$rxn2name)
-            
-            es$network$rxn2name <- rbind(es$network$rxn2name, unknown.rxn2name)
-            
-            es$network$rxn2name$name[match(es$rxn.de$ID, es$network$rxn2name$rxn)] <-
-                gene.id.map$Symbol[match(es$rxn.de$origin, gene.id.map[,es$network$gene.ids])]            
-            
-            
-        }
+        es <- processReactionDE(es, plot)
         
-        es$rxn.pval <- es$rxn.de$pval
-        names(es$rxn.pval) <- es$rxn.de$ID
-        
-        es$fb.rxn <- fitBumModel(es$rxn.pval, plot=F)
-        if (plot) {
-            hist(es$fb.rxn, main="Histogram of gene p-values")
-            plot(es$fb.rxn, main="QQ-Plot for gene BUM-model")
-        }
     } else {
         es$rxn.pval <- NULL
     }
@@ -160,23 +167,23 @@ makeExperimentSet <- function(network,
             ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), 
             pval=NA,
             log2FC=NA,
-            stringsAsFactors=F)
+            stringsAsFactors=FALSE)
     }
     
-    met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=F)
-    met.de.ext <- merge(met.de.ext, es$met.de, all.x=T) # all.x=T — we keep mets if there is no MS data
-    met.de.ext <- merge(met.de.ext, es$network$met2name, by.x="ID", by.y="met", all.x=T)
+    met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=FALSE)
+    met.de.ext <- merge(met.de.ext, es$met.de, all.x=TRUE) # all.x=TRUE — we keep mets if there is no MS data
+    met.de.ext <- merge(met.de.ext, es$network$met2name, by.x="ID", by.y="met", all.x=TRUE)
     met.de.ext$logPval <- log(met.de.ext$pval)
     es$met.de.ext <- met.de.ext
     
     
     if (is.null(es$rxn.de)) {
-        es$rxn.de <- data.frame(ID=unique(es$graph.raw$rxn), pval=NA, log2FC=NA, stringsAsFactors=F)
+        es$rxn.de <- data.frame(ID=unique(es$graph.raw$rxn), pval=NA, log2FC=NA, stringsAsFactors=FALSE)
     }
     
-    rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=F)
-    rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=F) # we drop reaction if it's not expressed
-    rxn.de.ext <- merge(rxn.de.ext, es$network$rxn2name, by.x="ID", by.y="rxn", all.x=T)
+    rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=FALSE)
+    rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=FALSE) # we drop reaction if it's not expressed
+    rxn.de.ext <- merge(rxn.de.ext, es$network$rxn2name, by.x="ID", by.y="rxn", all.x=TRUE)
     rxn.de.ext$logPval <- log(rxn.de.ext$pval)
     es$rxn.de.ext <- rxn.de.ext
     
@@ -213,7 +220,7 @@ makeExperimentSet <- function(network,
         
         net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
                                      node.col="ID", edge.cols=c("met.x", "met.y"),
-                                     directed=F)
+                                     directed=FALSE)
         
         es$subnet <- net1
     } else {    
@@ -226,13 +233,13 @@ makeExperimentSet <- function(network,
             message("Collapsing reactions by common most significant enzymes")
             
             edges.dt <- data.table(edges, key="met")
-            rxn.net <- merge(edges.dt, edges.dt, by="met", allow.cartesian=T)
+            rxn.net <- merge(edges.dt, edges.dt, by="met", allow.cartesian=TRUE)
             rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
             
             #rxn.de.origin.split <- es$rxn.de$origin
             es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
             
-            t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=F)                
+            t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=FALSE)                
             #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
             
             es$rxn.de.ext$rxns <- es$rxn.de.ext$ID
@@ -257,7 +264,7 @@ makeExperimentSet <- function(network,
         es$edges <- edges
         net1 <- graph.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
                                      node.col="ID",
-                                     directed=F)
+                                     directed=FALSE)
         
         es$subnet <- net1
     }

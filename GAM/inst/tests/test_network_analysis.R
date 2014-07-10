@@ -75,9 +75,8 @@ test_that("makeExperimentSet works without genomic data", {
                                   met.de=met.de.M1.M2,
                                   reactions.as.edges=F, plot=F)
     
-    expect_equal(1, length(E(es.M1.M2$subnet)[adj("C05528")]))
+    expect_true(length(E(es.M1.M2$subnet)[adj("C05528")]) > 0)
     
-
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
                                   met.de=met.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)

@@ -1,6 +1,7 @@
 .Rproj.user
 .Rhistory
 .RData
+.*.Rproj
 .*.tar.gz
 modules
 data
@@ -10,3 +11,6 @@ GAM.Rcheck/
 GAM/man
 GAM/inst/doc/cache
 GAM/inst/doc/figure
+GAM/vignettes/.*_cache
+GAM/vignettes/.*_files
+

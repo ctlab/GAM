@@ -5,7 +5,7 @@ organism.id.map <- rbind(
 colnames(organism.id.map) <- 
     c("KEGG", "Annotation")
 
-organism.id.map <- data.frame(organism.id.map, stringsAsFactors=F)
+organism.id.map <- data.frame(organism.id.map, stringsAsFactors=FALSE)
 
 makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
     annotation.package <- paste0(org.annotation, ".db")
@@ -18,7 +18,7 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
     
     res <- bimaps[[1]]
     for (i in seq_len(length(ids) - 1)+1) {
-        res <- merge(res, bimaps[[i]], all=T)
+        res <- merge(res, bimaps[[i]], all=TRUE)
     }
     res
 }

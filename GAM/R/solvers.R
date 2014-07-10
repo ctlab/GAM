@@ -5,8 +5,8 @@ appendModule <- function(res, module.graph) {
 
 runHeinz <- function(subnet,
                       heinz.py, 
-                      score.edges=F,
-                      score.nodes=T,                      
+                      score.edges=FALSE,
+                      score.nodes=TRUE,                      
                       nModules=1, 
                       tolerance=10,
                       subopt.diff=100,
@@ -23,7 +23,7 @@ runHeinz <- function(subnet,
         # Hack to make writeHeinzeNodes working
         V(subnet)$score <- 0
     }
-    writeHeinzNodes(subnet, file=nodes.file, use.score=T)
+    writeHeinzNodes(subnet, file=nodes.file, use.score=TRUE)
     
     
     wd.bak <- getwd()
@@ -65,7 +65,7 @@ runHeinz <- function(subnet,
 #' @param timeLimit Time limit for execution
 #' @return solver function
 #' @import igraph
-#' @exampls 
+#' @examples 
 #' solver <- mwcs.solver("/usr/local/bin/mwcs")
 #' @export
 mwcs.solver <- function(mwcs, timeLimit=-1) {
@@ -84,7 +84,7 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
             # Hack to make writeHeinzeNodes working
             V(subnet)$score <- 0
         }
-        writeHeinzNodes(network, file=nodes.file, use.score=T)
+        writeHeinzNodes(network, file=nodes.file, use.score=TRUE)
         
         solution.file <- file.path(graph.dir, "sol.txt")
         
@@ -113,7 +113,7 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
 #' @param subopt.diff subopt_diff parameter for heinz
 #' @param timeLimit Time limit for execution
 #' @return solver function
-#' @exampls 
+#' @examples 
 #' solver <- heinz.solver("/usr/local/lib/heinz/heinz.py")
 #' @export
 heinz.solver <- function(heinz.py,
@@ -144,13 +144,13 @@ heinz.solver <- function(heinz.py,
 #' Solves MWCS instance with BioNet::runFastHeinz algorithm
 #' @param network Netowrk to find module in
 #' @return Module
-#' @exampls 
+#' @examples 
 #' data(kegg.mouse.network)
-#' data(examples)
+#' data(examplesGAM)
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
 #'                            met.de=met.de.M1.M2,
 #'                            gene.de=gene.de.M1.M2,
-#'                            reactions.as.edges=F)
+#'                            reactions.as.edges=FALSE)
 #' module.rn <- findModule(es.rn, solver=fastHeinz.solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
 #' @export
 fastHeinz.solver <- function(network) {

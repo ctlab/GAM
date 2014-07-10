@@ -71,7 +71,7 @@ getIdType <- function(ids, id.map) {
 #' met.de.M1.M2.kegg <- convertPval(met.de.M1.M2, met.id.map$HMDB, met.id.map$KEGG)
 #' @export
 convertPval <- function(pval, from, to) {
-    map <- data.frame(ID=from, to=to, stringsAsFactors=F)
+    map <- data.frame(ID=from, to=to, stringsAsFactors=FALSE)
     pval.ext <- merge(map, pval, by="ID")
     if ("origin" %in% colnames(pval)) {
         pval.ext$ID<- NULL
@@ -91,7 +91,7 @@ convertPval <- function(pval, from, to) {
 # @param zero.rm If TRUE removes genes with zero expression in all samples
 # @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
 # @param quantile If TRUE applies quantile normalization
-normalizeExpressions <- function(exprs, zero.rm=T, log2=T, quantile=T) {
+normalizeExpressions <- function(exprs, zero.rm=TRUE, log2=TRUE, quantile=TRUE) {
     if (zero.rm) {
         # removing unexpressed genes
         keep <- apply(exprs, 1, max) > 0
@@ -188,7 +188,7 @@ diffExpr <- function(exprs,
             stop("use.deseq=FALSE needs limma package to work")
         }
         
-        exprs.normalized <- normalizeExpressions(exprs, zero.rm=T, log2=log2, quantile=quantile)
+        exprs.normalized <- normalizeExpressions(exprs, zero.rm=TRUE, log2=log2, quantile=quantile)
         
         names(conditions.vector) <- conditions.vector
         conditions.vector <- factor(conditions.vector)
@@ -218,10 +218,10 @@ diffExpr <- function(exprs,
         
         f.top <- topTable(fit2, number=Inf)
         ids <- if ("ID" %in% names(f.top)) f.top$ID else rownames(f.top)
-        res <- data.frame(ID=ids, pval=f.top$adj.P.Val, log2FC=-f.top$logFC, baseMean=f.top$AveExpr, stringsAsFactors=F)        
+        res <- data.frame(ID=ids, pval=f.top$adj.P.Val, log2FC=-f.top$logFC, baseMean=f.top$AveExpr, stringsAsFactors=FALSE)        
     }
     res <- res[res$baseMean > min.expr,]
-    res <- res[order(res$baseMean, decreasing=T),]        
+    res <- res[order(res$baseMean, decreasing=TRUE),]        
     res <- head(res, n=top)
     res <- res[order(res$pval),]
     res <- na.omit(res)

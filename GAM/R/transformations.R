@@ -5,7 +5,7 @@ splitMappingByConnectivity <- function(connections, from, to) {
     names(to) <- from
     connections <- connections[connections[,1] != connections[,2],]
     c1 <- connections[to[connections[,1]] == to[connections[,2]],]
-    while (T) {
+    while (TRUE) {
         c2 <- data.frame(x=colors[c1[,1]], y=colors[c1[,2]])
         
         c2[c2$x > c2$y, ] <- c2[c2$x > c2$y, c("y", "x")]
@@ -19,7 +19,7 @@ splitMappingByConnectivity <- function(connections, from, to) {
         matched <- colors %in% c2$y
         colors[matched] <- c2$x[match(colors[matched], c2$y)]
     }
-#     while (T) {
+#     while (TRUE) {
 #         c2 <- data.table(x=colors[c1[,1]], y=colors[c1[,2]])
 #         
 #         c2[x > y, ] <- c2[x > y, list(y,x)]
@@ -80,8 +80,8 @@ moveColumnsToFront <- function(d, cols) {
 #' @importFrom plyr rbind.fill
 graph.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),
-                                 directed=T,
-                                 name.as.label=T) {    
+                                 directed=TRUE,
+                                 name.as.label=TRUE) {    
     edge.table <- moveColumnsToFront(edge.table, edge.cols)
     
     if ("name" %in% names(edge.table) && name.as.label) {

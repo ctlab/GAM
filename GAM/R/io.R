@@ -34,8 +34,8 @@ saveModuleToJson <- function(module, outputFilePrefix) {
 get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attributes(graph)) {
     sapply(attrs,
            function(attr) get.vertex.attribute(graph, attr, index),
-           simplify=F,
-           USE.NAMES=T)
+           simplify=FALSE,
+           USE.NAMES=TRUE)
 }
 
 #' Get values of multiple atrributes of multiple edges
@@ -49,8 +49,8 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
 get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph)) {
     sapply(attrs, 
            function(attr) get.edge.attribute(graph, attr, index),
-           simplify=F,
-           USE.NAMES=T)
+           simplify=FALSE,
+           USE.NAMES=TRUE)
 }
 
 #' Converts a module from igraph to a list of nodes and links
@@ -157,7 +157,7 @@ getAttrXmlStrings <- function(attr.values, indent="") {
             type <- "integer"
         } else if(attr.rtype == "numeric") {
             type <- "real"
-            attr.values[[i]] <- sub("Inf", "Infinity", as.character(attr.values[[i]]), fixed=T)
+            attr.values[[i]] <- sub("Inf", "Infinity", as.character(attr.values[[i]]), fixed=TRUE)
         } else {
             type <- "string"
             attr.values[[i]] <- as.character(attr.values[[i]])
