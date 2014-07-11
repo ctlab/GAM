@@ -1,6 +1,38 @@
 #' @import BioNet 
 NULL
 
+# Preprocess experiment set's differential expression data for genes
+# 
+# Converts gene IDs to be the same as in network
+# 
+# @param es Experiment set with gene DE data
+# @param gene.ids Type of IDs used in gene DE data (see colnames(es$gene.id.map) for possible values)
+# @param plot If TRUE plot BUM fit
+preprocessGeneDE <- function(es, gene.ids) {
+    if (is.null(es$gene.de)) {
+        return(es)
+    }
+    message("Preprocessing gene p-values...")
+    
+    if (!is.null(es$gene.de$log2FC)) {
+        es$gene.de$log2FC <- fixInf(es$gene.de$log2FC)
+    }
+    if (!is.null(gene.ids)) {
+        gene.id.map <- es$network$gene.id.map
+        if (!is(gene.id.map, "data.table")) {
+            gene.id.map <- as.data.table(gene.id.map)
+        }
+        message(sprintf("Converting gene ids from %s to %s", gene.ids, es$network$gene.ids))
+        es$gene.de <- convertPval(es$gene.de, 
+                                  from=gene.id.map[,get(gene.ids)], 
+                                  to=gene.id.map[,get(es$network$gene.ids)])
+    }    
+    es$gene.de$origin <- NULL
+    message("Converting gene p-values to reactions...")
+    es$rxn.de <- convertPval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+        
+    es
+}
 
 # Preprocess experiment set's differential expression data for genes and metabolites
 # 
@@ -11,58 +43,69 @@ NULL
 # @param met.ids Type of IDs used in metabolite DE data (see met.id.map for possible values)
 # @param gene.ids Type of IDs used in gene DE data (see colnames(es$gene.id.map) for possible values)
 # @param plot If TRUE plot BUM fit
-preprocessPvalAndMetDE <- function(es, met.ids, gene.ids, plot=TRUE) {
-    if (!is.null(es$gene.de)) {
-        message("Processing gene p-values...")
+preprocessMetDE <- function(es, met.ids, plot=TRUE) {    
+    if (is.null(es$met.de)) {
+        es$met.de <- data.frame(
+            ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), 
+            pval=NA,
+            log2FC=NA,
+            stringsAsFactors=FALSE)
         
-        if (!is.null(es$gene.de$log2FC)) {
-            es$gene.de$log2FC <- fixInf(es$gene.de$log2FC)
-        }
-        if (!is.null(gene.ids)) {
-            gene.id.map <- es$network$gene.id.map
-            es$gene.de <- convertPval(es$gene.de, 
-                                       from=gene.id.map[,gene.ids], 
-                                       to=gene.id.map[,es$network$gene.ids])
-        }    
-        es$gene.de$origin <- NULL
-        message("Converting gene p-values to reactions...")
-        es$rxn.de <- convertPval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
-        
+        es$met.pval <- NULL        
+        return(es)
     }
     
-    if (!is.null(es$met.de)) {
-        message("Processing metabolite p-values...")
-        if (!is.null(es$met.de$log2FC)) {
-            es$met.de$log2FC <- fixInf(es$met.de$log2FC)        
+    message("Processing metabolite p-values...")
+    if (!is.null(es$met.de$log2FC)) {
+        es$met.de$log2FC <- fixInf(es$met.de$log2FC)        
+    }
+    if (!is.null(met.ids)) {
+        lazyData("met.id.map")
+        met.id.map <- get("met.id.map")
+        if (!is(met.id.map, "data.table")) {
+            met.id.map <- as.data.table(met.id.map)
         }
-        if (!is.null(met.ids)) {
-            lazyData("met.id.map")
-            met.id.map <- get("met.id.map")
-            es$met.de <- convertPval(es$met.de, 
-                                      from=met.id.map[,met.ids], 
-                                      to=met.id.map[,es$network$met.ids])
-        }
-        
-        es$met.pval <- es$met.de$pval
-        names(es$met.pval) <- es$met.de$ID
-        es$fb.met <- fitBumModel(es$met.pval, plot=FALSE)
-        if (plot) {
-            hist(es$fb.met, main="Histogram of metabolite p-values")
-            plot(es$fb.met, main="QQ-Plot for metabolite BUM-model")
-        }
-    } else {
-        es$met.pval <- NULL
+        message(sprintf("Converting metabolite ids from %s to %s", met.ids, es$network$met.ids))
+        es$met.de <- convertPval(es$met.de, 
+                                 from=met.id.map[, get(met.ids)], 
+                                 to=met.id.map[, get(es$network$met.ids)])
     }
     
-    return(es)
+    es$met.pval <- es$met.de$pval
+    names(es$met.pval) <- es$met.de$ID
+    es$fb.met <- fitBumModel(es$met.pval, plot=FALSE)
+    if (plot) {
+        hist(es$fb.met, main="Histogram of metabolite p-values")
+        plot(es$fb.met, main="QQ-Plot for metabolite BUM-model")
+    }
+    
+    es
 }
 
-
+#' Process reaction DE
+#' 
+#' Sets reaction names, fits BUM-model.
+#' 
+#' @param es Experiment set
+#' @param plot If TRUE plot BUM-models
+#' @return Experiment set object whith updated network and fit BUM-model
+#' @import data.table
 processReactionDE <- function(es, plot) {
+    if (is.null(es$rxn.de)) {
+        es$rxn.de <- data.frame(ID=unique(es$graph.raw$rxn), pval=NA, log2FC=NA, stringsAsFactors=FALSE)
+        es$rxn.pval <- NULL
+        return(es)
+    }
+    
+    message("Processing reaction p-values...")
     if (!is.null(es$rxn.de$log2FC)) {
         es$rxn.de$log2FC <- fixInf(es$rxn.de$log2FC)                        
     }
-    if ("origin" %in% colnames(es$rxn.de)) {
+    
+    if ("symbol" %in% colnames(es$rxn.de)) {
+        symbol <- with(es$rxn.de, { x <- symbol; names(x) <- ID; x[intersect(ID, es$network$rxn2name$rxn)] } )
+        es$network$rxn2name$name[match(names(symbol), es$network$rxn2name$rxn)] <- symbol
+    } else if ("origin" %in% colnames(es$rxn.de)) {
         
         es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
         
@@ -90,7 +133,88 @@ processReactionDE <- function(es, plot) {
     if (plot) {
         hist(es$fb.rxn, main="Histogram of gene p-values")
         plot(es$fb.rxn, main="QQ-Plot for gene BUM-model")
+    }            
+    
+    es
+}
+
+makeSubnetWithReactionsAsEdges <- function(es) {
+    net.edges.ext <- merge(es$graph.raw, es$rxn.de.ext, by.x="rxn", by.y="ID")
+    edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
+    net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
+        net.edges.ext[edges2rev, c("met.y", "met.x")]        
+    
+    
+    net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min, na.action=na.pass))
+    net.edges.ext <- merge(net.edges.pval, net.edges.ext)
+    net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
+    net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
+    
+    
+    
+    if (es$use.rpairs) {
+        edges.keep <- net.edges.ext$rptype %in% "main"
+    } else { 
+        edges.keep <- TRUE
     }
+    
+    net.edges.ext.all <- net.edges.ext
+    net.edges.ext <- net.edges.ext[edges.keep,]
+    
+    es$net.edges.ext <- net.edges.ext
+    es$net.edges.ext.all <- net.edges.ext.all
+    
+    net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
+                              node.col="ID", edge.cols=c("met.x", "met.y"),
+                              directed=FALSE)
+    
+    es$subnet <- net1
+    es
+}
+
+makeSubnetWithReactionsAsNodes <- function(es) {
+    edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
+                   rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
+    edges <- unique(edges)
+    
+    if (es$collapse.reactions && "origin" %in% names(es$rxn.de.ext)) {
+        message("Collapsing reactions by common most significant enzymes")
+        
+        edges.dt <- data.table(edges, key="met")
+        rxn.net <- merge(edges.dt, edges.dt, by="met", allow.cartesian=TRUE)
+        rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
+        
+        #rxn.de.origin.split <- es$rxn.de$origin
+        es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
+        
+        t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=FALSE)                
+        #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
+        
+        es$rxn.de.ext$rxns <- es$rxn.de.ext$ID
+        es$rxn.de.ext$ID <- es$rxn.de.origin.split            
+        
+        uniqueJoin <- function(x) {
+            u  <-  unique(unlist(strsplit(as.character(x), split="\\+")))
+            return(paste(u, collapse="+"))
+        }
+        
+        cols.to.fix <- setdiff(c(colnames(es$network$rxn2name), "rxns"), c("rxn", "name"))
+        f <- as.formula(paste0("cbind(", paste0(cols.to.fix, collapse=","), ") ~ ID"))
+        cols.fixed <- aggregate(f , es$rxn.de.ext, uniqueJoin)
+        
+        es$rxn.de.ext <- unique(es$rxn.de.ext[, !names(es$rxn.de.ext) %in% cols.to.fix])
+        es$rxn.de.ext <- merge(es$rxn.de.ext, cols.fixed)
+        
+        edges$rxn <- es$rxn.de.origin.split[edges$rxn]
+        edges <- unique(edges)
+    }
+    
+    es$edges <- edges
+    net1 <- graph.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
+                              node.col="ID",
+                              directed=FALSE)
+    
+    es$subnet <- net1
     es
 }
 
@@ -110,6 +234,7 @@ processReactionDE <- function(es, plot) {
 #' @param collapse.reactions If TRUE, collapse reaction nodes if they share an enzyme
 #'                           and at least one metabolite (only when reactions are nodes)
 #' @param use.rpairs If TRUE, only rpairs will be used as reaction edges (only when reactions are edges)
+#' @param drop.nonexpressed If TRUE, reactions that doesn't have expressed enzymes are removed from the network
 #' @param plot If TRUE plot BUM-models
 #' @importFrom plyr rename
 #' @import data.table
@@ -127,6 +252,7 @@ makeExperimentSet <- function(network,
                               reactions.as.edges=TRUE,
                               collapse.reactions=TRUE,
                               use.rpairs=TRUE,
+                              drop.nonexpressed=TRUE,
                               plot=TRUE) {
     if (is.null(met.ids) && !is.null(met.de)) {
         lazyData("met.id.map")
@@ -148,27 +274,23 @@ makeExperimentSet <- function(network,
     es$graph.raw <- es$network$graph.raw
     es$reactions.as.edges <- reactions.as.edges
     es$use.rpairs <- use.rpairs
+    es$collapse.reactions <- collapse.reactions
+    es$drop.nonexpressed <- drop.nonexpressed
     
-    
-    es <- preprocessPvalAndMetDE(es, met.ids=met.ids, gene.ids=gene.ids, plot=plot)
-    
-    if (!is.null(es$rxn.de)) {
-        message("Processing reaction p-values...")
-        es <- processReactionDE(es, plot)
-        
+    if (is.null(rxn.de)) {
+        es <- preprocessGeneDE(es, gene.ids=gene.ids)    
     } else {
-        es$rxn.pval <- NULL
+        if (!is.null(gene.de)) {
+            warning("gene.de is not used because rxn.de is supplied")
+        }            
     }
+    
+    es <- preprocessMetDE(es, met.ids=met.ids, plot=plot)
+    es <- processReactionDE(es, plot)
+    
+    
         
     message("Building network")    
-    
-    if (is.null(es$met.de)) {
-        es$met.de <- data.frame(
-            ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), 
-            pval=NA,
-            log2FC=NA,
-            stringsAsFactors=FALSE)
-    }
     
     met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=FALSE)
     met.de.ext <- merge(met.de.ext, es$met.de, all.x=TRUE) # all.x=TRUE — we keep mets if there is no MS data
@@ -177,13 +299,9 @@ makeExperimentSet <- function(network,
     es$met.de.ext <- met.de.ext
     
     
-    if (is.null(es$rxn.de)) {
-        es$rxn.de <- data.frame(ID=unique(es$graph.raw$rxn), pval=NA, log2FC=NA, stringsAsFactors=FALSE)
-    }
-    
     rxn.de.ext <- data.frame(ID=unique(es$graph.raw$rxn), stringsAsFactors=FALSE)
-    rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=FALSE) # we drop reaction if it's not expressed
-    rxn.de.ext <- merge(rxn.de.ext, es$network$rxn2name, by.x="ID", by.y="rxn", all.x=TRUE)
+    rxn.de.ext <- merge(rxn.de.ext, es$rxn.de, all.x=!es$drop.nonexpressed)
+    rxn.de.ext <- merge(rxn.de.ext, es$network$rxn2name, by.x="ID", by.y="rxn", all.x=!es$drop.nonexpressed)
     rxn.de.ext$logPval <- log(rxn.de.ext$pval)
     es$rxn.de.ext <- rxn.de.ext
     
@@ -193,80 +311,10 @@ makeExperimentSet <- function(network,
     
     
     if (reactions.as.edges) {    
-        net.edges.ext <- merge(es$graph.raw, rxn.de.ext, by.x="rxn", by.y="ID")
-        edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
-        net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
-            net.edges.ext[edges2rev, c("met.y", "met.x")]        
+        es <- makeSubnetWithReactionsAsEdges(es)
         
-        
-        net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min, na.action=na.pass))
-        net.edges.ext <- merge(net.edges.pval, net.edges.ext)
-        net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
-        net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
-        
-        
-        
-        if (use.rpairs) {
-            edges.keep <- net.edges.ext$rptype %in% "main"
-        } else { 
-            edges.keep <- TRUE
-        }
-        
-        net.edges.ext.all <- net.edges.ext
-        net.edges.ext <- net.edges.ext[edges.keep,]
-        
-        es$net.edges.ext <- net.edges.ext
-        es$net.edges.ext.all <- net.edges.ext.all
-        
-        net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
-                                     node.col="ID", edge.cols=c("met.x", "met.y"),
-                                     directed=FALSE)
-        
-        es$subnet <- net1
     } else {    
-        
-        edges <- rbind(rename(es$graph.raw[, c("met.x", "rxn")], c("met.x" = "met")),
-                       rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
-        edges <- unique(edges)
-        
-        if (collapse.reactions && "origin" %in% names(rxn.de.ext)) {
-            message("Collapsing reactions by common most significant enzymes")
-            
-            edges.dt <- data.table(edges, key="met")
-            rxn.net <- merge(edges.dt, edges.dt, by="met", allow.cartesian=TRUE)
-            rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
-            
-            #rxn.de.origin.split <- es$rxn.de$origin
-            es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
-            
-            t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=FALSE)                
-            #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
-            
-            es$rxn.de.ext$rxns <- es$rxn.de.ext$ID
-            es$rxn.de.ext$ID <- es$rxn.de.origin.split            
-            
-            uniqueJoin <- function(x) {
-                u  <-  unique(unlist(strsplit(as.character(x), split="\\+")))
-                return(paste(u, collapse="+"))
-            }
-            
-            cols.to.fix <- setdiff(c(colnames(es$network$rxn2name), "rxns"), c("rxn", "name"))
-            f <- as.formula(paste0("cbind(", paste0(cols.to.fix, collapse=","), ") ~ ID"))
-            cols.fixed <- aggregate(f , es$rxn.de.ext, uniqueJoin)
-            
-            es$rxn.de.ext <- unique(es$rxn.de.ext[, !names(es$rxn.de.ext) %in% cols.to.fix])
-            es$rxn.de.ext <- merge(es$rxn.de.ext, cols.fixed)
-            
-            edges$rxn <- es$rxn.de.origin.split[edges$rxn]
-            edges <- unique(edges)
-        }
-        
-        es$edges <- edges
-        net1 <- graph.from.tables(node.table=list(met=es$met.de.ext, rxn=es$rxn.de.ext), edge.table=edges,
-                                     node.col="ID",
-                                     directed=FALSE)
-        
-        es$subnet <- net1
+        es <- makeSubnetWithReactionsAsNodes(es)
     }
     
     
@@ -282,11 +330,28 @@ scoreValue <- function (fb, pval, fdr = 0.01)
     return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
 }
 
+recommendedFDR <- function(fb, pval, num.positive = 100) {
+    lo <- -1    
+    hi <- -200
+    
+    for (i in 1:10) {
+        mid <- (lo + hi) / 2
+        val <- sum(scoreValue(fb, pval, exp(mid)) > 0)
+        if (val < num.positive) {
+            # we want higher FDR
+            hi <- mid
+        } else {
+            lo <- mid
+        }
+    }
+    exp(mid)    
+}
+
 #' Assign scores to network's nodes and edges
 #' @param es Experiment set object
 #' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and gene.fdr aren't used
-#' @param met.fdr FDR for metabolites only
-#' @param gene.fdr FDR for genes/reactions only
+#' @param met.fdr FDR for metabolites only, NA makes FDR to be set automatically, NULL makes metabolites not be scored
+#' @param gene.fdr FDR for genes/reactions only, NA makes FDR to be set automatically, NULL makes reactions not be scored
 #' @param absent.met.score Score for metabolites absent from data
 #' @param absent.rxn.score Score for reactions when there is no genomic data
 #' @return Experiment set object with scored network subnet.scored field
@@ -301,9 +366,12 @@ scoreValue <- function (fb, pval, fdr = 0.01)
 #' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, gene.fdr=3e-5, absent.met.score=-20)
 #' @export 
 scoreNetwork <- function(es,                         
-                       fdr=NULL, met.fdr=NULL, gene.fdr=NULL,
-                       absent.met.score=NULL,
-                       absent.rxn.score=0) {
+                       fdr=NULL, met.fdr=NA, rxn.fdr=NA,
+                       absent.met.score=NULL,                       
+                       absent.rxn.score=NULL,
+                       met.score=-1,
+                       rxn.score=-1,
+                       num.positive=100) {
     
     net <- es$subnet
     
@@ -312,46 +380,73 @@ scoreNetwork <- function(es,
         gene.fdr <- fdr
     }
     
-            
-    met.scores <- NULL    
+    mets.to.score <- V(net)[nodeType == "met"]
+    scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score$name] }
+    if (es$reactions.as.edges) {
+        rxns.to.score <- E(net)
+        scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score$rxn] }
+    } else {
+        rxns.to.score <- V(net)[nodeType == "rxn"]
+        scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score$rxn] }
+    }
+                    
     if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
         fb <- es$fb.met
-        met.scores <- scoreValue(fb, na.omit(es$met.de.ext$pval), met.fdr)
-        names(met.scores) <- es$met.de.ext$ID[!is.na(es$met.de.ext$pval)]
-    }
-    
-    
-    rxn.scores <- NULL
-    if (!is.null(es$fb.rxn) && !is.null(gene.fdr)) {
-        fb <- es$fb.rxn 
-        rxn.scores <- scoreValue(fb, na.omit(es$rxn.de.ext$pval), gene.fdr)
-        names(rxn.scores) <- es$rxn.de.ext$ID[!is.na(es$rxn.de.ext$pval)]
-    }
-    
-    
-    if (is.null(absent.met.score)) {
-        absent.met.score <- mean(met.scores[met.scores < 0])
-        message(paste0("absent.met.score <- ", absent.met.score))
-    }
+        pvals <- with(es$met.de.ext, { x <- pval; names(x) <- ID; na.omit(x) })
+            
+        if (is.na(met.fdr)) {
+            met.fdr <- recommendedFDR(fb, pvals, num.positive=num.positive)
+            message(sprintf("Using FDR of %.1e for metabolites", met.fdr))
+        }
         
-    absent.met.scores <- sapply(V(net)[nodeType == "met"]$name, function(x) absent.met.score)
-    met.scores <- c(met.scores, absent.met.scores[!names(absent.met.scores) %in% names(met.scores)])
-    
-    met.scores <- met.scores[names(met.scores) %in% V(net)$name]
-    V(net)[names(met.scores)]$score <- met.scores
-    
-    absent.rxn.scores <- sapply(es$rxn.de$ID, function(x) absent.rxn.score)
-    rxn.scores <- c(rxn.scores, absent.rxn.scores[!names(absent.rxn.scores) %in% names(rxn.scores)])
-    
-    if (es$reactions.as.edges) {
+        met.scores <- scoreValue(fb, pvals, met.fdr)
+                
+        if (is.null(absent.met.score)) {
+            absent.met.score <- min(met.scores)
+            message(sprintf("Set score of absent metabolites to %.1f", absent.met.score))            
+        }
         
-        E(net)$score <- rxn.scores[E(net)$rxn]
+        absent.met.scores <- sapply(mets.to.score$name, function(x) absent.met.score)
+        
+        met.scores <- c(met.scores, absent.met.scores)
+        met.scores <- met.scores[!duplicated(names(met.scores))]
+        met.scores <- met.scores[names(met.scores) %in% mets.to.score$name]
+        es$met.fdr <- met.fdr
     } else {
-        rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]
-        V(net)[names(rxn.scores)]$score <- rxn.scores
+        met.scores <- rep(met.score, length(mets.to.score))
+        names(met.scores) <- mets.to.score$name
+        es$met.score <- met.score
     }
+    scoreMets(met.scores)
     
-    
+    if (!is.null(es$fb.rxn) && !is.null(rxn.fdr)) {
+        fb <- es$fb.rxn 
+        pvals <- with(es$rxn.de.ext, { x <- pval; names(x) <- ID; na.omit(x) })
+                
+        if (is.na(rxn.fdr)) {
+            rxn.fdr <- recommendedFDR(fb, pvals, num.positive=num.positive)
+            message(sprintf("Using FDR of %.1e for reactions", rxn.fdr))
+        }
+        
+        rxn.scores <- scoreValue(fb, pvals, rxn.fdr)
+        
+        if (is.null(absent.rxn.score)) {
+            absent.rxn.score <- min(rxn.scores)
+            message(sprintf("Set score of absent reactions to %.1f", absent.rxn.score))            
+        }
+        
+        absent.rxn.scores <- sapply(rxns.to.score$rxn, function(x) absent.rxn.score)
+        
+        rxn.scores <- c(rxn.scores, absent.rxn.scores)
+        rxn.scores <- rxn.scores[!duplicated(names(rxn.scores))]
+        rxn.scores <- rxn.scores[names(rxn.scores) %in% rxns.to.score$rxn]
+        es$rxn.fdr <- rxn.fdr
+    } else {
+        rxn.scores <- rep(rxn.score, length(rxns.to.score))
+        names(rxn.scores) <- rxns.to.score$name
+        es$rxn.score <- rxn.score
+    }
+    scoreRxns(rxn.scores)
     
     es$subnet.scored <- net
     return(es)
