@@ -104,7 +104,10 @@ getModuleJsonString <- function(module) {
 #' saveModuleToXgmml(module.re, "M1 vs M2", "module.re.xgmml")
 #' }
 #' @export
-saveModuleToXgmml <- function(network, name, file) {
+saveModuleToXgmml <- function(network, name=NULL, file) {
+    if (is.null(name)) {
+        name <- deparse(substitute(network))    
+    }    
     s <- getGraphXmlString(network, name)
     write(s, file)
 }
