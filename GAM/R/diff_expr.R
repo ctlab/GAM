@@ -36,15 +36,19 @@ convertPvalBiomart <- function(pval, from, to, mart) {
 #' of IDs is matched.
 #' 
 #' @param ids Vector of IDs
-#' @param id.map Map between different type of IDs
+#' @param id.map Map between different type of IDs, better to be data.table
 #' @return Type of IDs in a vector or NULL if no suitable type was found
 #' @examples
 #' data(met.id.map)
 #' id.type <- getIdType(c("HMDB00001", "HMDB02092"), met.id.map)
 #' @export
 getIdType <- function(ids, id.map) {
+    if (!is(id.map, "data.table")) {
+        warning("Converting id.map to data.table")
+        id.map <- as.data.table(id.map)
+    }
     counts <- sapply(names(id.map), function(id.type) {
-        sum(ids %in% id.map[, id.type])    
+        sum(ids %in% id.map[, get(id.type)])    
     })
     
     if (max(counts) == 0) {
