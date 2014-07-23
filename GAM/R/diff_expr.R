@@ -98,12 +98,12 @@ convertPval <- function(pval, from, to) {
 normalizeExpressions <- function(exprs, zero.rm=TRUE, log2=TRUE, quantile=TRUE) {
     if (zero.rm) {
         # removing unexpressed genes
-        keep <- apply(exprs, 1, max) > 0
+        keep <- apply(exprs, 1, function(x) max(x, na.rm = T)) > 0
         exprs <- exprs[keep,]
     }
     if (log2) {
         # adding pseudocount for zero expressions  
-        min2s <- apply(exprs, 2, function(x) { min(x[x != 0]) })
+        min2s <- apply(exprs, 2, function(x) { min(x[x != 0], na.rm=T) })
         
         for (sample in colnames(exprs)) {
             t <- exprs[,sample]
