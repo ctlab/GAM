@@ -31,22 +31,22 @@ library(igraph)
 # :ToDo: check the result for makeExperimentSet tests
 
 test_that("makeExperimentSet works with full data", {
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
+    es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
                                   met.de=met.de.M1.M2,
                                   gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=T, plot=F)
-
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
+    
+    es.M1.M2.full.rn <- makeExperimentSet(network=kegg.mouse.network, 
                                   met.de=met.de.M1.M2,
                                   gene.de=gene.de.M1.M2,
                                   reactions.as.edges=F, collapse.reactions=F, plot=F)
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
+    es.M1.M2.full.re.rp <- makeExperimentSet(network=kegg.mouse.network,
                                   met.de=met.de.M1.M2,
                                   gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
+    es.M1.M2.full.re <- makeExperimentSet(network=kegg.mouse.network,
                                   met.de=met.de.M1.M2,
                                   gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
@@ -92,10 +92,19 @@ test_that("findModule works", { # :ToDo:
 test_that("makeKeggNetwork works", { # :ToDo:
 })
 
-test_that("scoreNetwork works", { # :ToDo:
+test_that("scoreNetwork works", { # :ToDo:    
+    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn.cr)
+    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn)
+    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.re.rp)
+    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.re)
 })
 
 test_that("scoreNetworkWithoutBUM works", { # :ToDo:
+    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn.cr)
+    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn)
+    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.re.rp)
+    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.re)
+    
 })
 
 test_that("fastHeinz.solver works", { # :ToDo:
@@ -107,3 +116,5 @@ test_that("heinz.solver works", { # :ToDo:
 test_that("mwcs.solver works", { # :ToDo:
 })
 
+test_that("randHeur.solver works", { # :ToDo:
+})

@@ -185,7 +185,7 @@ makeSubnetWithReactionsAsNodes <- function(es) {
         rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
         
         #rxn.de.origin.split <- es$rxn.de$origin
-        es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, rxn.de.ext$ID, rxn.de.ext$origin)
+        es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, es$rxn.de.ext$ID, es$rxn.de.ext$origin)
         
         t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=FALSE)                
         #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
@@ -380,14 +380,14 @@ scoreNetwork <- function(es,
         gene.fdr <- fdr
     }
     
-    mets.to.score <- V(net)[nodeType == "met"]
-    scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score$name] }
+    mets.to.score <- V(net)[nodeType == "met"]$name
+    scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$reactions.as.edges) {
-        rxns.to.score <- E(net)
-        scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score$rxn] }
+        rxns.to.score <- E(net)$name
+        scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score] }
     } else {
-        rxns.to.score <- V(net)[nodeType == "rxn"]
-        scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score$rxn] }
+        rxns.to.score <- V(net)[nodeType == "rxn"]$name
+        scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score] }
     }
                     
     if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
@@ -406,15 +406,15 @@ scoreNetwork <- function(es,
             message(sprintf("Set score of absent metabolites to %.1f", absent.met.score))            
         }
         
-        absent.met.scores <- sapply(mets.to.score$name, function(x) absent.met.score)
+        absent.met.scores <- sapply(mets.to.score, function(x) absent.met.score)
         
         met.scores <- c(met.scores, absent.met.scores)
         met.scores <- met.scores[!duplicated(names(met.scores))]
-        met.scores <- met.scores[names(met.scores) %in% mets.to.score$name]
+        met.scores <- met.scores[names(met.scores) %in% mets.to.score]
         es$met.fdr <- met.fdr
     } else {
         met.scores <- rep(met.score, length(mets.to.score))
-        names(met.scores) <- mets.to.score$name
+        names(met.scores) <- mets.to.score
         es$met.score <- met.score
     }
     scoreMets(met.scores)
@@ -432,18 +432,20 @@ scoreNetwork <- function(es,
         
         if (is.null(absent.rxn.score)) {
             absent.rxn.score <- min(rxn.scores)
-            message(sprintf("Set score of absent reactions to %.1f", absent.rxn.score))            
+            if (length(setdiff(rxns.to.score, names(rxn.scores))) > 0) {            
+                message(sprintf("Set score of absent reactions to %.1f", absent.rxn.score))            
+            }            
         }
         
-        absent.rxn.scores <- sapply(rxns.to.score$rxn, function(x) absent.rxn.score)
+        absent.rxn.scores <- sapply(rxns.to.score, function(x) absent.rxn.score)
         
         rxn.scores <- c(rxn.scores, absent.rxn.scores)
         rxn.scores <- rxn.scores[!duplicated(names(rxn.scores))]
-        rxn.scores <- rxn.scores[names(rxn.scores) %in% rxns.to.score$rxn]
+        rxn.scores <- rxn.scores[names(rxn.scores) %in% rxns.to.score]
         es$rxn.fdr <- rxn.fdr
     } else {
         rxn.scores <- rep(rxn.score, length(rxns.to.score))
-        names(rxn.scores) <- rxns.to.score$name
+        names(rxn.scores) <- rxns.to.score
         es$rxn.score <- rxn.score
     }
     scoreRxns(rxn.scores)
@@ -521,8 +523,7 @@ scoreNetworkWithoutBUM <- function(es,
     absent.rxn.scores <- sapply(es$rxn.de$ID, function(x) absent.rxn.score)
     rxn.scores <- c(rxn.scores, absent.rxn.scores[!names(absent.rxn.scores) %in% names(rxn.scores)])
     
-    if (es$reactions.as.edges) {
-        
+    if (es$reactions.as.edges) {        
         E(net)$score <- rxn.scores[E(net)$rxn]
     } else {
         rxn.scores <- rxn.scores[names(rxn.scores) %in% V(net)$name]

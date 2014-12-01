@@ -6,6 +6,8 @@
 # Not compressing now for faster loading
 #save(gene.id.map, file="./GAM//data/gene.id.map.rda", compress=F)
 
+library("data.table")
+
 hmdb2kegg <- read.csv("metabocards-2.5.extr.tsv", header=T, colClasses="character", sep="\t")
 hmdb2kegg <- na.omit(hmdb2kegg[, c("HMDB", "KEGG")])
 nrow(hmdb2kegg)
@@ -20,4 +22,5 @@ head(kegg2name)
 
 met.id.map <- merge(hmdb2kegg, kegg2name, all.x=T)
 head(met.id.map)
+met.id.map <- data.table(met.id.map)
 save(met.id.map, file="met.id.map.rda")

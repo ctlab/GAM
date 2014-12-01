@@ -64,6 +64,7 @@ makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism
     colnames(gene.id.map) <- c("Entrez", "RefSeq", "Symbol")
     
     gene.id.map <- gene.id.map[gene.id.map$Entrez %in% enz2gene$gene, ]
+    gene.id.map <- as.data.table(gene.id.map)
     
     
     mets <- unique(c(net$met.x, net$met.y))

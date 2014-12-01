@@ -4,7 +4,7 @@
 -->
 ```{r eval=TRUE, echo=FALSE, message=FALSE}
 require(knitr)
-opts_chunk$set(error=F, cache=T, dev="svg")
+opts_chunk$set(error=FALSE, cache=TRUE, dev="svg")
 ```
 
 # Genomic and metabolomic integrated analysis tutorial
@@ -86,7 +86,7 @@ can be controlled: larger FDRs make larger modules. Score for absnet metabolites
 how many such metabolites will be in the module.
 ```{r}
 met.fdr <- 3e-5
-gene.fdr <- 3e-5
+rxn.fdr <- 3e-5
 absent.met.score <- -20
 ```
 
@@ -94,7 +94,7 @@ And now we can finally find most significant module in our network (if heinz is 
 ```{r chache=TRUE, error=FALSE, eval=FALSE}
 module.re <- findModule(es.re,
                         met.fdr=met.fdr,
-                        gene.fdr=gene.fdr,
+                        rxn.fdr=rxn.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
 ```
@@ -116,7 +116,7 @@ or few other formats.
 saveModule(module.re,
            paste0("module.M1.M2.re", 
                   ".mf=", met.fdr,
-                  ".rf=", gene.fdr,
+                  ".rf=", rxn.fdr,
                   ".ms=", absent.met.score),
            types=c("pdf", "XGMML")
 )
@@ -124,7 +124,7 @@ saveModule(module.re,
 
 There is a Cytoscape VizMap style supplied with the package that can be used 
 for visualization:
-```{r}
+```{r echo=FALSE}
 system.file("GAM_VizMap.xml", package="GAM")
 ```
      
@@ -146,7 +146,7 @@ es.rn$subnet
 FDRs should be set a little stricter:
 ```{r}
 met.fdr=c(2e-7)
-gene.fdr=c(2e-7)
+rxn.fdr=c(2e-7)
 absent.met.score=c(-20)
 ```
 
@@ -154,7 +154,7 @@ And finding modules:
 ```{r eval=FALSE}
 module.rn <- findModule(es.rn,
                         met.fdr=met.fdr,
-                        gene.fdr=gene.fdr,
+                        rxn.fdr=rxn.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
 ```
