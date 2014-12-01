@@ -147,10 +147,6 @@ heinz.solver <- function(heinz.py,
 #' @examples 
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
-#' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
-#'                            reactions.as.edges=FALSE)
 #' module.rn <- findModule(es.rn, solver=fastHeinz.solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
 #' @export
 fastHeinz.solver <- function(network) {
@@ -172,9 +168,6 @@ fastHeinz.solver <- function(network) {
 #' data(examplesGAM)
 #' solver <- randHeur.solver()
 #' module.re <- findModule(es.re, solver=solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
-#' @export
-#' #' @examples 
-#' 
 #' @export
 randHeur.solver <- function(nruns=10) {
     res <- function(network) {        
