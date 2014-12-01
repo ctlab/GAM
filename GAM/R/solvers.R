@@ -162,3 +162,135 @@ fastHeinz.solver <- function(network) {
     names(scores) <- V(network)$name
     res <- list(runFastHeinz(network, scores))
 }
+
+
+#' Solves MWCS instance with randomized heuristic algorithm
+#' @param nruns Number of algorithm runs
+#' @return solver function
+#' @examples 
+#' data(kegg.mouse.network)
+#' data(examplesGAM)
+#' solver <- randHeur.solver()
+#' module.re <- findModule(es.re, solver=solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
+#' @export
+#' #' @examples 
+#' 
+#' @export
+randHeur.solver <- function(nruns=10) {
+    res <- function(network) {        
+        jobs <- list()
+        for (i in seq_len(nruns)) {
+            jobs <- c(jobs, list(mcparallel(solveMwcsRandHeur(network))))
+        }
+        solutions <- mccollect(jobs)
+        best <- which.max(sapply(solutions, function(s) s$score))        
+        solution <- induced.subgraph(network, solutions[[best]]$nodes)        
+        message("best score: ", solutions[[best]]$score)
+        solution
+    }
+    res
+}
+
+solveMwcsRandHeur <- function(network) {
+    n <- length(V(network))
+    m <- length(E(network))
+    vscores <- V(network)$score
+    escores <- E(network)$score
+    
+    score <- function(nodes, edges) {
+        sum(vscores[nodes]) + sum(escores[edges])
+    }
+    
+    best.solutions <- list()
+    best.solutions.edges <- list()
+    best.scores <- rep(0, n)
+    edges <- get.edgelist(network, names=FALSE)
+    
+    solution <- list()
+    solution$score <- -Inf    
+    
+    makeSolution <- function(id, nodes, edges, score=NULL) {
+        res <- newEmptyObject()
+        res$id <- id
+        res$nodes <- nodes
+        res$edges <- edges
+        res$score <- score       
+        
+        
+        if (is.null(res$score)) {
+            res$score <- score(nodes, edges)
+        }
+        res
+        
+    }
+    
+    updateBest <- function(newsolution) {
+        if (newsolution$score > solution$score) {
+            solution <<- newsolution
+            #             message("new best score: ", solution$score)
+        }
+    }
+    
+    for (v in V(network)) {
+        newsolution <- makeSolution(v, v, NULL)
+        updateBest(newsolution);
+        best.solutions[[v]] <- newsolution
+    }
+    
+    
+    checked <- rep(FALSE, m)
+    
+    max.iterations <- 10000
+    
+    for (i in seq_len(max.iterations)) {                
+        edges.unchecked <- which(!checked)        
+        if (length(edges.unchecked) == 0) {
+            #             message("exhausted")            
+            break
+        }
+        edge <- max(ceiling(runif(1, max=length(edges.unchecked))), 1)
+        checked[edge] <- TRUE
+        
+        start <- edges[edge, 1]
+        end <- edges[edge, 2]
+        
+        startsolution <- best.solutions[[start]]
+        endsolution <- best.solutions[[end]]
+        
+        score.start <- startsolution$score
+        score.end <- endsolution$score
+        
+        if (startsolution$id == endsolution$id && edge %in% startsolution$edges) {
+            next
+        }
+        
+        newnodes <- union(startsolution$nodes, endsolution$nodes)
+        newedges <- union(edge, union(startsolution$edges, endsolution$edges))
+        
+        
+        newsolution <- makeSolution(n + i, newnodes, newedges)
+        
+        
+        to_update <- c()
+        
+        
+        
+        if (newsolution$score > score.start) {
+            start.nodes <- startsolution$nodes
+            to_update <- union(to_update, start.nodes[best.scores[start.nodes] < newsolution$score])
+        }
+        
+        if (newsolution$score > score.end) {
+            end.nodes <- endsolution$nodes
+            to_update <- union(to_update, end.nodes[best.scores[end.nodes] < newsolution$score])
+        }
+        
+        if (length(to_update) > 0) {
+            updateBest(newsolution)
+            best.solutions[to_update] <- list(newsolution)             
+            to_check <- sapply(E(network)[adj(to_update)], identity)
+            checked[to_check] <- FALSE
+        }        
+    }    
+    solution
+}
