@@ -383,7 +383,7 @@ scoreNetwork <- function(es,
     mets.to.score <- V(net)[nodeType == "met"]$name
     scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$reactions.as.edges) {
-        rxns.to.score <- E(net)$name
+        rxns.to.score <- E(net)$rxn
         scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score] }
     } else {
         rxns.to.score <- V(net)[nodeType == "rxn"]$name

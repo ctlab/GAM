@@ -92,11 +92,14 @@ test_that("findModule works", { # :ToDo:
 test_that("makeKeggNetwork works", { # :ToDo:
 })
 
-test_that("scoreNetwork works", { # :ToDo:    
+test_that("scoreNetwork works", {
     es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn.cr)
     es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn)
-    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.re.rp)
+    es.M1.M2.full.re.rp.scored <- scoreNetwork(es.M1.M2.full.re.rp)
+    expect_true("score" %in% list.edge.attributes(es.M1.M2.full.re.rp.scored$subnet.scored))
+    expect_true("score" %in% list.vertex.attributes(es.M1.M2.full.re.rp.scored$subnet.scored))
     es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.re)
+    expect_true("score" %in% list.edge.attributes(es.M1.M2.scored$subnet.scored))
 })
 
 test_that("scoreNetworkWithoutBUM works", { # :ToDo:
