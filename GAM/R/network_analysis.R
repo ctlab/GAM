@@ -478,9 +478,9 @@ scoreNetwork <- function(es,
 #' @export 
 scoreNetworkWithoutBUM <- function(es,
                                    met.pval.threshold=1e-5,
-                                   met.pval.default=NULL,
+                                   met.pval.default=1,
                                    rxn.pval.threshold=1e-5,
-                                   rxn.pval.default=NULL
+                                   rxn.pval.default=1
                                    ) {
     
     net <- es$subnet
