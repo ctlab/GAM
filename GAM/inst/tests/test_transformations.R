@@ -84,5 +84,3 @@ test_that("get.vertex.attributes works", {
     expect_equal(va$pval[1], met.nt$pval[1])
 })
 
-test_that("plotNetwork works", { # :ToDo:
-})

@@ -60,15 +60,16 @@ runHeinz <- function(subnet,
     return(res)
 }
 
-#' Solves MWCS instance using mwcs solver (under development) 
-#' @param mwcs Path to mwcs executable
+#' Solves MWCS instance using heinz2 solver (under development) 
+#' @param heinz2 Path to heinz2 executable
+#' @param nthreads Number of threads to use
 #' @param timeLimit Time limit for execution
 #' @return solver function
 #' @import igraph
 #' @examples 
-#' solver <- mwcs.solver("/usr/local/bin/mwcs")
+#' solver <- heinz2.solver("/usr/local/heinz2/heinz")
 #' @export
-mwcs.solver <- function(mwcs, timeLimit=-1) {
+heinz2.solver <- function(heinz2, nthreads=1, timeLimit=-1) {
     function(network) {
         score.edges <- "score" %in% list.edge.attributes(network)
         score.nodes <- "score" %in% list.vertex.attributes(network)
@@ -88,10 +89,11 @@ mwcs.solver <- function(mwcs, timeLimit=-1) {
         
         solution.file <- file.path(graph.dir, "sol.txt")
         
-        system2(paste0(mwcs),
+        system2(paste0(heinz2),
                 c("-n", nodes.file,
                   "-e", edges.file,
                   "-o", solution.file,
+                  "-m", nthreads,
                   "-v", 1,
                   "-t", timeLimit))
         
@@ -140,25 +142,6 @@ heinz.solver <- function(heinz.py,
             )        
     }
 }
-
-#' Solves MWCS instance with BioNet::runFastHeinz algorithm
-#' @param network Netowrk to find module in
-#' @return Module
-#' @examples 
-#' data(kegg.mouse.network)
-#' data(examplesGAM)
-#' module.rn <- findModule(es.rn, solver=fastHeinz.solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
-#' @export
-fastHeinz.solver <- function(network) {
-    score.edges <- "score" %in% list.edge.attributes(network) && !all(E(network)$score == 0)
-    if (score.edges) {
-        stop("Can't run fast heinz on network with scored edges")
-    }
-    scores <- V(network)$score
-    names(scores) <- V(network)$name
-    res <- list(runFastHeinz(network, scores))
-}
-
 
 #' Solves MWCS instance with randomized heuristic algorithm
 #' @param nruns Number of algorithm runs

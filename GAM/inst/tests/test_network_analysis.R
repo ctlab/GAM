@@ -1,7 +1,7 @@
 context("Network analysis")
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
-mwcs <- "/usr/local/bin/mwcs"
+heinz2 <- "/usr/local/lib/heinz2/heinz"
 
 if (file.exists(heinz.py)) {
     test_that("runHeinz works", {
@@ -28,7 +28,6 @@ data(examplesGAM)
 data(mmpData)
 library(igraph)
 
-# :ToDo: check the result for makeExperimentSet tests
 
 test_that("makeExperimentSet works with full data", {
     es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
@@ -86,12 +85,6 @@ test_that("makeExperimentSet works without genomic data", {
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
-test_that("findModule works", { # :ToDo:
-})
-
-test_that("makeKeggNetwork works", { # :ToDo:
-})
-
 test_that("scoreNetwork works", {
     es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn.cr)
     es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn)
@@ -102,7 +95,7 @@ test_that("scoreNetwork works", {
     expect_true("score" %in% list.edge.attributes(es.M1.M2.scored$subnet.scored))
 })
 
-test_that("scoreNetworkWithoutBUM works", { # :ToDo:
+test_that("scoreNetworkWithoutBUM works", {
     es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn.cr)
     es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn)
     es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.re.rp)
@@ -110,14 +103,20 @@ test_that("scoreNetworkWithoutBUM works", { # :ToDo:
     
 })
 
-test_that("fastHeinz.solver works", { # :ToDo:
+
+test_that("findModule works", {
+    module <- findModule(es.M1.M2.full.re.rp, solver=randHeur.solver(10))    
+    expect_true(all(c("Citrate", "Itaconate", "L-Citrulline") %in% V(module)$label))
 })
 
-test_that("heinz.solver works", { # :ToDo:
+test_that("heinz.solver works", {
+    if (file.exists(heinz.py)) {
+        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=10))
+    }
 })
 
-test_that("mwcs.solver works", { # :ToDo:
-})
-
-test_that("randHeur.solver works", { # :ToDo:
+test_that("heinz2.solver works", { 
+    if (file.exists(heinz2)) {
+        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz2.solver(heinz2, timeLimit=10))
+    }    
 })
