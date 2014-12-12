@@ -39,10 +39,22 @@ NULL
 #' @name met.de.M1.M2
 NULL
 
+#' Example of an experiment set object for M1 vs. M2 comparison whith reactions as edges
+#'
+#' @docType data
+#' @name es.re
+NULL
+
+#' Example of an experiment set object for M1 vs. M2 comparison whith reactions as nodes
+#'
+#' @docType data
+#' @name es.rn
+NULL
+
 #' Example of a module for M1 vs. M2 comparison whith reactions as edges
 #' 
 #' met.fdr = 3e-5
-#' gene.fdr = 3e-5
+#' rxb,fdr = 3e-5
 #' absent.met.score = -20
 #' 
 #' @docType data
@@ -54,7 +66,7 @@ NULL
 #' Example of a module for M1 vs. M2 comparison whith reactions as nodes
 #' 
 #' met.fdr = 2e-7
-#' gene.fdr = 2e-7
+#' rxb,fdr = 2e-7
 #' absent.met.score = -20
 #' 
 #' @docType data

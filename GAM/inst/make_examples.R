@@ -41,12 +41,12 @@ es.re <- makeExperimentSet(network=kegg.mouse.network,
 
 
 met.fdr=c(3e-5)
-gene.fdr=c(3e-5)
+rxn.fdr=c(3e-5)
 absent.met.score=c(-20)
 
 module.re <- findModule(es.re,
                         met.fdr=met.fdr,
-                        gene.fdr=gene.fdr,
+                        rxn.fdr=rxn.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
 module.re
@@ -58,14 +58,14 @@ es.rn <- makeExperimentSet(network=kegg.mouse.network,
                            plot=F)
 
 met.fdr=c(2e-7)
-gene.fdr=c(2e-7)
+rxn.fdr=c(2e-7)
 absent.met.score=c(-20)
 
 module.rn <- findModule(es.rn,
                         met.fdr=met.fdr,
-                        gene.fdr=gene.fdr,
+                        rxn.fdr=rxn.fdr,
                         absent.met.score=absent.met.score,
                         solver=solver)
 module.rn
 
-save(gene.de.M1.M2, met.de.M1.M2, module.re, module.rn, file="examplesGAM.rda")
+save(gene.de.M1.M2, met.de.M1.M2, es.re, es.rn, module.re, module.rn, file="examplesGAM.rda")

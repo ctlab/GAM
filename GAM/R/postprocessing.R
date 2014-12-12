@@ -27,7 +27,7 @@
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -82,7 +82,7 @@ addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.no
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -162,7 +162,7 @@ simplifyReactionNodes <- function(module, es) {
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -236,7 +236,7 @@ addMetabolitesForReactions<- function(module, es) {
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -286,7 +286,7 @@ addInterconnections <- function(module, es) {
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -338,7 +338,7 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' 
 #' module.rn <- findModule(es.rn,
 #'                         met.fdr=1e-6,
-#'                         gene.fdr=1e-6,
+#'                         rxn.fdr=1e-6,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }
@@ -381,7 +381,7 @@ removeHangingNodes <- function(module) {
 #' \dontrun{
 #' module.re <- findModule(es.re,
 #'                         met.fdr=3e-05,
-#'                         gene.fdr=3e-05,
+#'                         rxn.fdr=3e-05,
 #'                         absent.met.score=-20,
 #'                         solver=solver)
 #' }

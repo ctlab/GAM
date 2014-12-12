@@ -167,7 +167,8 @@ fastHeinz.solver <- function(network) {
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' solver <- randHeur.solver()
-#' module.re <- findModule(es.re, solver=solver, met.fdr=1e-3, gene.fdr=1e-3, absent.met.score=-20)
+#' module.re <- findModule(es.re, solver=solver, met.fdr=1e-3, rxn.fdr=1e-3, absent.met.score=-20)
+#' @import parallel
 #' @export
 randHeur.solver <- function(nruns=10) {
     res <- function(network) {        

@@ -330,7 +330,7 @@ scoreValue <- function (fb, pval, fdr = 0.01)
     return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
 }
 
-recommendedFDR <- function(fb, pval, num.positive = 100) {
+recommendedFDR <- function(fb, pval, num.positive=100) {
     lo <- -1    
     hi <- -200
     
@@ -349,35 +349,34 @@ recommendedFDR <- function(fb, pval, num.positive = 100) {
 
 #' Assign scores to network's nodes and edges
 #' @param es Experiment set object
-#' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and gene.fdr aren't used
+#' @param fdr FDR for both metabolites and genes/reactions, if set met.fdr and rxn.fdr aren't used
 #' @param met.fdr FDR for metabolites only, NA makes FDR to be set automatically, NULL makes metabolites not be scored
-#' @param gene.fdr FDR for genes/reactions only, NA makes FDR to be set automatically, NULL makes reactions not be scored
+#' @param rxn.fdr FDR for genes/reactions only, NA makes FDR to be set automatically, NULL makes reactions not be scored
 #' @param absent.met.score Score for metabolites absent from data
 #' @param absent.rxn.score Score for reactions when there is no genomic data
+#' @param met.score Score for metabolites if met.fdr is NULL or there is no metabolic data
+#' @param rxn.score Score for reactions if met.fdr is NULL or there is no transcriptional data
+#' @param num.positive Desired number of positevely scored metabolites/reactions (used to automatically set FDRs)
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @examples
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
-#' es.re <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
-#'                            reactions.as.edges=TRUE)
-#' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, gene.fdr=3e-5, absent.met.score=-20)
+#' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, rxn.fdr=3e-5, absent.met.score=-20)
 #' @export 
 scoreNetwork <- function(es,                         
                        fdr=NULL, met.fdr=NA, rxn.fdr=NA,
                        absent.met.score=NULL,                       
                        absent.rxn.score=NULL,
-                       met.score=-1,
-                       rxn.score=-1,
+                       met.score=0,
+                       rxn.score=0,
                        num.positive=100) {
     
     net <- es$subnet
     
     if (!is.null(fdr)) {
         met.fdr <- fdr
-        gene.fdr <- fdr
+        rxn.fdr <- fdr
     }
     
     mets.to.score <- V(net)[nodeType == "met"]$name
@@ -467,10 +466,6 @@ scoreNetwork <- function(es,
 #' @examples
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
-#' es.re <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
-#'                            reactions.as.edges=TRUE)
 #' es.re.scored <- scoreNetworkWithoutBUM(es.re,
 #'                                        met.pval.threshold=1e-5,
 #'                                        met.pval.default=1,
@@ -481,8 +476,7 @@ scoreNetworkWithoutBUM <- function(es,
                                    met.pval.default=1,
                                    rxn.pval.threshold=1e-5,
                                    rxn.pval.default=1
-                                   ) {
-    
+                                   ) {    
     net <- es$subnet
     
             
@@ -555,7 +549,7 @@ scoreNetworkWithoutBUM <- function(es,
 #'                            reactions.as.edges=TRUE)
 #' solver <- heinz.solver("/usr/local/lib/heinz/heinz.py")
 #' \dontrun{
-#' module.re <- findModule(es.re, solver, met.fdr=3e-5, gene.fdr=3e-5, absent.met.score=-20)
+#' module.re <- findModule(es.re, solver, met.fdr=3e-5, rxn.fdr=3e-5, absent.met.score=-20)
 #' }
 #' @export 
 findModule <- function(es,                         

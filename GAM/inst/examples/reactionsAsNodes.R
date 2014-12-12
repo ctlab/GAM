@@ -15,7 +15,7 @@ solver <- heinz.solver(heinz.py)
 
 module.rn <- findModule(es.rn,
                         met.fdr=1e-6,
-                        gene.fdr=1e-6,
+                        rxn.fdr=1e-6,
                         absent.met.score=-20,
                         solver=solver)
 }

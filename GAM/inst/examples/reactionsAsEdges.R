@@ -14,7 +14,7 @@ es.re <- makeExperimentSet(network=kegg.mouse.network,
 \dontrun{
 module.re <- findModule(es.re,
                         met.fdr=3e-05,
-                        gene.fdr=3e-05,
+                        rxn.fdr=3e-05,
                         absent.met.score=-20,
                         solver=solver)
 }
@@ -26,6 +26,6 @@ plotNetwork(module.re)
 saveModule(module.re,
            paste0("module.M1.M2.re", 
                   ".mf=", met.fdr,
-                  ".rf=", gene.fdr,
+                  ".rf=", rxn.fdr,
                   ".ms=", absent.met.score),
            types=c("pdf", "XGMML")
