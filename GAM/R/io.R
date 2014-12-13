@@ -96,15 +96,15 @@ getModuleJsonString <- function(module) {
 
 #' Save network to an XGMML file
 #' @param network Network to save
-#' @param name Name of the network
 #' @param file File to save to
+#' @param name Name of the network
 #' @examples
 #' data(examplesGAM)
 #' \dontrun{
 #' saveModuleToXgmml(module.re, "M1 vs M2", "module.re.xgmml")
 #' }
 #' @export
-saveModuleToXgmml <- function(network, name=NULL, file) {
+saveModuleToXgmml <- function(network, file, name=NULL) {
     if (is.null(name)) {
         name <- deparse(substitute(network))    
     }    
@@ -257,4 +257,131 @@ saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
         }
         
     }
+}
+
+#' Save network to a graphviz dot file
+#' @param network Network to save
+#' @param file File to save to
+#' @param name Name of the network
+#' @examples
+#' data(examplesGAM)
+#' \dontrun{
+#' saveModuleToDot(module.re, "module.re.dot", name="M1 vs M2")
+#' }
+#' @export
+saveModuleToDot <- function(network, file, name=NULL) {
+    if (is.null(name)) {
+        name <- deparse(substitute(network))    
+    }    
+    s <- getGraphDotString(network, name)
+    write(s, file)
+}
+
+getGraphDotString <- function(network, name) {
+    res <- c()
+    res <- c(res, sprintf('graph "%s" {\n', name))    
+    res <- c(res, "outputorder=edgesfirst\n")    
+    res <- c(res, "pad=\"2,0.25\"\n")   
+    res <- c(res, getEdgeDotStrings(network, indent="  "))
+    res <- c(res, getNodeDotStrings(network, indent="  "))
+    res <- c(res, '}\n')
+    
+    paste(res, collapse="")
+}
+
+
+getAttrDotStrings <- function(attr.values) {
+    attr.dotStrings <- list() 
+    attr.names <- names(attr.values)
+    for(i in seq_along(attr.values)) {
+        attr.rtype <- is(attr.values[[i]])[1]
+        attr.dotStrings[[i]] <- sprintf("%s = \"%s\"", attr.names[i], attr.values[[i]])
+        attr.dotStrings[[i]][is.na(attr.values[[i]])] <- NA
+    }
+    names(attr.dotStrings) <- attr.names
+    do.call("cbind", attr.dotStrings)
+}
+
+upRamp <- colorRamp(c("#cccccc", "#ff3333"))
+downRamp <- colorRamp(c("#cccccc", "green"))
+
+getDotColor <- function(log2FC) {
+    if (is.na(log2FC)) {
+        return("#7777ff")
+    }
+    
+    if (log2FC > 0) {
+        col <- upRamp(min(1, abs(log2FC) / 2))
+    } else {
+        col <- downRamp(min(1, abs(log2FC) / 2))
+    }
+    rgb(col[,1], col[,2], col[,3], maxColorValue=255)
+}
+
+getDotSize <- function(logPval) {
+    logPval[is.na(logPval)] <- 0
+    return(pmin(0.2 - logPval/100/0.3, 0.5))
+}
+
+getDotNodeStyleAttributes <- function(attrs) {    
+    with(attrs, data.frame(
+        label=label,
+        shape="circle",
+        fixedsize="true",
+        style="filled",            
+        width=sapply(logPval, getDotSize),
+        fontsize=sapply(logPval, getDotSize) * 45,
+        color=sapply(log2FC, getDotColor),
+        fillcolor=sapply(log2FC, getDotColor)
+    ))
+}
+
+getDotEdgeStyleAttributes <- function(attrs) {    
+    with(attrs, data.frame(
+        label=label,
+        penwidth=sapply(logPval, getDotSize) * 20,        
+        fontsize=sapply(logPval, getDotSize) * 45,
+        color=sapply(log2FC, getDotColor)
+    ))
+}
+
+
+getNodeDotStrings <- function(network, indent="") {
+    if (length(V(network)) == 0) {
+        return(NULL)
+    }
+    attr.values <- get.vertex.attributes(network)
+    style.attr.values <- getDotNodeStyleAttributes(attr.values)
+    attr.dotStrings <- getAttrDotStrings(style.attr.values)
+    
+    if(is.null(V(network)$name))
+    {
+        V(network)$name <- as.character(V(network))
+    }
+    node.label <- V(network)$name
+    node.id <- as.vector(V(network))
+    node.attrs <- apply(attr.dotStrings, 1, function(x) paste(na.omit(x), collapse=", "))
+    nodeStrings <- sprintf("%sn%s [ %s ];\n", indent, node.id, node.attrs)
+    nodeStrings
+}
+
+getEdgeDotStrings <- function(network, indent="") {
+    if (length(E(network)) == 0) {
+        return(NULL)
+    }
+    attr.values <- get.edge.attributes(network)
+    style.attr.values <- getDotEdgeStyleAttributes(attr.values)
+    attr.dotStrings <- getAttrDotStrings(style.attr.values)
+    
+    edgelist.names <- get.edgelist(network, names=TRUE)
+    edgelist.names <- paste(edgelist.names[,1], edgelist.names[,2], sep=" (pp) ")
+    edgelist.ids <- get.edgelist(network, names=FALSE)
+    
+    edge.attrs <- apply(attr.dotStrings, 1, function(x) paste(na.omit(x), collapse=", "))
+    edgeStrings <- sprintf("%sn%s -- n%s [ %s ];\n",
+                           indent,                           
+                           edgelist.ids[,1],
+                           edgelist.ids[,2],
+                           edge.attrs)
+    edgeStrings
 }
