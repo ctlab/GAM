@@ -2,14 +2,7 @@
 
 DESC_FILE="GAM/DESCRIPTION"
 
-NEWREV=`hg id -i`
-NEWREV_NUM=`hg id -n | sed "s/+/.5/"`
-VERSION=`hg id -t -r 'ancestors(.) and tag()'`
-TAGREV=`hg id -i -r 'ancestors(.) and tag()'`
-if [ "$TAGREV" != "$NEWREV" ]
-then
-    VERSION="${VERSION}-${NEWREV_NUM}"
-fi
+VERSION=`git describe --dirty --tags`
 DATE=`date '+%Y-%m-%d'`
 
 
