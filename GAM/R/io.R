@@ -323,25 +323,26 @@ getDotSize <- function(logPval) {
     return(pmin(0.2 - logPval/100/0.3, 0.5))
 }
 
-getDotNodeStyleAttributes <- function(attrs) {    
+getDotNodeStyleAttributes <- function(attrs) {        
+    
     with(attrs, data.frame(
-        label=label,
+        label=if (!is.null(attrs$label)) label else "",
         shape="circle",
         fixedsize="true",
         style="filled",            
         width=sapply(logPval, getDotSize),
         fontsize=sapply(logPval, getDotSize) * 45,
-        color=sapply(log2FC, getDotColor),
-        fillcolor=sapply(log2FC, getDotColor)
+        color=if (!is.null(attrs$log2FC)) sapply(log2FC, getDotColor) else "black",
+        fillcolor=if (!is.null(attrs$log2FC)) sapply(log2FC, getDotColor) else "white"
     ))
 }
 
 getDotEdgeStyleAttributes <- function(attrs) {    
-    with(attrs, data.frame(
-        label=label,
+    with(attrs, data.frame(        
+        label=if (!is.null(attrs$label)) label else "",
         penwidth=sapply(logPval, getDotSize) * 20,        
         fontsize=sapply(logPval, getDotSize) * 45,
-        color=sapply(log2FC, getDotColor)
+        color=if (!is.null(attrs$log2FC)) sapply(log2FC, getDotColor) else "grey"        
     ))
 }
 
