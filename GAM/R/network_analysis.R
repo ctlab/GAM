@@ -139,32 +139,69 @@ processReactionDE <- function(es, plot) {
 }
 
 makeSubnetWithReactionsAsEdges <- function(es) {
-    graph.raw <- es$graph.raw
-    if (es$use.rpairs) {
-        graph.raw <- graph.raw[graph.raw$rptype %in% "main", ]
-    }
-    
-    
-    net.edges.ext <- merge(graph.raw, es$rxn.de.ext, by.x="rxn", by.y="ID")
+    net.edges.ext <- merge(es$graph.raw, es$rxn.de.ext, by.x="rxn", by.y="ID")
     edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
     net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
         net.edges.ext[edges2rev, c("met.y", "met.x")]        
     
     
-    net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min, na.action=na.pass))
+    net.edges.pval <- (aggregate(pval ~ met.x + met.y + rptype, data=net.edges.ext, min, na.action=na.pass))
     net.edges.ext <- merge(net.edges.pval, net.edges.ext)
+    net.edges.ext <- net.edges.ext[
+        order(
+            factor(
+                net.edges.ext$rptype, 
+                levels=unique(c(c("main", "trans"), net.edges.ext$rptype)))),
+                ]
     net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
     net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
     
         
-    es$net.edges.ext <- net.edges.ext    
+    if (es$use.rpairs) {
+        edges.keep <- net.edges.ext$rptype %in% "main"
+    } else { 
+        edges.keep <- TRUE
+    }
+    
+    net.edges.ext.all <- net.edges.ext
+    net.edges.ext <- net.edges.ext[edges.keep,]
+    
+    es$net.edges.ext <- net.edges.ext
+    es$net.edges.ext.all <- net.edges.ext.all
     
     net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
                               node.col="ID", edge.cols=c("met.x", "met.y"),
                               directed=FALSE)
     
     es$subnet <- net1
-    es
+    es    
+    
+#     graph.raw <- es$graph.raw
+#     if (es$use.rpairs) {
+#         graph.raw <- graph.raw[graph.raw$rptype %in% "main", ]
+#     }
+#     
+#     
+#     net.edges.ext <- merge(graph.raw, es$rxn.de.ext, by.x="rxn", by.y="ID")
+#     edges2rev <- net.edges.ext$met.x > net.edges.ext$met.y
+#     net.edges.ext[edges2rev, c("met.x", "met.y")] <- 
+#         net.edges.ext[edges2rev, c("met.y", "met.x")]        
+#     
+#     
+#     net.edges.pval <- (aggregate(pval ~ met.x + met.y, data=net.edges.ext, min, na.action=na.pass))
+#     net.edges.ext <- merge(net.edges.pval, net.edges.ext)
+#     net.edges.ext <- net.edges.ext[!duplicated(net.edges.ext[,c("met.x", "met.y")]),]        
+#     net.edges.ext <- net.edges.ext[net.edges.ext$met.x != net.edges.ext$met.y,]    
+#     
+#         
+#     es$net.edges.ext <- net.edges.ext    
+#     
+#     net1 <- graph.from.tables(node.table=list(met=es$met.de.ext), edge.table=es$net.edges.ext,
+#                               node.col="ID", edge.cols=c("met.x", "met.y"),
+#                               directed=FALSE)
+#     
+#     es$subnet <- net1
+#     es
 }
 
 makeSubnetWithReactionsAsNodes <- function(es) {
