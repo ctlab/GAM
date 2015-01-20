@@ -22,6 +22,7 @@ if (file.exists(heinz.py)) {
     })
 }
 
+library(GAM.db)
 data("kegg.mouse.network")
 library(mouseMacrophages)
 data(examplesGAM)
@@ -63,6 +64,12 @@ test_that("makeExperimentSet works without metabolic data", {
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
                                   gene.de=gene.de.M1.M2,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
+    
+    c1 <- "C00040"
+    c2 <- "C00264"
+    expect_true(c1 %in% V(es.M1.M2$subnet)$name)
+    expect_true(c2 %in% V(es.M1.M2$subnet)[nei(c1)]$name)
+    
     
     es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
                                   gene.de=gene.de.M1.M2,
