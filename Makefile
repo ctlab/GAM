@@ -1,10 +1,24 @@
-all: description document build
+GAM: build
 
-fast-build: description
+GAM.db:
+	make -C GAM.db
+
+GAM.networks:
+	make -C GAM.networks
+
+all: description document examples build
+
+r-dependencies:
+	Rscript install_dependencies.R
+
+fast-build: description data
 	R -e 'library(devtools); build("GAM", vignettes=F)'
 
 build: description document
 	R -e 'library(devtools); build("GAM")'
+
+build.db: description document
+	R -e 'library(devtools); build("GAM.db")'
 
 document:
 	R -e 'library(devtools); document("GAM")'

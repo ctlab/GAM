@@ -1,4 +1,9 @@
-library("GAM")
+#!/usr/bin/env Rscript
+library("devtools")
+load_all("GAM")
+load_all("GAM.db")
+load_all("GAM.networks")
+
 library("igraph")
 library("mouseMacrophages")
 data("mmpData")

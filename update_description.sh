@@ -2,7 +2,12 @@
 
 DESC_FILE="GAM/DESCRIPTION"
 
-VERSION=`git describe --dirty --tags`
+NEWREV=`git describe --tags --dirty`
+VERSION=`git describe --candidates=0 --tags 2>/dev/null`
+if [ -z "$VERSION" ] 
+then
+    VERSION=`git describe --abbrev=0 --tags`-1
+fi
 DATE=`date '+%Y-%m-%d'`
 
 

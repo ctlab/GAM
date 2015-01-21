@@ -13,7 +13,7 @@ hmdb2kegg <- na.omit(hmdb2kegg[, c("HMDB", "KEGG")])
 nrow(hmdb2kegg)
 head(hmdb2kegg)
 
-kegg2name <- read.table("../networks/kegg/met2name.tsv", header=T, colClasses="character")
+kegg2name <- read.table("../kegg/met2name.tsv", header=T, colClasses="character")
 kegg2name <- kegg2name[, c("met", "name")]
 kegg2name$name <- gsub(";.*$", "", kegg2name$name)
 colnames(kegg2name) <- c("KEGG", "name")

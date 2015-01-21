@@ -1,10 +1,3 @@
-GAM="../../GAM"
-
-kegg.mouse.network.rda kegg.human.network.rda: \
-		kegg.db.rda \
-		make_networks.R
-	./make_networks.R
-
 kegg.db.rda: \
 		enz2gene.tsv \
 		rxn2enz.tsv \
@@ -50,9 +43,3 @@ enzyme: ligand ligand/enzyme.tar.gz
 
 reaction: ligand ligand/reaction.tar.gz
 	tar xzf ligand/reaction.tar.gz reaction/reaction -O > reaction
-
-install: \
-		kegg.mouse.network.rda \
-		kegg.human.network.rda \
-		kegg.db.rda
-	cp kegg.*.rda ${GAM}/data/

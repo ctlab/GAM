@@ -24,6 +24,7 @@ Package `mouseMacrophages` contains data from experiment that we will use as an 
 
 ```{r message=FALSE}
 library("GAM")
+library("GAM.db")
 library("igraph")
 library("mouseMacrophages")
 data("mmpData")

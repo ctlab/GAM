@@ -1,9 +1,9 @@
 Package: GAM
 Type: Package
 Title: Package for integrated network analysis of genomic and metabolomic data
-Version: 0.99.2-165
-Date: 2014-07-11
-Revision: fce648be9b75
+Version: 0.99.2-1
+Date: 2015-01-21
+Revision: 0.99.2-36-ga21b0d7-dirty
 Author: Alexey Sergushichev, Maxim Artyomov
 Maintainer: Alexey Sergushichev <asergushichev@path.wustl.edu>
 Description: This package provides functions for integrated metabolic and

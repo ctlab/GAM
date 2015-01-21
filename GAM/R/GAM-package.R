@@ -8,27 +8,6 @@
 #' @author Alexey Sergushichev \email{asergushichev@@wustl.edu}
 NULL
 
-#' Table with mapping between metabolite IDs
-#' For now just HMDB, KEGG and KEGG name
-#' @docType data
-#' @name met.id.map
-NULL
-
-#' Object with tables from KEGG database
-#' @docType data
-#' @name kegg.db
-NULL
-
-#' Mouse reactions network based on KEGG
-#' @docType data
-#' @name kegg.mouse.network
-NULL
-
-#' Human reactions network based on KEGG
-#' @docType data
-#' @name kegg.human.network
-NULL
-
 #' Gene differential expression data for mouse macrophages between M1 and M2 states
 #' @docType data
 #' @name gene.de.M1.M2
