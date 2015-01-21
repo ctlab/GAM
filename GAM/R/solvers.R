@@ -143,6 +143,7 @@ heinz.solver <- function(heinz.py,
     }
 }
 
+
 #' Solves MWCS instance with randomized heuristic algorithm
 #' @param nruns Number of algorithm runs
 #' @return solver function
@@ -153,11 +154,14 @@ heinz.solver <- function(heinz.py,
 #' module.re <- findModule(es.re, solver=solver, met.fdr=1e-3, rxn.fdr=1e-3, absent.met.score=-20)
 #' @import parallel
 #' @export
-randHeur.solver <- function(nruns=10) {
+randHeur.solver <- function(nruns=10, ...) {
     res <- function(network) {        
         jobs <- list()
+        RNGkind("L'Ecuyer-CMRG")
         for (i in seq_len(nruns)) {
-            jobs <- c(jobs, list(mcparallel(solveMwcsRandHeur(network))))
+            mc.reset.stream()
+            jobs <- c(jobs, list(mcparallel({                    
+                solveMwcsRandHeur(network, ...)})))
         }
         solutions <- mccollect(jobs)
         best <- which.max(sapply(solutions, function(s) s$score))        
@@ -168,10 +172,11 @@ randHeur.solver <- function(nruns=10) {
     res
 }
 
-solveMwcsRandHeur <- function(network) {
+solveMwcsRandHeur <- function(network, max.iterations=10000) {
     n <- length(V(network))
     m <- length(E(network))
     vscores <- V(network)$score
+    
     escores <- E(network)$score
     
     score <- function(nodes, edges) {
@@ -180,7 +185,7 @@ solveMwcsRandHeur <- function(network) {
     
     best.solutions <- list()
     best.solutions.edges <- list()
-    best.scores <- rep(0, n)
+    
     edges <- get.edgelist(network, names=FALSE)
     
     solution <- list()
@@ -203,8 +208,7 @@ solveMwcsRandHeur <- function(network) {
     
     updateBest <- function(newsolution) {
         if (newsolution$score > solution$score) {
-            solution <<- newsolution
-            #             message("new best score: ", solution$score)
+            solution <<- newsolution            
         }
     }
     
@@ -213,19 +217,27 @@ solveMwcsRandHeur <- function(network) {
         updateBest(newsolution);
         best.solutions[[v]] <- newsolution
     }
-    
+    best.scores <- vscores
     
     checked <- rep(FALSE, m)
     
-    max.iterations <- 10000
+    
     
     for (i in seq_len(max.iterations)) {                
-        edges.unchecked <- which(!checked)        
+        edges.weights <- pmax(best.scores[edges[, 1]],
+                              best.scores[edges[, 2]]) + escores
+        edges.unchecked <- which(!checked)         
+        
         if (length(edges.unchecked) == 0) {
-            #             message("exhausted")            
             break
         }
-        edge <- max(ceiling(runif(1, max=length(edges.unchecked))), 1)
+        
+        candidates <- sapply(1:2, function(x) {
+            max(ceiling(runif(1, max=length(edges.unchecked))), 1)
+        })
+        
+        edge <- candidates[which.max(edges.weights[candidates])]
+        
         checked[edge] <- TRUE
         
         start <- edges[edge, 1]
@@ -265,9 +277,11 @@ solveMwcsRandHeur <- function(network) {
         if (length(to_update) > 0) {
             updateBest(newsolution)
             best.solutions[to_update] <- list(newsolution)             
+            best.scores[to_update] <- newsolution$score
             to_check <- sapply(E(network)[adj(to_update)], identity)
             checked[to_check] <- FALSE
         }        
     }    
-    solution
+    solution    
+   
 }
