@@ -5,8 +5,9 @@ library(BioNet)
 library(org.Mm.eg.db)
 library(org.Hs.eg.db)
 
+library(GAM.db)
+
 load_all("../GAM")
-load_all("../GAM.db")
 
 
 data("kegg.db")

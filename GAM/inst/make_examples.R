@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 library("devtools")
+library("GAM.db")
 load_all("GAM")
-load_all("GAM.db")
 load_all("GAM.networks")
 
 library("igraph")

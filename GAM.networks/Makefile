@@ -8,4 +8,5 @@ document:
 	R -e 'library(devtools); document(".")'
 
 data/kegg.human.network.rda data/kegg.mouse.network.rda:
+	mkdir -p data
 	./make_networks.R

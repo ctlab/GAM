@@ -1,9 +1,9 @@
 GAM: build
 
-GAM.db:
+GAM.db-package:
 	make -C GAM.db
 
-GAM.networks:
+GAM.networks-package:
 	make -C GAM.networks
 
 all: description document examples build
@@ -28,6 +28,7 @@ description:
 
 examples:
 	Rscript GAM/inst/make_examples.R
+	mkdir -p GAM/data
 	mv examplesGAM.rda GAM/data/
 
 check: document

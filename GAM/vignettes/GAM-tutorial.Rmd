@@ -44,6 +44,7 @@ human (`kegg.human.network`). For details, how networks can be constructed see
 section [Constructing network](#constructing-network) for details.
 
 ```{r}
+library("GAM.networks")
 data("kegg.mouse.network")
 ```
 
@@ -173,10 +174,11 @@ Again, for available post-processing functions see section [Postprocessing](#pos
 
 ## Constructing network <a name="constructing-network"></a>
 
-Network construction uses KEGG database. `GAM` package goes with
+Network construction uses KEGG database. `GAM.db` package goes with
 neccessary parts of KEGG in `kegg.db` object:
 
 ```{r}
+library("GAM.db")
 data(kegg.db)
 names(kegg.db)
 ```
