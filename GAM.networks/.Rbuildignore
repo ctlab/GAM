@@ -1,0 +1,4 @@
+.Rbuildignore
+Makefile
+make_networks.R
+.swp$

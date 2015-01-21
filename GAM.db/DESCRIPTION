@@ -1,0 +1,16 @@
+Package: GAM.db
+Type: Package
+Title: Package with data for integrated network analysis of genomic and metabolomic data
+Version: 0.1.2014-12-23
+Date: 2014-12-23
+Author: Alexey Sergushichev, Maxim Artyomov
+Maintainer: Alexey Sergushichev <asergushichev@path.wustl.edu>
+Description: This package contains data from KEGG and HMDB
+biocViews: Metabolomics, Microarray, GraphsAndNetworks, NetworkAnalysis,
+    GeneExpression, DifferentialExpression, MassSpectrometry
+Imports:
+Depends:
+    R (>= 2.10)
+License: GPL (>=2)
+Suggests:
+    GAM

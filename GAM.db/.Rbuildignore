@@ -1,0 +1,5 @@
+.Rbuildignore
+Makefile
+^kegg
+^metabocards
+.swp$
