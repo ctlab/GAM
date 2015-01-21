@@ -1,2 +1,2 @@
 #!/usr/bin/env Rscript
-isntall.packages(c("devtools", "roxygen2"))
+install.packages(c("devtools", "roxygen2"))
