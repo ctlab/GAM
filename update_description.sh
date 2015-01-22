@@ -4,7 +4,7 @@ DESC_TEMPLATE="GAM/DESCRIPTION.template"
 DESC_FILE="GAM/DESCRIPTION"
 
 NEWREV=`git describe --tags --dirty`
-VERSION=`git describe --candidates=0 --tags 2>/dev/null`
+VERSION=`git describe --candidates=0 --dirty=-1 --tags 2>/dev/null`
 if [ -z "$VERSION" ] 
 then
     VERSION=`git describe --abbrev=0 --tags`-1
