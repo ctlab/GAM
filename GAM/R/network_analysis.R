@@ -411,6 +411,9 @@ scoreNetwork <- function(es,
         rxn.fdr <- fdr
     }
     
+    V(net)$score <- 0
+    E(net)$score <- 0
+    
     mets.to.score <- V(net)[nodeType == "met"]$name
     scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$reactions.as.edges) {

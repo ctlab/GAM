@@ -165,7 +165,11 @@ randHeur.solver <- function(nruns=10, ...) {
         }
         solutions <- mccollect(jobs)
         best <- which.max(sapply(solutions, function(s) s$score))        
-        solution <- induced.subgraph(network, solutions[[best]]$nodes)        
+        if (is.null(solutions[[best]]$edges)) {
+            solution <- induced.subgraph(network, solutions[[best]]$nodes)
+        } else {
+            solution <- subgraph.edges(network, solutions[[best]]$edges)        
+        }
         message("best score: ", solutions[[best]]$score)
         solution
     }
