@@ -389,6 +389,7 @@ recommendedFDR <- function(fb, pval, num.positive=100) {
 #' @param met.score Score for metabolites if met.fdr is NULL or there is no metabolic data
 #' @param rxn.score Score for reactions if met.fdr is NULL or there is no transcriptional data
 #' @param num.positive Desired number of positevely scored metabolites/reactions (used to automatically set FDRs)
+#' @param rxn.bias Bias towards the reactions, on the log2 scale ratio of positive scores for reactions and metabolites
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @examples
@@ -402,7 +403,8 @@ scoreNetwork <- function(es,
                        absent.rxn.score=NULL,
                        met.score=0,
                        rxn.score=0,
-                       num.positive=100) {
+                       num.positive=150,
+                       rxn.bias=0) {
     
     net <- es$subnet
     
@@ -451,7 +453,6 @@ scoreNetwork <- function(es,
         names(met.scores) <- mets.to.score
         es$met.score <- met.score
     }
-    scoreMets(met.scores)
     
     if (!is.null(es$fb.rxn) && !is.null(rxn.fdr)) {
         fb <- es$fb.rxn 
@@ -482,6 +483,17 @@ scoreNetwork <- function(es,
         names(rxn.scores) <- rxns.to.score
         es$rxn.score <- rxn.score
     }
+    
+    if (!is.null(rxn.bias)) {
+        met.pos.sum <- sum(met.scores[met.scores > 0])
+        rxn.pos.sum <- sum(rxn.scores[rxn.scores > 0])
+        if (met.pos.sum > 1e-10 && rxn.pos.sum > 1e-10) {
+            met.scores <- met.scores / met.pos.sum * 100 * (2 ^ (-rxn.bias/2))
+            rxn.scores <- rxn.scores / rxn.pos.sum * 100 * (2 ^ (rxn.bias/2))
+        }
+    }
+    
+    scoreMets(met.scores)
     scoreRxns(rxn.scores)
     
     es$subnet.scored <- net
