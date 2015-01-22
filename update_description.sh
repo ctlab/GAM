@@ -1,5 +1,6 @@
 #!/bin/bash
 
+DESC_TEMPLATE="GAM/DESCRIPTION.template"
 DESC_FILE="GAM/DESCRIPTION"
 
 NEWREV=`git describe --tags --dirty`
@@ -12,7 +13,7 @@ DATE=`date '+%Y-%m-%d'`
 
 
 t=`mktemp`
-cat "$DESC_FILE" |\
+cat "$DESC_TEMPLATE" |\
     sed "s/^Revision:.*$/Revision: $NEWREV/" |\
     sed "s/^Date:.*$/Date: $DATE/" |\
     sed "s/^Version:.*$/Version: $VERSION/" |\

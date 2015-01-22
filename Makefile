@@ -11,7 +11,7 @@ all: description document examples build
 r-dependencies:
 	Rscript install_dependencies.R
 
-fast-build: description data
+fast-build: description
 	R -e 'library(devtools); build("GAM", vignettes=F)'
 
 build: description document
