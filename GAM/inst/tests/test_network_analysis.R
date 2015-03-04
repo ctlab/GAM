@@ -3,6 +3,15 @@ context("Network analysis")
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 heinz2 <- "/usr/local/lib/heinz2/heinz"
 
+library(GAM.db)
+library(GAM.networks)
+data("kegg.mouse.network")
+library(mouseMacrophages)
+data(examplesGAM)
+data(mmpData)
+library(igraph)
+
+
 if (file.exists(heinz.py)) {
     test_that("runHeinz works", {
         met.nt <- data.frame(ID=c("C01", "C02", "C03"), score=c(1, 1, 1), stringsAsFactors=F)
@@ -21,15 +30,6 @@ if (file.exists(heinz.py)) {
         expect_equivalent(V(module)$name, c("C01", "C02"))
     })
 }
-
-library(GAM.db)
-library(GAM.networks)
-data("kegg.mouse.network")
-library(mouseMacrophages)
-data(examplesGAM)
-data(mmpData)
-library(igraph)
-
 
 es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
                                          met.de=met.de.M1.M2,
