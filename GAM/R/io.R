@@ -32,10 +32,12 @@ saveModuleToJson <- function(module, outputFilePrefix) {
 #' vertex.attributes <- get.vertex.attributes(module.re)
 #' @export
 get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attributes(graph)) {
-    sapply(attrs,
-           function(attr) get.vertex.attribute(graph, attr, index),
-           simplify=FALSE,
-           USE.NAMES=TRUE)
+    data.frame(
+        sapply(attrs,
+               function(attr) get.vertex.attribute(graph, attr, index),
+               simplify=FALSE,
+               USE.NAMES=TRUE),
+        stringsAsFactors=F)
 }
 
 #' Get values of multiple atrributes of multiple edges
@@ -46,11 +48,17 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
 #' data(examplesGAM)
 #' edge.attributes <- get.edge.attributes(module.re)
 #' @export
-get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph)) {
-    sapply(attrs, 
-           function(attr) get.edge.attribute(graph, attr, index),
-           simplify=FALSE,
-           USE.NAMES=TRUE)
+get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph), include.ends=FALSE) {
+    res <- data.frame(sapply(
+            attrs, function(attr) get.edge.attribute(graph, attr, index),
+            simplify = FALSE, USE.NAMES = TRUE),
+            stringsAsFactors=F)
+        
+    if (include.ends) {
+        ends <- as.data.frame(get.edgelist(graph)[index,], stringsAsFactors=F)
+        res <- cbind(from=ends[,1], to=ends[,2], res, stringsAsFactors=F)
+    }     
+    res
 }
 
 #' Converts a module from igraph to a list of nodes and links

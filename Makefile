@@ -1,12 +1,10 @@
-GAM: build
+GAM: description document examples build
 
 GAM.db-package:
 	make -C GAM.db
 
 GAM.networks-package:
 	make -C GAM.networks
-
-all: description document examples build
 
 r-dependencies:
 	Rscript install_dependencies.R

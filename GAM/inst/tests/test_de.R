@@ -6,8 +6,8 @@ genExpressions <- function(conditions.vector, distribution.parameters) {
     for (name in names(distribution.parameters)) {
         mean <- distribution.parameters[[name]][1]
         sd <- distribution.parameters[[name]][2]
-        res[conditions.vector == name] <- 
-            rnorm(sum(conditions.vector == name), mean, sd)
+        k <- sum(conditions.vector == name)
+        res[conditions.vector == name] <- pmax(rnorm(k, mean, sd), 0)
     }
     return(res)
 }

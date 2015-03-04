@@ -66,11 +66,12 @@ met.fdr=c(2e-7)
 rxn.fdr=c(2e-7)
 absent.met.score=c(-20)
 
+solver2 <- heinz2.solver(heinz2="/usr/local/lib/heinz2/heinz", timeLimit=30)
 module.rn <- findModule(es.rn,
                         met.fdr=met.fdr,
                         rxn.fdr=rxn.fdr,
                         absent.met.score=absent.met.score,
-                        solver=solver)
+                        solver=solver2)
 module.rn
 
 save(gene.de.M1.M2, met.de.M1.M2, es.re, es.rn, module.re, module.rn, file="examplesGAM.rda")

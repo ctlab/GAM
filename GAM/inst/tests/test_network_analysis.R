@@ -30,26 +30,28 @@ data(mmpData)
 library(igraph)
 
 
+es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
+                                         met.de=met.de.M1.M2,
+                                         gene.de=gene.de.M1.M2,
+                                         reactions.as.edges=F, collapse.reactions=T, plot=F)
+
+es.M1.M2.full.rn <- makeExperimentSet(network=kegg.mouse.network, 
+                                      met.de=met.de.M1.M2,
+                                      gene.de=gene.de.M1.M2,
+                                      reactions.as.edges=F, collapse.reactions=F, plot=F)
+
+es.M1.M2.full.re.rp <- makeExperimentSet(network=kegg.mouse.network,
+                                         met.de=met.de.M1.M2,
+                                         gene.de=gene.de.M1.M2,
+                                         reactions.as.edges=T, use.rpairs=T, plot=F)
+
+es.M1.M2.full.re <- makeExperimentSet(network=kegg.mouse.network,
+                                      met.de=met.de.M1.M2,
+                                      gene.de=gene.de.M1.M2,
+                                      reactions.as.edges=T, use.rpairs=F, plot=F)
+
 test_that("makeExperimentSet works with full data", {
-    es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=met.de.M1.M2,
-                                  gene.de=gene.de.M1.M2,
-                                  reactions.as.edges=F, collapse.reactions=T, plot=F)
     
-    es.M1.M2.full.rn <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=met.de.M1.M2,
-                                  gene.de=gene.de.M1.M2,
-                                  reactions.as.edges=F, collapse.reactions=F, plot=F)
-    
-    es.M1.M2.full.re.rp <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=met.de.M1.M2,
-                                  gene.de=gene.de.M1.M2,
-                                  reactions.as.edges=T, use.rpairs=T, plot=F)
-    
-    es.M1.M2.full.re <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=met.de.M1.M2,
-                                  gene.de=gene.de.M1.M2,
-                                  reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
 test_that("makeExperimentSet works without metabolic data", {
@@ -118,12 +120,14 @@ test_that("findModule works", {
 
 test_that("heinz.solver works", {
     if (file.exists(heinz.py)) {
-        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=10))
+        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=30), num.positive=50)
+        expect_true("Irg1" %in% V(module)$label)
     }
 })
 
 test_that("heinz2.solver works", { 
     if (file.exists(heinz2)) {
         module <- findModule(es.M1.M2.full.rn.cr, solver=heinz2.solver(heinz2, timeLimit=10))
+        expect_true("Irg1" %in% V(module)$label)
     }    
 })

@@ -3,14 +3,15 @@ appendModule <- function(res, module.graph) {
     res
 }
 
+
 runHeinz <- function(subnet,
-                      heinz.py, 
-                      score.edges=FALSE,
-                      score.nodes=TRUE,                      
-                      nModules=1, 
-                      tolerance=10,
-                      subopt.diff=100,
-                      cplexTimeLimit=1e+75) {
+                     heinz.py, 
+                     score.edges=FALSE,
+                     score.nodes=TRUE,                      
+                     nModules=1, 
+                     tolerance=10,
+                     subopt.diff=100,
+                     cplexTimeLimit=1e+75) {
     
     graph.dir <- tempfile("graph")
     dir.create(graph.dir)
@@ -53,60 +54,13 @@ runHeinz <- function(subnet,
             return(NULL)
         }
         module.graph <- readHeinzGraph(node.file = sol.file,
-                                      network = subnet, format="igraph")
+                                       network = subnet, format="igraph")
         res <- appendModule(res, module.graph)
         
     }
     return(res)
 }
 
-#' Solves MWCS instance using heinz2 solver (under development) 
-#' @param heinz2 Path to heinz2 executable
-#' @param nthreads Number of threads to use
-#' @param timeLimit Time limit for execution
-#' @return solver function
-#' @import igraph
-#' @examples 
-#' solver <- heinz2.solver("/usr/local/heinz2/heinz")
-#' @export
-heinz2.solver <- function(heinz2, nthreads=1, timeLimit=-1) {
-    function(network) {
-        score.edges <- "score" %in% list.edge.attributes(network)
-        score.nodes <- "score" %in% list.vertex.attributes(network)
-        
-        graph.dir <- tempfile("graph")
-        dir.create(graph.dir)
-        edges.file <- file.path(graph.dir, "edges.txt")
-        nodes.file <- file.path(graph.dir, "nodes.txt")
-        
-        writeHeinzEdges(network, file=edges.file, use.score=score.edges)
-        
-        if (!score.nodes) {
-            # Hack to make writeHeinzeNodes working
-            V(subnet)$score <- 0
-        }
-        writeHeinzNodes(network, file=nodes.file, use.score=TRUE)
-        
-        solution.file <- file.path(graph.dir, "sol.txt")
-        
-        system2(paste0(heinz2),
-                c("-n", nodes.file,
-                  "-e", edges.file,
-                  "-o", solution.file,
-                  "-m", nthreads,
-                  "-v", 1,
-                  "-t", timeLimit))
-        
-        
-        if (!file.exists(solution.file)) {
-            warning("Solution file not found")
-            return(NULL)
-        }
-        res <- readHeinzGraph(node.file = solution.file,
-                              network = network, format="igraph")
-        return(res)
-    }
-}
 
 #' Solves MWCS instance using heinz
 #' @param heinz.py Path to heinz.py executable
@@ -123,7 +77,7 @@ heinz.solver <- function(heinz.py,
                          tolerance=10,
                          subopt.diff=100,
                          timeLimit=1e+75
-                         ) {
+) {
     
     
     function(network) {
@@ -139,7 +93,125 @@ heinz.solver <- function(heinz.py,
             tolerance=tolerance,
             subopt.diff=subopt.diff,
             cplexTimeLimit=timeLimit
-            )        
+        )        
+    }
+}
+
+
+MWCSize <- function(g) {         
+    was.connected <- is.connected(g)
+    et <- as.data.table(get.edge.attributes(g, include.ends=TRUE))
+    et <- et[, list(from, to, score)]
+    et[, from.weight := pmax(-V(g)[et$from]$score, 0)+1e-3]
+    et[, to.weight := pmax(-V(g)[et$to]$score, 0)+1e-3]
+    et <- et[score > 0, ]
+    
+    if (nrow(et) > 0) {
+        et[, from.d := score * from.weight / (from.weight + to.weight)]
+        et[, to.d := score * to.weight / (from.weight + to.weight)]
+        
+        ds <- rbind(
+            et[, list(v=from, d=from.d)],
+            et[, list(v=to, d=to.d)])
+        
+        ds <- aggregate(d ~ v, data=ds, sum)
+        
+        V(g)[ds$v]$score <- V(g)[ds$v]$score + ds$d
+        E(g)$origEdge <- E(g)
+        E(g)[score > 0]$score <- 0        
+    }
+    
+    
+    neg.edges <- E(g)[score < 0]
+    if (length(neg.edges) > 0) {
+        neg.edges.table <- get.edgelist(g)[neg.edges, ]
+        neg.edges.names <- sprintf("%s_%s_%s", neg.edges.table[,1], neg.edges.table[,2], neg.edges)
+        V(g)$wasEdge <- FALSE
+        g <- add.vertices(g, length(neg.edges), name=neg.edges.names, score=E(g)[neg.edges]$score, wasEdge=TRUE, origEdge=neg.edges)
+        new.edges <- rbind(
+            cbind(neg.edges.table[,1], neg.edges.names),
+            cbind(neg.edges.table[,2], neg.edges.names)
+        )
+        g <- add.edges(g, t(as.matrix(new.edges)), score=0)
+        g <- delete.edges(g, neg.edges)        
+    }
+    
+    E(g)$score <- 0
+    stopifnot(is.connected(g) == was.connected)
+    g
+}
+
+deMWCSize <- function(m, g) {
+    E(g)$origEdge <- E(g)
+    orig.vertices <- V(g)[name %in% V(m)$name]
+    edges.to.add <- unique(c(
+        E(induced.subgraph(g, orig.vertices))[score >= 0]$origEdge,
+        na.omit(c(V(m)$origEdge, E(m)$origEdge))))        
+    
+    m.x <- subgraph.edges(g, edges.to.add)    
+    m.x <- remove.edge.attribute(m.x, "origEdge")
+    m.x
+}
+
+#' Solves MWCS instance using heinz2 solver
+#' @param heinz2 Path to heinz2 executable
+#' @param nthreads Number of threads to use
+#' @param timeLimit Time limit for execution
+#' @return solver function
+#' @import igraph
+#' @examples 
+#' solver <- heinz2.solver("/usr/local/lib/heinz2/heinz")
+#' @export
+heinz2.solver <- function(heinz2, nthreads=1, timeLimit=-1) {
+    function(network) {
+        network.orig <- network
+        
+        score.edges <- "score" %in% list.edge.attributes(network)
+        score.nodes <- "score" %in% list.vertex.attributes(network)
+        
+        
+        graph.dir <- tempfile("graph")
+        dir.create(graph.dir)
+        edges.file <- file.path(graph.dir, "edges.txt")
+        nodes.file <- file.path(graph.dir, "nodes.txt")
+        
+                
+        if (!score.nodes) {
+            # Hack to make writeHeinzeNodes working
+            V(network)$score <- 0
+        }
+        
+        if (score.edges) {
+            network <- MWCSize(network.orig)            
+        }        
+                
+        writeHeinzNodes(network, file=nodes.file, use.score=TRUE)
+        writeHeinzEdges(network, file=edges.file, use.score=score.edges)
+        
+        solution.file <- file.path(graph.dir, "sol.txt")
+        
+        system2(paste0(heinz2),
+                c("-n", nodes.file,
+                  "-e", edges.file,
+                  "-o", solution.file,
+                  "-m", nthreads,
+                  "-p",
+                  "-v", 1,
+                  "-t", timeLimit))
+        
+        
+        if (!file.exists(solution.file)) {
+            warning("Solution file not found")
+            return(NULL)
+        }
+        res <- readHeinzGraph(node.file = solution.file,
+                              network = network, format="igraph")
+        
+        if (score.edges) {
+            res <- deMWCSize(res, network.orig)
+        }
+        
+        return(res)
     }
 }
 

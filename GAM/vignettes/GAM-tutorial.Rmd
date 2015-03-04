@@ -74,13 +74,10 @@ es.re$subnet
 ```
 
 To be able to find modules `GAM` need a solver for maximum-wight
-connected subgraph problem. [Heinz](http://www.mi.fu-berlin.de/w/LiSA/Heinz) 
-is used for this purpose. Directory with `heinz.py` should also contain a license file
-for CPLEX `access.ilm` and solver for Prize-Collecting Steiner Tree problem `dhea`.
-See section [MWCS solvers](#mwcs-solvers) for additional information.
+connected subgraph problem. [Heinz 2](https://software.cwi.nl/cwisoftware/software/heinz) 
+is used for this purpose. See section [MWCS solvers](#mwcs-solvers) for additional information.
 ```{r}
-heinz.py <- "/usr/local/lib/heinz/heinz.py"
-solver <- heinz.solver(heinz.py)
+solver <- heinz2.solver("/usr/local/lib/heinz2/heinz", timeLimit=30)
 ```
 
 Set FDRs and score for absent metabolites. Using these parameters size of the module

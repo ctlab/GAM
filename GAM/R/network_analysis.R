@@ -357,6 +357,7 @@ makeExperimentSet <- function(network,
 
 # Scores p-value by fitted BUM-model
 # This is a helper function based on BioNet::scoreFunction()
+#' @import BioNet
 scoreValue <- function (fb, pval, fdr = 0.01) 
 {
     return((fb$a - 1) * (log(pval) - log(fdrThreshold(fdr, fb))))
