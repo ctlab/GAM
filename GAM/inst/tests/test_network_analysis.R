@@ -23,6 +23,7 @@ if (file.exists(heinz.py)) {
 }
 
 library(GAM.db)
+library(GAM.networks)
 data("kegg.mouse.network")
 library(mouseMacrophages)
 data(examplesGAM)
