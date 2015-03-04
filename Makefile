@@ -31,3 +31,6 @@ examples:
 
 check: document
 	R CMD check GAM
+
+test:
+	R -e 'library("devtools"); library("testthat"); load_all("GAM"); test_dir("GAM/inst/tests/")'
