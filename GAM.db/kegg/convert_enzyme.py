@@ -10,6 +10,8 @@ organisms = ["MMU", "HSA"]
 
 e2g = ["enz\tgene\torganism"]
 e2g_all = ["enz\tgene\torganism"]
+e2name = ["enz\tname\treaction"]
+
 
 for description in descriptions:
     if description == "":
@@ -38,6 +40,20 @@ for description in descriptions:
     if not "GENES" in d:
         d["GENES"] = ""
 
+    escaped_name = ""
+    if "NAME" in d:
+        escaped_name = d["NAME"].replace("\n", " ") \
+                                .replace('"', '\\"') \
+                                .replace("<","") \
+                                .replace(">","")
+    escaped_reaction = ""
+    if "REACTION" in d:
+        escaped_reaction = d["REACTION"].replace("\n", " ") \
+                                .replace('"', '\\"') \
+                                .replace("<","") \
+                                .replace(">","")
+    e2name.extend(["%s\t%s\t%s" % (enz_id, escaped_name, escaped_reaction)])
+
     genes = d["GENES"].split("\n")
     for organism_genes in genes:
         if len(organism_genes) == 0:
@@ -50,6 +66,9 @@ for description in descriptions:
             e2g.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
         e2g_all.extend(["%s\t%s\t%s" % (enz_id, gene, organism) for gene in genes_entrez if gene != ""])
 
+
+with open("enz2name.tsv", "w") as f:
+    f.write("%s\n" % "\n".join(e2name))
 
 with open("enz2gene.tsv", "w") as f:
     f.write("%s\n" % "\n".join(e2g))
