@@ -15,7 +15,7 @@
 #' data(examplesGAM)
 #' if (require(biomarRt)) {
 #'     mart <- useMart("ensembl",dataset="mmusculus_gene_ensembl")
-#'     gene.de.M1.M2.entrez <- convertPvalBiomart(gene.de.M1.M2, "refseq_mrna", "entrezgene", mart)
+#'     gene.de.M0.M1.entrez <- convertPvalBiomart(gene.de.M0.M1, "refseq_mrna", "entrezgene", mart)
 #' }
 #' }
 #' @export
@@ -72,7 +72,7 @@ getIdType <- function(ids, id.map) {
 #' @examples
 #' data(met.id.map)
 #' data(examplesGAM)
-#' met.de.M1.M2.kegg <- convertPval(met.de.M1.M2, met.id.map$HMDB, met.id.map$KEGG)
+#' met.de.M0.M1.kegg <- convertPval(met.de.M0.M1, met.id.map$HMDB, met.id.map$KEGG)
 #' @export
 convertPval <- function(pval, from, to) {
     map <- data.frame(ID=from, to=to, stringsAsFactors=FALSE)
@@ -141,94 +141,4 @@ fixInf <- function(dm) {
         dm[dm == Inf] <- max(dm[dm != Inf]) + 1
     }
     dm
-}
-
-#' Make differential expression analysis using limma or DESeq
-#' @param exprs Table or matrix with expressions
-#' @param conditions.vector Vector of conditions for exprs columns
-#' @param state1 First condition to compare
-#' @param state2 Second condition to compare
-#' @param top How many most expressed genes should be kept
-#' @param log2 If TRUE apply log2 transformation (zeros replaced with minimal value in column)
-#' @param quantile Apply quantile normalisation
-#' @param use.deseq Use DESeq for analysis
-#' @param min.expr Minimal mean expression for a feature to be kept
-#' @return Table with p-values for differential expression and log-fold changes
-#' @examples
-#' \dontrun{
-#' if (require(mouseMacrophages) && require(DESeq)) {
-#'     data(mmpData)
-#'     gene.de.M1.M2 <- diffExpr(
-#'         exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
-#'         state1="MandLPSandIFNg", state2="MandIL4", 
-#'         use.deseq=TRUE, top=Inf, min.expr=5)
-#' }
-#' }
-#' @export
-diffExpr <- function(exprs, 
-                     conditions.vector,
-                     state1, state2,
-                     top=Inf,
-                     log2=FALSE, quantile=FALSE,
-                     use.deseq=FALSE,
-                     min.expr=0) {
-    exprs <-as.matrix(exprs)
-    
-    
-    conditions.vector <- as.character(conditions.vector)
-    
-    if (use.deseq) {
-        if (!require(DESeq)) {
-            stop("use.deseq=TRUE needs DESeq package to work")
-        }
-        cds <- newCountDataSet(round(exprs), conditions.vector)
-        cds <- estimateSizeFactors(cds)
-        cds <- estimateDispersions(cds)
-        res <- nbinomTest(cds, state1, state2)
-        res <- res[, c("id", "pval", "log2FoldChange", "baseMean")]
-        colnames(res) <- c("ID", "pval", "log2FC", "baseMean")
-    } else {
-        if (!require(limma)) {
-            stop("use.deseq=FALSE needs limma package to work")
-        }
-        
-        exprs.normalized <- normalizeExpressions(exprs, zero.rm=TRUE, log2=log2, quantile=quantile)
-        
-        names(conditions.vector) <- conditions.vector
-        conditions.vector <- factor(conditions.vector)
-        
-        design <- model.matrix(~0 + conditions.vector)
-        colnames(design) <- levels(conditions.vector)
-        
-        colnames(exprs.normalized) <- conditions.vector
-        
-        conditions.levels <- unique(conditions.vector)
-        
-        fit <- lmFit(exprs.normalized, design)
-        j <- which(conditions.levels == state1)
-        if (length(j) != 1) {
-            stop(c("invalied state '", state1, "'", sep=""))
-        }
-        jj <- which(conditions.levels == state2)
-        if (length(jj) != 1) {
-            stop(c("invalied state '", state2, "'", sep=""))
-        }
-        
-        contr.str <- paste(conditions.levels[j], conditions.levels[jj], sep="-")
-        contr.mat <- makeContrasts(contrasts=contr.str, levels=conditions.vector)
-        
-        fit2 <- contrasts.fit(fit,contr.mat)
-        fit2 <- eBayes(fit2)
-        
-        f.top <- topTable(fit2, number=Inf)
-        ids <- if ("ID" %in% names(f.top)) f.top$ID else rownames(f.top)
-        res <- data.frame(ID=ids, pval=f.top$adj.P.Val, log2FC=-f.top$logFC, baseMean=f.top$AveExpr, stringsAsFactors=FALSE)        
-    }
-    res <- res[res$baseMean > min.expr,]
-    res <- res[order(res$baseMean, decreasing=TRUE),]        
-    res <- head(res, n=top)
-    res <- res[order(res$pval),]
-    res <- na.omit(res)
-    rownames(res) <- seq_len(nrow(res))
-    return(res)
 }

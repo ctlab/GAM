@@ -4,8 +4,8 @@ data("examples")
 data("kegg.mouse.network")
 
 es.rn <- makeExperimentSet(network=kegg.mouse.network,
-                           met.de=met.de.M1.M2,
-                           gene.de=gene.de.M1.M2,
+                           met.de=met.de.M0.M1,
+                           gene.de=gene.de.M0.M1,
                            reactions.as.edges=FALSE,
                            plot=FALSE)
     

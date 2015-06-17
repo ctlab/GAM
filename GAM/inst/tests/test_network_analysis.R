@@ -31,24 +31,24 @@ if (file.exists(heinz.py)) {
     })
 }
 
-es.M1.M2.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
-                                         met.de=met.de.M1.M2,
-                                         gene.de=gene.de.M1.M2,
+es.M0.M1.full.rn.cr <- makeExperimentSet(network=kegg.mouse.network, 
+                                         met.de=met.de.M0.M1,
+                                         gene.de=gene.de.M0.M1,
                                          reactions.as.edges=F, collapse.reactions=T, plot=F)
 
-es.M1.M2.full.rn <- makeExperimentSet(network=kegg.mouse.network, 
-                                      met.de=met.de.M1.M2,
-                                      gene.de=gene.de.M1.M2,
+es.M0.M1.full.rn <- makeExperimentSet(network=kegg.mouse.network, 
+                                      met.de=met.de.M0.M1,
+                                      gene.de=gene.de.M0.M1,
                                       reactions.as.edges=F, collapse.reactions=F, plot=F)
 
-es.M1.M2.full.re.rp <- makeExperimentSet(network=kegg.mouse.network,
-                                         met.de=met.de.M1.M2,
-                                         gene.de=gene.de.M1.M2,
+es.M0.M1.full.re.rp <- makeExperimentSet(network=kegg.mouse.network,
+                                         met.de=met.de.M0.M1,
+                                         gene.de=gene.de.M0.M1,
                                          reactions.as.edges=T, use.rpairs=T, plot=F)
 
-es.M1.M2.full.re <- makeExperimentSet(network=kegg.mouse.network,
-                                      met.de=met.de.M1.M2,
-                                      gene.de=gene.de.M1.M2,
+es.M0.M1.full.re <- makeExperimentSet(network=kegg.mouse.network,
+                                      met.de=met.de.M0.M1,
+                                      gene.de=gene.de.M0.M1,
                                       reactions.as.edges=T, use.rpairs=F, plot=F)
 
 test_that("makeExperimentSet works with full data", {
@@ -56,79 +56,79 @@ test_that("makeExperimentSet works with full data", {
 })
 
 test_that("makeExperimentSet works without metabolic data", {
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  gene.de=gene.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network, 
+                                  gene.de=gene.de.M0.M1,
                                   reactions.as.edges=F, collapse.reactions=T, plot=F)
 
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  gene.de=gene.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network, 
+                                  gene.de=gene.de.M0.M1,
                                   reactions.as.edges=F, collapse.reactions=F, plot=F)
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  gene.de=gene.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network,
+                                  gene.de=gene.de.M0.M1,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
     c1 <- "C00040"
     c2 <- "C00264"
-    expect_true(c1 %in% V(es.M1.M2$subnet)$name)
-    expect_true(c2 %in% V(es.M1.M2$subnet)[nei(c1)]$name)
+    expect_true(c1 %in% V(es.M0.M1$subnet)$name)
+    expect_true(c2 %in% V(es.M0.M1$subnet)[nei(c1)]$name)
     
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  gene.de=gene.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network,
+                                  gene.de=gene.de.M0.M1,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
 test_that("makeExperimentSet works without genomic data", {
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network, 
-                                  met.de=met.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network, 
+                                  met.de=met.de.M0.M1,
                                   reactions.as.edges=F, plot=F)
     
-    expect_true(length(E(es.M1.M2$subnet)[adj("C05528")]) > 0)
+    expect_true(length(E(es.M0.M1$subnet)[adj("C05528")]) > 0)
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=met.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network,
+                                  met.de=met.de.M0.M1,
                                   reactions.as.edges=T, use.rpairs=T, plot=F)
     
-    es.M1.M2 <- makeExperimentSet(network=kegg.mouse.network,
-                                  met.de=met.de.M1.M2,
+    es.M0.M1 <- makeExperimentSet(network=kegg.mouse.network,
+                                  met.de=met.de.M0.M1,
                                   reactions.as.edges=T, use.rpairs=F, plot=F)
 })
 
 test_that("scoreNetwork works", {
-    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn.cr)
-    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.rn)
-    es.M1.M2.full.re.rp.scored <- scoreNetwork(es.M1.M2.full.re.rp)
-    expect_true("score" %in% list.edge.attributes(es.M1.M2.full.re.rp.scored$subnet.scored))
-    expect_true("score" %in% list.vertex.attributes(es.M1.M2.full.re.rp.scored$subnet.scored))
-    es.M1.M2.scored <- scoreNetwork(es.M1.M2.full.re)
-    expect_true("score" %in% list.edge.attributes(es.M1.M2.scored$subnet.scored))
+    es.M0.M1.scored <- scoreNetwork(es.M0.M1.full.rn.cr)
+    es.M0.M1.scored <- scoreNetwork(es.M0.M1.full.rn)
+    es.M0.M1.full.re.rp.scored <- scoreNetwork(es.M0.M1.full.re.rp)
+    expect_true("score" %in% list.edge.attributes(es.M0.M1.full.re.rp.scored$subnet.scored))
+    expect_true("score" %in% list.vertex.attributes(es.M0.M1.full.re.rp.scored$subnet.scored))
+    es.M0.M1.scored <- scoreNetwork(es.M0.M1.full.re)
+    expect_true("score" %in% list.edge.attributes(es.M0.M1.scored$subnet.scored))
 })
 
 test_that("scoreNetworkWithoutBUM works", {
-    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn.cr)
-    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.rn)
-    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.re.rp)
-    es.M1.M2.scored <- scoreNetworkWithoutBUM(es.M1.M2.full.re)
+    es.M0.M1.scored <- scoreNetworkWithoutBUM(es.M0.M1.full.rn.cr)
+    es.M0.M1.scored <- scoreNetworkWithoutBUM(es.M0.M1.full.rn)
+    es.M0.M1.scored <- scoreNetworkWithoutBUM(es.M0.M1.full.re.rp)
+    es.M0.M1.scored <- scoreNetworkWithoutBUM(es.M0.M1.full.re)
     
 })
 
 
 test_that("findModule works", {
-    module <- findModule(es.M1.M2.full.re.rp, solver=randHeur.solver(10))    
+    module <- findModule(es.M0.M1.full.re.rp, solver=randHeur.solver(10))    
     expect_true(all(c("Citrate", "Itaconate", "L-Citrulline") %in% V(module)$label))
 })
 
 test_that("heinz.solver works", {
     if (file.exists(heinz.py)) {
-        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=30), num.positive=50)
+        module <- findModule(es.M0.M1.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=30), num.positive=50)
         expect_true("Irg1" %in% V(module)$label)
     }
 })
 
 test_that("heinz2.solver works", { 
     if (file.exists(heinz2)) {
-        module <- findModule(es.M1.M2.full.rn.cr, solver=heinz2.solver(heinz2, timeLimit=10))
+        module <- findModule(es.M0.M1.full.rn.cr, solver=heinz2.solver(heinz2, timeLimit=10))
         expect_true("Irg1" %in% V(module)$label)
     }    
 })

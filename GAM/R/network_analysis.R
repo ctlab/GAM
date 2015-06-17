@@ -274,8 +274,8 @@ makeSubnetWithReactionsAsNodes <- function(es) {
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=TRUE)
 #' @export
 makeExperimentSet <- function(network, 
@@ -592,8 +592,8 @@ scoreNetworkWithoutBUM <- function(es,
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=TRUE)
 #' solver <- heinz.solver("/usr/local/lib/heinz/heinz.py")
 #' \dontrun{

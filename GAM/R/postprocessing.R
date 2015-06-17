@@ -16,8 +16,8 @@
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -71,8 +71,8 @@ addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.no
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -151,8 +151,8 @@ simplifyReactionNodes <- function(module, es) {
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -225,8 +225,8 @@ addMetabolitesForReactions<- function(module, es) {
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -275,8 +275,8 @@ addInterconnections <- function(module, es) {
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -327,8 +327,8 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=FALSE,
 #'                            plot=FALSE)
 #'     
@@ -374,8 +374,8 @@ removeHangingNodes <- function(module) {
 #' solver <- heinz.solver(heinz.py)
 #' 
 #' es.re <- makeExperimentSet(network=kegg.mouse.network,
-#'                            met.de=met.de.M1.M2,
-#'                            gene.de=gene.de.M1.M2,
+#'                            met.de=met.de.M0.M1,
+#'                            gene.de=gene.de.M0.M1,
 #'                            reactions.as.edges=TRUE)
 #' 
 #' \dontrun{

@@ -2,9 +2,9 @@
 %\VignetteIndexEntry{Genomic and metabolomic integrated analysis tutorial}
 %\VignetteEngine{knitr::knitr}
 -->
-```{r eval=TRUE, echo=FALSE, message=FALSE}
+```{r eval=TRUE, echo=T, message=FALSE}
 require(knitr)
-opts_chunk$set(error=FALSE, cache=TRUE, dev="svg")
+opts_chunk$set(error=TRUE, cache=TRUE, dev="svg")
 ```
 
 # Genomic and metabolomic integrated analysis tutorial
@@ -26,17 +26,15 @@ Package `mouseMacrophages` contains data from experiment that we will use as an 
 library("GAM")
 library("GAM.db")
 library("igraph")
-library("mouseMacrophages")
-data("mmpData")
 data("examplesGAM")
 ```
 
 
-Mouse macrophages data consists of two ExpressionSet objects with gene and metabolite expressions.
-states:
+Load differential expression data for mouse macrophages:
 ```{r}
-mmpGeneSet
-mmpMetSet
+library(RCurl)
+gene.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.gene.de.tsv"), sep="\t")
+met.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.met.de.tsv"), sep="\t")
 ```
 
 Load network for mouse. The package contains prebuilt networks for mouse and
@@ -56,10 +54,10 @@ available differential expression data, and type of IDs that is
 used in this data. One part of preprocessing is to fit p-values distribution
 to beta-uniform model, by default `makeEXperimentSet` makes histogram and QQ-plot,
 so you can check if it fits good enough.
-```{r chache=TRUE, error=FALSE, message=FALSE, fig.width=4, fig.height=4}
+```{r cache=TRUE, error=FALSE, message=FALSE, fig.width=4, fig.height=4}
 es.re <- makeExperimentSet(network=kegg.mouse.network,
-                           met.de=met.de.M1.M2,
-                           gene.de=gene.de.M1.M2,
+                           met.de=met.de.M0.M1,
+                           gene.de=gene.de.M0.M1,
                            reactions.as.edges=T)
 ```
 
@@ -78,6 +76,7 @@ connected subgraph problem. [Heinz 2](https://software.cwi.nl/cwisoftware/softwa
 is used for this purpose. See section [MWCS solvers](#mwcs-solvers) for additional information.
 ```{r}
 solver <- heinz2.solver("/usr/local/lib/heinz2/heinz", timeLimit=30)
+print(solver)
 ```
 
 Set FDRs and score for absent metabolites. Using these parameters size of the module
@@ -113,7 +112,7 @@ After that, you can save resulting module into pdf, XGMML
 or few other formats.
 ```{r error=FALSE}
 saveModule(module.re,
-           paste0("module.M1.M2.re", 
+           paste0("module.M0.M1.re", 
                   ".mf=", met.fdr,
                   ".rf=", rxn.fdr,
                   ".ms=", absent.met.score),
@@ -135,8 +134,8 @@ in the reaction.
 
 ```{r chache=TRUE, error=FALSE, message=FALSE}
 es.rn <- makeExperimentSet(network=kegg.mouse.network,
-                           met.de=met.de.M1.M2,
-                           gene.de=gene.de.M1.M2,
+                           met.de=met.de.M0.M1,
+                           gene.de=gene.de.M0.M1,
                            reactions.as.edges=F,
                            plot=F)
 es.rn$subnet
@@ -144,17 +143,15 @@ es.rn$subnet
 
 FDRs should be set a little stricter:
 ```{r}
-met.fdr=c(2e-7)
-rxn.fdr=c(2e-7)
-absent.met.score=c(-20)
+met.fdr=c(5e-6)
+rxn.fdr=c(5e-6)
 ```
 
 And finding modules:
 ```{r eval=FALSE}
 module.rn <- findModule(es.rn,
                         met.fdr=met.fdr,
-                        rxn.fdr=rxn.fdr,
-                        absent.met.score=absent.met.score,
+                        rxn.fdr=rxn.fdr,               
                         solver=solver)
 ```
 
@@ -234,31 +231,6 @@ kegg.db$rxn2enz <- rbind(kegg.db$rxn2enz, c("RXIRG1", "Irg1"))
 kegg.db$enz2gene <- rbind(kegg.db$enz2gene, c("Irg1", "16365", "MMU"))
 kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 ```
-
-## Differential expression
-
-The `GAM` package
-contains helper functions do make DE in one command, but you can do it manually, see documentation
-for `limma` and `DESeq` packages.
-
-```{r}
-state1 <- "MandLPSandIFNg"
-state2 <- "MandIL4"
-
-gene.de.M1.M2 <- diffExpr(
-    exprs=exprs(mmpGeneSet), conditions.vector=pData(mmpGeneSet)$condition,
-    state1=state1, state2=state2, 
-    use.deseq=T, top=Inf, min.expr=5)
-
-met.de.M1.M2 <- diffExpr(
-    exprs=exprs(mmpMetSet), conditions.vector=pData(mmpMetSet)$condition,
-    state1=state1, state2=state2, 
-    log2=F, quantile=F, use.deseq=F, top=Inf)
-
-head(gene.de.M1.M2)
-head(met.de.M1.M2)
-```
-
 
 
 ## Postprocessing <a name="postprocessing"></a>

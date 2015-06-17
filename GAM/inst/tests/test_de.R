@@ -12,64 +12,6 @@ genExpressions <- function(conditions.vector, distribution.parameters) {
     return(res)
 }
 
-test_that("diffExpr works with limma", {
-    if (require(mouseMacrophages) && require(limma)) {
-        data(mmpData)
-        met.exprs <- exprs(mmpMetSet)
-        set.seed(42)
-        n <- 100
-        met.exprs <- met.exprs[sample(rownames(met.exprs), n), ]
-        state1 <- "MandLPSandIFNg"
-        state2 <- "MandIL4"
-        met.exprs <- rbind(
-            met.exprs,
-            HMDBx1=genExpressions(pData(mmpMetSet)$condition, 
-                       list(
-                           MandIL4=c(15, 0.2), 
-                           MandLPSandIFNg=c(13, 0.2))),
-            HMDBx2=genExpressions(pData(mmpMetSet)$condition, 
-                       list(
-                           MandIL4=c(8, 0.3), 
-                           MandLPSandIFNg=c(8.2, 0.3))))
-        met.de <- diffExpr(
-            exprs=met.exprs, conditions.vector=pData(mmpMetSet)$condition,
-            state1=state1, state2=state2,
-            use.deseq=FALSE, top=Inf)
-        expect_true(met.de[met.de$ID == "HMDBx1",]$pval < 1e-5)
-        expect_true(met.de[met.de$ID == "HMDBx2",]$pval > 1e-5)
-    }
-})
-
-
-test_that("diffExpr works with DESeq", {
-    if (require(mouseMacrophages) && require(DESeq)) {
-        data(mmpData)
-        gene.exprs <- exprs(mmpGeneSet)
-        set.seed(42)
-        n <- 1000
-        gene.exprs <- gene.exprs[sample(rownames(gene.exprs), n), ]
-        state1 <- "MandLPSandIFNg"
-        state2 <- "MandIL4"
-        gene.exprs <- rbind(
-            gene.exprs,
-            NMx_1=genExpressions(pData(mmpGeneSet)$condition, 
-                       list(
-                           MandIL4=c(1000, 200), 
-                           MandLPSandIFNg=c(100, 50))),
-            
-            NMx_2=genExpressions(pData(mmpGeneSet)$condition, 
-                       list(
-                           MandIL4=c(200, 100), 
-                           MandLPSandIFNg=c(200, 100))))
-        gene.de <- diffExpr(
-            exprs=gene.exprs, conditions.vector=pData(mmpGeneSet)$condition,
-            state1=state1, state2=state2,
-            use.deseq=TRUE, top=Inf, min.expr=5)
-        expect_true(gene.de[gene.de$ID == "NMx_1",]$pval < 1e-5)
-        expect_true(gene.de[gene.de$ID == "NMx_2",]$pval > 1e-5)
-    }
-})
-
 test_that("convertPval works", {
     data(met.id.map)
     met.de.hmdb <- data.frame(

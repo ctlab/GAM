@@ -10,12 +10,12 @@ NULL
 
 #' Gene differential expression data for mouse macrophages between M1 and M2 states
 #' @docType data
-#' @name gene.de.M1.M2
+#' @name gene.de.M0.M1
 NULL
 
 #' Metabolite differential expression data for mouse macrophages between M1 and M2 states
 #' @docType data
-#' @name met.de.M1.M2
+#' @name met.de.M0.M1
 NULL
 
 #' Example of an experiment set object for M1 vs. M2 comparison whith reactions as edges
