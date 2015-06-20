@@ -396,5 +396,6 @@ addTransEdges <- function(module, es) {
         node.col="ID",
         edge.cols=c("met.x", "met.y"),
         directed=FALSE)
+    # :ToDo: subgraph.edges should be used here
     return(induced.subgraph(net.with.trans, V(module)$name))
 }

@@ -3,6 +3,20 @@ appendModule <- function(res, module.graph) {
     res
 }
 
+readGraph <- function(node.file, edge.file, network) {
+    nodes <- as.matrix(read.table(file = node.file, 
+                                  na.strings = "n/a"))
+    nodes2 <- which(!is.na(as.numeric(nodes[, 2])))
+    
+    
+    edges <- as.matrix(read.table(file = edge.file,
+                                  na.strings = "n/a"))
+    edges2 <- which(!is.na(as.numeric(edges[, 3])))
+    
+    res <- subgraph.edges(network, eids = edges2, delete.vertices = T)
+    stopifnot(setequal(V(network)[nodes2]$name, V(res)$name))
+    res
+}
 
 runHeinz <- function(subnet,
                      heinz.py, 
@@ -53,8 +67,9 @@ runHeinz <- function(subnet,
             warning("Solution file not found")
             return(NULL)
         }
-        module.graph <- readHeinzGraph(node.file = sol.file,
-                                       network = subnet, format="igraph")
+        module.graph <- readGraph(node.file = sol.file,
+                                  edge.file = paste(edges.file, i, "hnz", sep="."),
+                                  network = subnet)
         res <- appendModule(res, module.graph)
         
     }
