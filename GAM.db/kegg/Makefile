@@ -14,17 +14,17 @@ kegg.db.rda: \
 met2name.tsv: cpd2name.tsv gly2name.tsv
 	tail -n +2 gly2name.tsv | cat cpd2name.tsv - | tr -d "<>" > met2name.tsv
 
-mets2collapse.tsv cpd2name.tsv: compound convert_compound.py
-	./convert_compound.py
+mets2collapse.tsv cpd2name.tsv: compound process_compound.py
+	./process_compound.py
 
-enz2gene.tsv: enzyme convert_enzyme.py
-	./convert_enzyme.py
+enz2gene.tsv: enzyme process_enzyme.py
+	./process_enzyme.py
 
-gly2name.tsv: glycan convert_glycan.py
-	./convert_glycan.py
+gly2name.tsv: glycan process_glycan.py
+	./process_glycan.py
 
-net.sif rxn2enz.tsv rxn2name.tsv: reaction convert_reaction.py
-	./convert_reaction.py
+net.sif rxn2enz.tsv rxn2name.tsv: reaction process_reaction.py
+	./process_reaction.py
 
 rxns2mask.lst: reaction
 	grep -B 6 "of \w*-step" reaction | grep ENTRY | grep -Po "R\d{5}" > rxns2mask.lst

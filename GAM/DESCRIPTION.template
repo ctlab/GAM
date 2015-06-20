@@ -14,7 +14,7 @@ Imports:
     BioNet (>= 1.20),
     igraph,
     plyr,
-    data.table
+    data.table (>= 1.8.11)
 Depends:
     R (>= 2.10)
 License: GPL (>=2)
