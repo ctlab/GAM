@@ -1,30 +1,30 @@
 GAM: description document examples build
 
-GAM.db-package:
+GAM.db-package: r-dependencies
 	make -C GAM.db
 
-GAM.networks-package:
+GAM.networks-package: r-dependencies
 	make -C GAM.networks
 
 r-dependencies:
-	Rscript install_dependencies.R
+	Rscript install-dependencies.R
 
-fast-build: description
+fast-build: description r-dependencies
 	R -e 'library(devtools); build("GAM", vignettes=F)'
 
-build: description document
+build: description document r-dependencies
 	R -e 'library(devtools); build("GAM")'
 
-build.db: description document
+build.db: description document r-dependencies
 	R -e 'library(devtools); build("GAM.db")'
 
-document:
+document: r-dependencies
 	R -e 'library(devtools); document("GAM")'
 
 description:
 	./update_description.sh
 
-examples:
+examples: r-dependencies
 	Rscript GAM/inst/make_examples.R
 	mkdir -p GAM/data
 	mv examplesGAM.rda GAM/data/

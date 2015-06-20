@@ -289,6 +289,7 @@ getGraphDotString <- function(network, name) {
     res <- c()
     res <- c(res, sprintf('graph "%s" {\n', name))    
     res <- c(res, "outputorder=edgesfirst\n")    
+    res <- c(res, "bgcolor=transparent\n")    
     res <- c(res, "pad=\"2,0.25\"\n")   
     res <- c(res, getEdgeDotStrings(network, indent="  "))
     res <- c(res, getNodeDotStrings(network, indent="  "))
