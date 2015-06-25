@@ -399,7 +399,9 @@ recommendedFDR <- function(fb, pval, num.positive=100) {
 #' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, rxn.fdr=3e-5, absent.met.score=-20)
 #' @export 
 scoreNetwork <- function(es,                         
-                       fdr=NULL, met.fdr=NA, rxn.fdr=NA,
+                       fdr=NULL,
+                         met.fdr=NA, 
+                         rxn.fdr=NA,
                        absent.met.score=NULL,                       
                        absent.rxn.score=NULL,
                        met.score=0,
@@ -421,9 +423,11 @@ scoreNetwork <- function(es,
     scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$reactions.as.edges) {
         rxns.to.score <- E(net)$rxn
+        rxns.to.score.origin <- E(net)$origin
         scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score] }
     } else {
         rxns.to.score <- V(net)[nodeType == "rxn"]$name
+        rxns.to.score.origin <- V(net)[nodeType == "rxn"]$origin
         scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score] }
     }
                     
@@ -460,11 +464,11 @@ scoreNetwork <- function(es,
         pvals <- with(es$rxn.de.ext, { x <- pval; names(x) <- ID; na.omit(x) })
                 
         if (is.na(rxn.fdr)) {
-            rxn.fdr <- recommendedFDR(fb, pvals, num.positive=num.positive)
+            rxn.fdr <- GAM:::recommendedFDR(fb, pvals, num.positive=num.positive)
             message(sprintf("Using FDR of %.1e for reactions", rxn.fdr))
         }
         
-        rxn.scores <- scoreValue(fb, pvals, rxn.fdr)
+        rxn.scores <- GAM:::scoreValue(fb, pvals, rxn.fdr)
         
         if (is.null(absent.rxn.score)) {
             absent.rxn.score <- min(rxn.scores)
@@ -478,6 +482,14 @@ scoreNetwork <- function(es,
         rxn.scores <- c(rxn.scores, absent.rxn.scores)
         rxn.scores <- rxn.scores[!duplicated(names(rxn.scores))]
         rxn.scores <- rxn.scores[names(rxn.scores) %in% rxns.to.score]
+        rxn.scores <- rxn.scores[rxns.to.score]
+        
+        if (!es$reactions.as.edges) {
+            rxns.to.cut <- table(rxns.to.score.origin[rxn.scores > 0])            
+            rxns.to.cut <- rxns.to.cut[rxns.to.cut >= 4]
+            rxn.scores[rxns.to.score.origin %in% names(rxns.to.cut)] <- 0
+        }
+        
         es$rxn.fdr <- rxn.fdr
     } else {
         rxn.scores <- rep(rxn.score, length(rxns.to.score))
