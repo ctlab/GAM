@@ -244,10 +244,10 @@ getEdgeXmlStrings <- function(network, indent="") {
 #' @examples
 #' data(examplesGAM)
 #' \dontrun{
-#' saveModuleToPdf(module.re, "module.re", types=c("pdf", "XGMML"))
+#' saveModuleToPdf(module.re, "module.re", types=c("pdf", "XGMML", "dot"))
 #' }
 #' @export
-saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
+saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML", "dot")) {
     outdir <- dirname(outputFilePrefix)
     
     if (!file.exists(outdir)) {
@@ -259,7 +259,9 @@ saveModule <- function(module, outputFilePrefix, types=c("pdf", "XGMML")) {
         if (type == "pdf") {
             saveModuleToPdf(module, paste0(outputFilePrefix, ".pdf"))
         } else if (type == "XGMML") {
-            saveModuleToXgmml(module, name=basename(outputFilePrefix), paste0(outputFilePrefix, ".xgmml"))
+            saveModuleToXgmml(module, file=paste0(outputFilePrefix, ".xgmml"), name=basename(outputFilePrefix))
+        } else if (type == "dot") {
+            saveModuleToDot(module, file=paste0(outputFilePrefix, ".dot"), name=basename(outputFilePrefix))
         } else {
             saveNetwork(module, file=outputFilePrefix,type=type)
         }
