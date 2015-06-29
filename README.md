@@ -10,10 +10,16 @@ First, run the `install-dependencies.R` script to install some necessary package
 Rscript install-dependencies.R
 ```
 
+Please, check that everything was install correctly during the above command!
+
 Now you need to build and install `GAM.db` package:
 * Run `make GAM.db-package` on the machine with access to KEGG to build the package.
 * Run `R CMD INSTALL $(ls GAM.db_*.tar.gz | tail -1)` to install the package.
 
-Finally, you can build the main `GAM` package by calling `make GAM-package` and the `GAM.networks` package by calling `make GAM.networks-package`.
+Second, you need to build `GAM.networks` package:
+* Run `make GAM.networks-package`.
+* Run `R CMD INSTALL $(ls GAM.networks_*.tar.gz | tail -1)` to install the package.
 
-You can consult with `GAM/vignettes/GAM-tutorial.html` on how to run the analysis.
+Finally, you can build the main `GAM` package by calling `make GAM`.
+
+You can consult with `GAM/vignettes/GAM-tutorial.Rmd` on how to run the analysis.
