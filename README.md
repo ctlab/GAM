@@ -23,3 +23,7 @@ Second, you need to build `GAM.networks` package:
 Finally, you can build the main `GAM` package by calling `make GAM`.
 
 You can consult with `GAM/vignettes/GAM-tutorial.Rmd` on how to run the analysis.
+
+## Solvers
+
+GAM requires an MWCS solver to be available. For Linux x64 machines we recommend to download heinz (http://homepages.cwi.nl/~klau/data/heinz_1.68.tgz) and unpack it into `/usr/local/lib/heinz` directory.
