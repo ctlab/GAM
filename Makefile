@@ -18,7 +18,7 @@ build: description document r-dependencies
 build.db: description document r-dependencies
 	R -e 'library(devtools); build("GAM.db")'
 
-document: r-dependencies
+document:
 	R -e 'library(devtools); document("GAM")'
 
 description:

@@ -10,9 +10,10 @@
 #' @param group.by Attribute by which node grouping shoud happen
 #' @return Modified module with normalized log-foldchange node attribute
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -65,9 +66,10 @@ addNormLogFC <- function(module, logFC.attr="log2FC", logFC.norm.attr="log2FC.no
 #' @return Modified module
 #' @import igraph 
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -99,6 +101,9 @@ simplifyReactionNodes <- function(module, es) {
     res <- module
     
     rxn.nodes <- V(res)[nodeType == "rxn" & degree(res) == 2]$name
+    if (length(rxn.nodes) == 0) {
+        return(res)
+    }
     rxn.edges <- get.edges(res, E(res)[adj(rxn.nodes)])
     rxn.edges <- matrix(V(res)[rxn.edges]$name, ncol=2)
     rxn.edges.types <- matrix(V(res)[rxn.edges]$nodeType, ncol=2)
@@ -145,9 +150,10 @@ simplifyReactionNodes <- function(module, es) {
 #' @return Modified module
 #' @import igraph 
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -219,9 +225,10 @@ addMetabolitesForReactions<- function(module, es) {
 #' @return Module with interconnecting reactions
 #' @import igraph 
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -269,9 +276,10 @@ addInterconnections <- function(module, es) {
 #' @return Module with attributes copied
 #' @import igraph 
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -321,9 +329,10 @@ expandReactionNodeAttributesToEdges <- function(module) {
 #' @param module Module to work with
 #' @return Module with hanging nodes removed
 #' @examples
-#' library("mouseMacrophages")
+#' library("GAM.db")
 #' data("examplesGAM")
 #' 
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' 
 #' es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -365,10 +374,10 @@ removeHangingNodes <- function(module) {
 #' @param es Experiment set object
 #' @return Modified module
 #' @examples
+#' library("GAM.db")
+#' library("GAM.networks")
 #' data("kegg.mouse.network")
 #' data("examplesGAM")
-#' library("mouseMacrophages")
-#' data("mmpData")
 #' 
 #' heinz.py <- "/usr/local/lib/heinz/heinz.py"
 #' solver <- heinz.solver(heinz.py)

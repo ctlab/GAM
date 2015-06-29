@@ -1,4 +1,5 @@
-library("mouseMacrophages")
+library("GAM.db")
+library("GAM.networks")
 data("examples")
 
 data("kegg.mouse.network")

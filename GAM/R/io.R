@@ -44,6 +44,7 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
 #' @param graph Graph
 #' @param index Edges to select
 #' @param attrs Vector of attribute names
+#' @param include.ends Whether include edge ends into the table or not
 #' @return List of vectors of attribute values, one element per attribute
 #' data(examplesGAM)
 #' edge.attributes <- get.edge.attributes(module.re)

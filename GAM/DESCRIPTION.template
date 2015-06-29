@@ -20,13 +20,12 @@ Depends:
 License: GPL (>=2)
 VignetteBuilder: knitr
 Suggests:
-    mouseMacrophages,
     biomaRt,
     rjson,
-    DESeq,
-    limma,
     AnnotationDbi,
     org.Hs.eg.db,
     org.Mm.eg.db,
     testthat,
-    knitr
+    knitr,
+    GAM.db,
+    GAM.networks

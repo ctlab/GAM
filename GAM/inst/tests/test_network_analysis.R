@@ -6,9 +6,7 @@ heinz2 <- "/usr/local/lib/heinz2/heinz"
 library(GAM.db)
 library(GAM.networks)
 data("kegg.mouse.network")
-library(mouseMacrophages)
 data(examplesGAM)
-data(mmpData)
 library(igraph)
 
 

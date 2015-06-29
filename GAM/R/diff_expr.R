@@ -39,6 +39,7 @@ convertPvalBiomart <- function(pval, from, to, mart) {
 #' @param id.map Map between different type of IDs, better to be data.table
 #' @return Type of IDs in a vector or NULL if no suitable type was found
 #' @examples
+#' library(GAM.db)
 #' data(met.id.map)
 #' id.type <- getIdType(c("HMDB00001", "HMDB02092"), met.id.map)
 #' @export
@@ -70,6 +71,7 @@ getIdType <- function(ids, id.map) {
 #' @return Table with IDs converted
 #' @importFrom plyr rename
 #' @examples
+#' library(GAM.db)
 #' data(met.id.map)
 #' data(examplesGAM)
 #' met.de.M0.M1.kegg <- convertPval(met.de.M0.M1, met.id.map$HMDB, met.id.map$KEGG)
@@ -88,42 +90,6 @@ convertPval <- function(pval, from, to) {
     res <- merge(aggregate(pval ~ ID, res, min), res)
     res <- res[!duplicated(res$ID),]
     res
-}
-
-# Normalize expression table
-# @param exprs Table with expressions
-# @param zero.rm If TRUE removes genes with zero expression in all samples
-# @param log2 It TRUE applies log2 transform. Zeroes are replaced with minimal non-zero element for sample
-# @param quantile If TRUE applies quantile normalization
-normalizeExpressions <- function(exprs, zero.rm=TRUE, log2=TRUE, quantile=TRUE) {
-    if (zero.rm) {
-        # removing unexpressed genes
-        keep <- apply(exprs, 1, function(x) max(x, na.rm = T)) > 0
-        exprs <- exprs[keep,]
-    }
-    if (log2) {
-        # adding pseudocount for zero expressions  
-        min2s <- apply(exprs, 2, function(x) { min(x[x != 0], na.rm=T) })
-        
-        for (sample in colnames(exprs)) {
-            t <- exprs[,sample]
-            t[t == 0] <- min2s[sample];
-            exprs[,sample] <- t
-        }
-        
-        exprs <- log2(exprs)
-    }
-    
-    if (quantile) {
-        if (!require(limma)) {
-            stop("quantile normalization needs limma package to work")
-        }
-        exprs2 <- as.data.frame(normalizeBetweenArrays(as.matrix(exprs), method="quantile"))
-        colnames(exprs2) <- colnames(exprs)
-        rownames(exprs2) <- rownames(exprs)
-        exprs <- exprs2
-    }
-    return(exprs)
 }
 
 # Replace infinities with real numbers

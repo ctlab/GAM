@@ -271,6 +271,8 @@ makeSubnetWithReactionsAsNodes <- function(es) {
 #' @importFrom plyr rename
 #' @import data.table
 #' @examples 
+#' library("GAM.db")
+#' library("GAM.networks")
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re <- makeExperimentSet(network=kegg.mouse.network,
@@ -394,6 +396,8 @@ recommendedFDR <- function(fb, pval, num.positive=100) {
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @examples
+#' library("GAM.networks")
+#' library("GAM.db")
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re.scored <- scoreNetwork(es.re, met.fdr=3e-5, rxn.fdr=3e-5, absent.met.score=-20)
@@ -524,6 +528,8 @@ scoreNetwork <- function(es,
 #' @return Experiment set object with scored network subnet.scored field
 #' @import igraph 
 #' @examples
+#' library("GAM.networks")
+#' library("GAM.db")
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re.scored <- scoreNetworkWithoutBUM(es.re,
@@ -601,6 +607,8 @@ scoreNetworkWithoutBUM <- function(es,
 #' @return List of most significant modules
 #' @import igraph 
 #' @examples
+#' library("GAM.networks")
+#' library("GAM.db")
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' es.re <- makeExperimentSet(network=kegg.mouse.network,

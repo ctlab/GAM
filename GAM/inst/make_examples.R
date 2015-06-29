@@ -1,6 +1,7 @@
 #!/usr/bin/env Rscript
 library("devtools")
 library("GAM.db")
+library("RCurl")
 load_all("GAM")
 load_all("GAM.networks")
 
@@ -23,8 +24,6 @@ genes.refseq <- kegg.mouse.network$gene.id.map$RefSeq[kegg.mouse.network$gene.id
 gene.de.M0.M1 <- gene.de.M0.M1[gene.de.M0.M1$ID %in% genes.refseq, ]
 met.de.M0.M1 <- met.de.M0.M1[met.de.M0.M1$ID %in% mets.hmdb, ]
 
-heinz.py <- "/usr/local/lib/heinz/heinz.py"
-solver <- heinz.solver(heinz.py)
 
 es.re <- makeExperimentSet(network=kegg.mouse.network,
                            met.de=met.de.M0.M1,
@@ -37,11 +36,21 @@ met.fdr=c(3e-5)
 rxn.fdr=c(3e-5)
 absent.met.score=c(-20)
 
-module.re <- findModule(es.re,
-                        met.fdr=met.fdr,
-                        rxn.fdr=rxn.fdr,
-                        absent.met.score=absent.met.score,
-                        solver=solver)
+es.re.sc <- scoreNetwork(es.re,
+                         met.fdr=met.fdr,
+                         rxn.fdr=rxn.fdr,
+                         absent.met.score=absent.met.score
+                         )
+
+heinz.py <- "/usr/local/lib/heinz/heinz.py"
+if (file.exists(heinz.py)) {
+    solver <- heinz.solver(heinz.py, timeLimit=60)
+} else {
+    warning(sprintf("%s not found, using randHeur.solver instead", heinz.py))
+    solver <- randHeur.solver()
+}
+
+module.re <- findModule(es.re.sc, solver=solver)
 module.re
 
 es.rn <- makeExperimentSet(network=kegg.mouse.network,
@@ -54,12 +63,13 @@ met.fdr=c(2e-7)
 rxn.fdr=c(2e-7)
 absent.met.score=c(-20)
 
-solver2 <- heinz2.solver(heinz2="/usr/local/lib/heinz2/heinz", timeLimit=30)
-module.rn <- findModule(es.rn,
-                        met.fdr=met.fdr,
-                        rxn.fdr=rxn.fdr,
-                        absent.met.score=absent.met.score,
-                        solver=solver2)
+es.rn.sc <- scoreNetwork(es.rn, 
+                         met.fdr=met.fdr,
+                         rxn.fdr=rxn.fdr,
+                         absent.met.score=absent.met.score
+                         )
+
+module.rn <- findModule(es.rn.sc, solver=solver)
 module.rn
 
 save(gene.de.M0.M1, met.de.M0.M1, es.re, es.rn, module.re, module.rn, file="examplesGAM.rda")

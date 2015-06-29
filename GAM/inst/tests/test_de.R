@@ -13,6 +13,7 @@ genExpressions <- function(conditions.vector, distribution.parameters) {
 }
 
 test_that("convertPval works", {
+    library(GAM.db)
     data(met.id.map)
     met.de.hmdb <- data.frame(
         ID=c("HMDB14289", "HMDB01919", "HMDB02092"),

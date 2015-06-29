@@ -233,8 +233,11 @@ heinz2.solver <- function(heinz2, nthreads=1, timeLimit=-1) {
 
 #' Solves MWCS instance with randomized heuristic algorithm
 #' @param nruns Number of algorithm runs
+#' @param ... Additional arguments for solveMwcsRandHeur
 #' @return solver function
 #' @examples 
+#' library("GAM.networks")
+#' library("GAM.db")
 #' data(kegg.mouse.network)
 #' data(examplesGAM)
 #' solver <- randHeur.solver()

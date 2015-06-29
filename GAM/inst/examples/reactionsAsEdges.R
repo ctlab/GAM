@@ -1,7 +1,7 @@
+library("GAM.networks")
+library("GAM.db")
 data("kegg.mouse.network")
-data("examples")
-library("mouseMacrophages")
-data("mmpData")
+data("examplesGAM")
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 solver <- heinz.solver(heinz.py)
