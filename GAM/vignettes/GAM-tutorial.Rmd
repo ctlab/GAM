@@ -282,21 +282,30 @@ module.rn <- expandReactionNodeAttributesToEdges(module.rn)
 
 ## MWCS solvers <a name="mwcs-solvers"></a>
 
-For now `GAM` supports three solvers: `heinz.solver`, `mwcs.solver` and `fastHeinz.solver`.
+For now `GAM` supports three solvers: `heinz.solver`, `heinz2.solver` and `gmwcs.solver`.
 
-**Heinz solver.** `GAM` was tested with *heinz-1.63*. You can download it from 
-[here](www.mi.fu-berlin.de/w/LiSA/Heinz). It may be hard to make it working as it
-requires file IBM CPLEX Licence and IBM doesn't issues them anymore. You can try
-to make *heinz-1.67* working, it's dynamicly linked with CPLEX library, so you
-can download academic version of CPLEX studio and use, but we didn't managed to do this.
+**Heinz solver** is a solver first described in Dittrich et al. 2008. It allows
+to solve the problem of finding maximum-weighted connected subgraph even if
+there are positive edge weights. However, it  searches only for tree solutions.
+Heinz is able to find the exact optimal solution very fast in practice. The
+last version for x64 linux machine can be downloaded 
+[here](http://homepages.cwi.nl/~klau/data/heinz_1.68.tgz).
 
-There is **MWCS solver** that is under development. It's not publicly available yet, but
-you can try to ask Gunnar W. Klau to send it to you. For now, MWCS solver can't be used
-when reactions are edges.
+**Heinz 2 solver** is described in El-Kebir&Klau 2014. It solves MWCS problem
+where only nodes are scored. It cannot be used when reactions are mapped to
+edges and there is differential expression for genes available. For instances
+appearing in GAM it works more robust than Heinz in finding a good solution
+within a limited amount of time. The last version
+x64 linux machine can be downloaded 
+[here](https://software.cwi.nl/software/heinz).
 
-`GAM` also can use **heuristic`fastHeinz` solver** which is part of the `BioNet` package [1, 2].
-Its results can be significantly worse than other solver's, but it doesn't have any external
-dependencies. It's also can be used only when reactions are nodes.
+The gmwcs solver is an experimental solver for the problem of finding
+maximum-weighted connected subgraph with weighted edges, not limited to tree
+solutions (in opposite to heinz). It is available at
+https://github.com/alexloboda/gmwcs-solver. Following Haouari et al, 2013 it
+reduces MWCS problem to integer linear programming problem which is
+consequently solved by IBM ILOG CPLEX. It also shows more robust performance
+than heinz when the time is limited.
 
 If you have probles making this solvers work, you can try to use a `GAM` web-interface at
 http://artyomovlab.wustl.edu/shiny/gam.
@@ -308,4 +317,5 @@ http://artyomovlab.wustl.edu/shiny/gam.
 3. Beisser, Daniela, et al. "Integrated pathway modules using time-course metabolic profiles and EST data from Milnesium tardigradum." BMC systems biology 6.1 (2012): 72.
 4. Csardi, Gabor, and Tamas Nepusz. "The igraph software package for complex network research." InterJournal, Complex Systems 1695.5 (2006).
 5. Shannon, Paul, et al. "Cytoscape: a software environment for integrated models of biomolecular interaction networks." Genome research 13.11 (2003): 2498-2504.
+6. El-Kebir, M., & Klau, G. W. Solving the Maximum-Weight Connected Sub-graph Problem to Optimality. arXiv preprint arXiv:1409.5308 (2014). 
 
