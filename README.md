@@ -10,11 +10,6 @@ First, run the `install-dependencies.R` script to install some necessary package
 Rscript install-dependencies.R
 ```
 
-Second, install the `mouseMacrophages` package with example data
-```
-R -e 'library("devtools"); install_url("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/mouseMacrophages.tar.gz")'
-```
-
 Now you need to build and install `GAM.db` package:
 * Run `make GAM.db-package` on the machine with access to KEGG to build the package.
 * Run `R CMD INSTALL $(ls GAM.db_*.tar.gz | tail -1)` to install the package.
