@@ -7,8 +7,8 @@ load_all("GAM.networks")
 
 library("igraph")
 
-gene.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.gene.de.tsv"), sep="\t")
-met.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.met.de.tsv"), sep="\t")
+gene.de.M0.M1 <- read.csv(text=getURL("http://artyomovlab.wustl.edu/publications/supp_materials/GAM/Ctrl.vs.MandLPSandIFNg.gene.de.tsv"), sep="\t")
+met.de.M0.M1 <- read.csv(text=getURL("http://artyomovlab.wustl.edu/publications/supp_materials/GAM/Ctrl.vs.MandLPSandIFNg.met.de.tsv"), sep="\t")
 
 
 data("kegg.mouse.network")

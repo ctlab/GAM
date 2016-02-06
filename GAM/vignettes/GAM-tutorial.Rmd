@@ -33,8 +33,8 @@ data("examplesGAM")
 Load differential expression data for mouse macrophages:
 ```{r}
 library(RCurl)
-gene.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.gene.de.tsv"), sep="\t")
-met.de.M0.M1 <- read.csv(text=getURL("https://artyomovlab.wustl.edu/publications/supp_materials/GAM_2015/Ctrl.vs.MandLPSandIFNg.met.de.tsv"), sep="\t")
+gene.de.M0.M1 <- read.csv(text=getURL("http://artyomovlab.wustl.edu/publications/supp_materials/GAM/Ctrl.vs.MandLPSandIFNg.gene.de.tsv"), sep="\t")
+met.de.M0.M1 <- read.csv(text=getURL("http://artyomovlab.wustl.edu/publications/supp_materials/GAM/Ctrl.vs.MandLPSandIFNg.met.de.tsv"), sep="\t")
 ```
 
 Load network for mouse. The package contains prebuilt networks for mouse and
