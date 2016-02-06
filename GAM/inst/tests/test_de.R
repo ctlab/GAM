@@ -36,7 +36,7 @@ test_that("convertPvalBiomart works", {
             log2FC=c(    0.9,         1.6), 
             stringsAsFactors=FALSE)
         
-        mart <- useMart("ensembl", dataset="mmusculus_gene_ensembl")    
+        mart <- useMart(biomart="ENSEMBL_MART_ENSEMBL", dataset="mmusculus_gene_ensembl", host="www.ensembl.org")    
         gene.de.entrez <- convertPvalBiomart(
             gene.de.refseq, 
             "refseq_mrna", "entrezgene", mart)
