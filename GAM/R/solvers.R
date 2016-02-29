@@ -148,7 +148,7 @@ MWCSize <- function(g) {
             cbind(neg.edges.table[,2], neg.edges.names)
         )
         g <- add.edges(g, t(as.matrix(new.edges)), score=0)
-        g <- delete.edges(g, neg.edges)        
+        g <- delete.edges(g, E(g)[score < 0])
     }
     
     E(g)$score <- 0

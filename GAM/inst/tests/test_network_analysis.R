@@ -130,3 +130,11 @@ test_that("heinz2.solver works", {
         expect_true("Irg1" %in% V(module)$label)
     }    
 })
+
+test_that("heinz2.solver kind of works for edge-weighted instances", { 
+    if (file.exists(heinz2)) {
+        module <- findModule(es.M0.M1.full.re.rp, solver=heinz2.solver(heinz2, timeLimit=10))
+        expect_true("Irg1" %in% E(module)$label)
+    }    
+})
+

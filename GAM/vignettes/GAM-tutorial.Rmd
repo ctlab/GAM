@@ -302,7 +302,7 @@ x64 linux machine can be downloaded
 The gmwcs solver is an experimental solver for the problem of finding
 maximum-weighted connected subgraph with weighted edges, not limited to tree
 solutions (in opposite to heinz). It is available at
-https://github.com/alexloboda/gmwcs-solver. Following Haouari et al, 2013 it
+https://github.com/ctlab/gmwcs-solver. Following Haouari et al, 2013 it
 reduces MWCS problem to integer linear programming problem which is
 consequently solved by IBM ILOG CPLEX. It also shows more robust performance
 than heinz when the time is limited.
