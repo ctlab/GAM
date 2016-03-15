@@ -306,7 +306,6 @@ getAttrDotStrings <- function(attr.values) {
     attr.dotStrings <- list() 
     attr.names <- names(attr.values)
     for(i in seq_along(attr.values)) {
-        attr.rtype <- is(attr.values[[i]])[1]
         attr.dotStrings[[i]] <- sprintf("%s = \"%s\"", attr.names[i], attr.values[[i]])
         attr.dotStrings[[i]][is.na(attr.values[[i]])] <- NA
     }
@@ -363,6 +362,15 @@ getDotEdgeStyleAttributes <- function(attrs) {
     ))
 }
 
+getDotTooltip <- function(attr.values) {
+    attr.strings <- list() 
+    attr.names <- names(attr.values)
+    for(i in seq_along(attr.values)) {
+        attr.strings[[i]] <- sprintf("%s: %s", attr.names[i], attr.values[[i]])
+    }
+    names(attr.strings) <- attr.names
+    apply(do.call("cbind", attr.strings), 1, paste0, collapse="&#10;")
+}
 
 getNodeDotStrings <- function(network, indent="") {
     if (length(V(network)) == 0) {
@@ -370,12 +378,17 @@ getNodeDotStrings <- function(network, indent="") {
     }
     attr.values <- get.vertex.attributes(network)
     style.attr.values <- getDotNodeStyleAttributes(attr.values)
-    attr.dotStrings <- getAttrDotStrings(style.attr.values)
+    # ignoring technical nodeType and big pathway attributes
+    tooltip <- getDotTooltip(attr.values[, !colnames(attr.values) %in% c("pathway", "nodeType")])
+    
+    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip))
     
     if(is.null(V(network)$name))
     {
         V(network)$name <- as.character(V(network))
     }
+    
+    
     node.label <- V(network)$name
     node.id <- as.vector(V(network))
     node.attrs <- apply(attr.dotStrings, 1, function(x) paste(na.omit(x), collapse=", "))
@@ -387,9 +400,17 @@ getEdgeDotStrings <- function(network, indent="") {
     if (length(E(network)) == 0) {
         return(NULL)
     }
-    attr.values <- get.edge.attributes(network)
+    attr.values <- get.edge.attributes(network, include.ends = TRUE)
     style.attr.values <- getDotEdgeStyleAttributes(attr.values)
-    attr.dotStrings <- getAttrDotStrings(style.attr.values)
+    
+    # ignoring big pathway attribute
+    tooltip.values <- attr.values[, !colnames(attr.values) %in% c("pathway")]
+    # for readability replacing node IDs with labels
+    tooltip.values$from <- V(network)[tooltip.values$from]$label
+    tooltip.values$to <- V(network)[tooltip.values$to]$label
+    tooltip <- getDotTooltip(tooltip.values)
+    
+    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip, labeltooltip=tooltip))
     
     edgelist.names <- get.edgelist(network, names=TRUE)
     edgelist.names <- paste(edgelist.names[,1], edgelist.names[,2], sep=" (pp) ")
