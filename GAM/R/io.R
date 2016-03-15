@@ -380,8 +380,19 @@ getNodeDotStrings <- function(network, indent="") {
     style.attr.values <- getDotNodeStyleAttributes(attr.values)
     # ignoring technical nodeType and big pathway attributes
     tooltip <- getDotTooltip(attr.values[, !colnames(attr.values) %in% c("pathway", "nodeType")])
+    URL <- sprintf("http://www.genome.jp/dbget-bin/www_bget?%s", 
+                   if ("nodeType" %in% names(attr.values)) {
+                       ifelse(attr.values$nodeType == "rxn", attr.values$rxns, attr.values$name)
+                   } else {
+                       attr.values$name
+                   })
+                   
     
-    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip))
+    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip, URL=URL))
+    if (length(URL) != 0) {
+        attr.dotStrings <- cbind(attr.dotStrings, getAttrDotStrings(data.frame(URL=URL)))
+    }
+    
     
     if(is.null(V(network)$name))
     {
@@ -410,7 +421,14 @@ getEdgeDotStrings <- function(network, indent="") {
     tooltip.values$to <- V(network)[tooltip.values$to]$label
     tooltip <- getDotTooltip(tooltip.values)
     
+    URL <- sprintf("http://www.genome.jp/dbget-bin/www_bget?%s", attr.values$rxn)
+    
+    
     attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip, labeltooltip=tooltip))
+    
+    if (length(URL) != 0) {
+        attr.dotStrings <- cbind(attr.dotStrings, getAttrDotStrings(data.frame(URL=URL)))
+    }
     
     edgelist.names <- get.edgelist(network, names=TRUE)
     edgelist.names <- paste(edgelist.names[,1], edgelist.names[,2], sep=" (pp) ")

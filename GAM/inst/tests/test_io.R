@@ -6,6 +6,5 @@ test_that("saveModuleToDot works", {
     file <- tempfile(fileext = ".dot")
     saveModuleToDot(module.re, file, name = "module.re")
     
-    file <- tempfile(fileext = ".dot")
     saveModuleToDot(module.rn, file, name = "module.rn")
 })
