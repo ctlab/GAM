@@ -4,7 +4,7 @@ library(plyr)
 
 kegg.db <- newEmptyObject()
 
-kegg.db$enz2gene <- read.table("enz2gene.tsv", header=T, colClasses="character")
+kegg.db$enz2gene <- read.table("enz2gene.all.tsv", header=T, colClasses="character")
 kegg.db$rxn2enz <- read.table("rxn2enz.tsv", header=T, colClasses="character")
 
 net <- read.table("net.sif", header=T, colClasses="character")

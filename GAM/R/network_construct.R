@@ -1,6 +1,8 @@
 organism.id.map <- rbind(
     c("MMU",  "org.Mm.eg"),
-    c("HSA",  "org.Hs.eg")
+    c("HSA",  "org.Hs.eg"),
+    c("ATH",  "org.At.tair"),
+    c("SCE",  "org.Sc.sgd")
     )
 colnames(organism.id.map) <- 
     c("KEGG", "Annotation")
@@ -12,14 +14,22 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
     if (!do.call("require", list(annotation.package))) {
         stop(paste("Can't load package", annotation.package, "to make gene ID map"))
     }
+    
+    # intersect with keeping names
+    ids <- ids[ids %in% columns(get(annotation.package))]
+    
 #     annotation.namespace <- getNamespace(annotation.package)
     bimaps <- lapply(ids, 
                      function(id) AnnotationDbi::as.data.frame(get(paste0(org.annotation, id))))
     
     res <- bimaps[[1]]
-    for (i in seq_len(length(ids) - 1)+1) {
+    for (i in tail(seq_along(ids), - 1)) {
         res <- merge(res, bimaps[[i]], all=TRUE)
     }
+    if (length(names(ids))) {
+        names(res)[seq_along(ids) + 1] <- names(ids)    
+    }
+    
     res
 }
 
@@ -60,8 +70,13 @@ makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism
     rxn2name$name <- gsub(";.*$", "", rxn2name$name)
     
     gene.id.map <- makeGeneIdMap(organism.annotation, 
-                                 c("REFSEQ", "SYMBOL"))
-    colnames(gene.id.map) <- c("Entrez", "RefSeq", "Symbol")
+                                 c("RefSeq"="REFSEQ", 
+                                   "Symbol"="SYMBOL",
+                                   "GeneName"="GENENAME"))
+    colnames(gene.id.map)[1] <- c("Entrez")
+    if (!"Symbol" %in% colnames(gene.id.map)) {
+        gene.id.map$Symbol <- gene.id.map$GeneName
+    }
     
     gene.id.map <- gene.id.map[gene.id.map$Entrez %in% enz2gene$gene, ]
     gene.id.map <- as.data.table(gene.id.map)

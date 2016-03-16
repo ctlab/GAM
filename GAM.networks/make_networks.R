@@ -4,6 +4,8 @@ library(methods)
 library(BioNet)
 library(org.Mm.eg.db)
 library(org.Hs.eg.db)
+library(org.Sc.sgd.db)
+library(org.At.tair.db)
 
 library(GAM.db)
 
@@ -23,4 +25,9 @@ save(kegg.mouse.network, file="data/kegg.mouse.network.rda", compress="xz")
 kegg.human.network <- makeKeggNetwork(kegg.db, "HSA")
 save(kegg.human.network, file="data/kegg.human.network.rda", compress="xz")
 
+kegg.arabidopsis.network <- makeKeggNetwork(kegg.db, "ATH")
+save(kegg.arabidopsis.network, file="data/kegg.arabidopsis.network.rda", compress="xz")
+
+kegg.yeast.network <- makeKeggNetwork(kegg.db, "SCE")
+save(kegg.yeast.network, file="data/kegg.yeast.network.rda", compress="xz")
 

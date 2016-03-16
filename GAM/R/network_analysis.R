@@ -119,9 +119,10 @@ processReactionDE <- function(es, plot) {
         colnames(unknown.rxn2name) <- colnames(es$network$rxn2name)
         
         es$network$rxn2name <- rbind(es$network$rxn2name, unknown.rxn2name)
-        
+        names.new <- gene.id.map$Symbol[match(es$rxn.de$origin, gene.id.map[[es$network$gene.ids]])]
+        names.new <- ifelse(!is.na(names.new), names.new, es$rxn.de$origin)
         es$network$rxn2name$name[match(es$rxn.de$ID, es$network$rxn2name$rxn)] <-
-            gene.id.map$Symbol[match(es$rxn.de$origin, gene.id.map[[es$network$gene.ids]])]
+            names.new
         
         
     }

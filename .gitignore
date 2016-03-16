@@ -2,7 +2,9 @@
 .Rhistory
 .RData
 .*.Rproj
-.*.tar.gz
+*.tar.gz
+*.rda
+*.tsv
 modules
 data
 networks
