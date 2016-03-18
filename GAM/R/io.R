@@ -50,13 +50,17 @@ get.vertex.attributes <- function(graph, index=V(graph), attrs=list.vertex.attri
 #' edge.attributes <- get.edge.attributes(module.re)
 #' @export
 get.edge.attributes <- function(graph, index=E(graph), attrs=list.edge.attributes(graph), include.ends=FALSE) {
-    res <- data.frame(sapply(
+    if (length(attrs) == 0) {
+        res <- data.frame(row.names = seq_along(index))
+    } else {
+        res <- data.frame(sapply(
             attrs, function(attr) get.edge.attribute(graph, attr, index),
             simplify = FALSE, USE.NAMES = TRUE),
             stringsAsFactors=F)
-        
+    }
+    
     if (include.ends) {
-        ends <- as.data.frame(get.edgelist(graph)[index,], stringsAsFactors=F)
+        ends <- as.data.frame(get.edgelist(graph)[index,, drop=F], stringsAsFactors=F)
         res <- cbind(from=ends[,1], to=ends[,2], res, stringsAsFactors=F)
     }     
     res

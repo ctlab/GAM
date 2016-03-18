@@ -64,6 +64,14 @@ test_that("get.edge.attributes works", {
     
     ea <- get.edge.attributes(g)
     expect_equal(ea$rxn[1], et$rxn[1])
+    
+    ea <- get.edge.attributes(g, include.ends = T)
+    expect_equal(ea$from[1], et$met.x[1])
+    expect_equal(ea$to[1], et$met.y[1])
+    
+    g <- remove.edge.attribute(g, "rxn")
+    ea <- get.edge.attributes(g, include.ends = T)
+    
 })
 
 test_that("get.vertex.attributes works", {
