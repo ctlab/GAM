@@ -25,9 +25,9 @@ save(kegg.mouse.network, file="data/kegg.mouse.network.rda", compress="xz")
 kegg.human.network <- makeKeggNetwork(kegg.db, "HSA")
 save(kegg.human.network, file="data/kegg.human.network.rda", compress="xz")
 
-kegg.arabidopsis.network <- makeKeggNetwork(kegg.db, "ATH")
+kegg.arabidopsis.network <- makeKeggNetwork(kegg.db, "ATH", gene.ids = "TAIR ID")
 save(kegg.arabidopsis.network, file="data/kegg.arabidopsis.network.rda", compress="xz")
 
-kegg.yeast.network <- makeKeggNetwork(kegg.db, "SCE")
+kegg.yeast.network <- makeKeggNetwork(kegg.db, "SCE", gene.ids="SGD ID")
 save(kegg.yeast.network, file="data/kegg.yeast.network.rda", compress="xz")
 

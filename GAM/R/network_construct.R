@@ -43,7 +43,10 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
 #'     kegg.mouse.network <- makeKeggNetwork(kegg.db, "MMU")
 #' }
 #' @export
-makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism.id.map$Annotation[organism.id.map$KEGG == organism.kegg]) {
+makeKeggNetwork <- function(kegg.db, 
+                            organism.kegg,
+                            organism.annotation=organism.id.map$Annotation[organism.id.map$KEGG == organism.kegg],
+                            gene.ids="Entrez") {
     enz2gene <- kegg.db$enz2gene[kegg.db$enz2gene$organism == organism.kegg, c("enz", "gene")]
     rxn2enz <- kegg.db$rxn2enz
     rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
@@ -73,12 +76,12 @@ makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism
                                  c("RefSeq"="REFSEQ", 
                                    "Symbol"="SYMBOL",
                                    "GeneName"="GENENAME"))
-    colnames(gene.id.map)[1] <- c("Entrez")
+    colnames(gene.id.map)[1] <- c(gene.ids)
     if (!"Symbol" %in% colnames(gene.id.map)) {
         gene.id.map$Symbol <- gene.id.map$GeneName
     }
     
-    gene.id.map <- gene.id.map[gene.id.map$Entrez %in% enz2gene$gene, ]
+    gene.id.map <- gene.id.map[gene.id.map[[gene.ids]] %in% enz2gene$gene, ]
     gene.id.map <- as.data.table(gene.id.map)
     
     
@@ -95,7 +98,7 @@ makeKeggNetwork <- function(kegg.db, organism.kegg, organism.annotation=organism
     kegg.network$rxn2gene <- rxn2gene
     kegg.network$graph.raw <- net
     kegg.network$met.ids <- "KEGG"
-    kegg.network$gene.ids <- "Entrez"
+    kegg.network$gene.ids <- gene.ids
     kegg.network$met2name <- met2name
     kegg.network$rxn2name <- rxn2name
     kegg.network$organism <- organism.kegg
