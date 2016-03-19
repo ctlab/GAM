@@ -392,9 +392,10 @@ getNodeDotStrings <- function(network, indent="") {
                    })
                    
     
-    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip, URL=URL))
+    attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip))
     if (length(URL) != 0) {
-        attr.dotStrings <- cbind(attr.dotStrings, getAttrDotStrings(data.frame(URL=URL)))
+        attr.dotStrings <- cbind(attr.dotStrings, 
+                                 getAttrDotStrings(data.frame(URL=URL, target="_blank")))
     }
     
     
@@ -431,7 +432,8 @@ getEdgeDotStrings <- function(network, indent="") {
     attr.dotStrings <- getAttrDotStrings(cbind(style.attr.values, tooltip=tooltip, labeltooltip=tooltip))
     
     if (length(URL) != 0) {
-        attr.dotStrings <- cbind(attr.dotStrings, getAttrDotStrings(data.frame(URL=URL)))
+        attr.dotStrings <- cbind(attr.dotStrings,
+                                 getAttrDotStrings(data.frame(URL=URL, target="_blank")))
     }
     
     edgelist.names <- get.edgelist(network, names=TRUE)
