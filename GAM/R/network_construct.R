@@ -46,7 +46,8 @@ makeGeneIdMap <- function(org.annotation, ids = c("REFSEQ", "SYMBOL")) {
 makeKeggNetwork <- function(kegg.db, 
                             organism.kegg,
                             organism.annotation=organism.id.map$Annotation[organism.id.map$KEGG == organism.kegg],
-                            gene.ids="Entrez") {
+                            gene.ids="Entrez",
+                            remove.nonenzymatic.ids=TRUE) {
     enz2gene <- kegg.db$enz2gene[kegg.db$enz2gene$organism == organism.kegg, c("enz", "gene")]
     rxn2enz <- kegg.db$rxn2enz
     rxn2gene <- merge(rxn2enz, enz2gene)[, c("rxn", "gene")]
@@ -72,6 +73,7 @@ makeKeggNetwork <- function(kegg.db,
     met2name$name <- gsub(";.*$", "", met2name$name)
     rxn2name$name <- gsub(";.*$", "", rxn2name$name)
     
+    # :ToDo: move to AnnotationDbi interface for gene.id.map
     gene.id.map <- makeGeneIdMap(organism.annotation, 
                                  c("RefSeq"="REFSEQ", 
                                    "Symbol"="SYMBOL",
@@ -81,7 +83,10 @@ makeKeggNetwork <- function(kegg.db,
         gene.id.map$Symbol <- gene.id.map$GeneName
     }
     
-    gene.id.map <- gene.id.map[gene.id.map[[gene.ids]] %in% enz2gene$gene, ]
+    if (remove.nonenzymatic.ids) {
+        gene.id.map <- gene.id.map[gene.id.map[[gene.ids]] %in% rxn2gene$gene, ]    
+    }
+    
     gene.id.map <- as.data.table(gene.id.map)
     
     
