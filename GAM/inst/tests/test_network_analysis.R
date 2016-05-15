@@ -2,6 +2,7 @@ context("Network analysis")
 
 heinz.py <- "/usr/local/lib/heinz/heinz.py"
 heinz2 <- "/usr/local/lib/heinz2/heinz"
+gmwcs <- "/usr/local/bin/gmwcs"
 
 library(GAM.db)
 library(GAM.networks)
@@ -121,6 +122,8 @@ test_that("heinz.solver works", {
     if (file.exists(heinz.py)) {
         module <- findModule(es.M0.M1.full.rn.cr, solver=heinz.solver(heinz.py, timeLimit=30), num.positive=50)
         expect_true("Irg1" %in% V(module)$label)
+    } else {
+        warning("heinz solver not found")
     }
 })
 
@@ -128,6 +131,8 @@ test_that("heinz2.solver works", {
     if (file.exists(heinz2)) {
         module <- findModule(es.M0.M1.full.rn.cr, solver=heinz2.solver(heinz2, timeLimit=10))
         expect_true("Irg1" %in% V(module)$label)
+    } else {
+        warning("heinz2 solver not found")
     }    
 })
 
@@ -135,6 +140,16 @@ test_that("heinz2.solver kind of works for edge-weighted instances", {
     if (file.exists(heinz2)) {
         module <- findModule(es.M0.M1.full.re.rp, solver=heinz2.solver(heinz2, timeLimit=10))
         expect_true("Irg1" %in% E(module)$label)
+    } else {
+        warning("heinz2 solver not found")
     }    
 })
 
+test_that("gmwcs works for edge-weighted instances", { 
+    if (file.exists(gmwcs)) {
+        module <- findModule(es.M0.M1.full.re.rp, solver=gmwcs.solver(gmwcs, timeLimit=10))
+        expect_true("Irg1" %in% E(module)$label)
+    } else {
+        warning("gmwcs solver not found")
+    }
+})

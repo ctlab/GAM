@@ -379,3 +379,44 @@ solveMwcsRandHeur <- function(network, max.iterations=10000) {
     solution    
    
 }
+
+#' Solves GMWCS instance using gmwcs solver
+#' @param gmwcs Path to gmwcs executable
+#' @param nthreads Number of threads to use
+#' @param timeLimit Time limit for execution
+#' @return solver function
+#' @import igraph
+#' @examples 
+#' solver <- gmwcs("/usr/local/bin/gmwcs")
+#' @export
+gmwcs.solver <- function (gmwcs, nthreads = 1, timeLimit = -1) {
+  function(network) {
+    network.orig <- network
+    score.edges <- "score" %in% list.edge.attributes(network)
+    score.nodes <- "score" %in% list.vertex.attributes(network)
+    graph.dir <- tempfile("graph")
+    dir.create(graph.dir)
+    edges.file <- file.path(graph.dir, "edges.txt")
+    nodes.file <- file.path(graph.dir, "nodes.txt")
+    if (!score.nodes) {
+      V(network)$score <- 0
+    }
+    
+    BioNet::writeHeinzNodes(network, file = nodes.file, use.score = TRUE)
+    BioNet::writeHeinzEdges(network, file = edges.file, use.score = score.edges)
+    system2(gmwcs, c("-n", nodes.file, "-e", edges.file, 
+                     "-m", nthreads, "-t", timeLimit
+                      ,             "-b"
+    ))
+    solution.file <- paste0(nodes.file, ".out")
+    if (!file.exists(solution.file)) {
+      warning("Solution file not found")
+      return(NULL)
+    }
+    res <- GAM:::readGraph(node.file = solution.file,
+                     edge.file = paste0(edges.file, ".out"),
+                     network = network)
+    return(res)
+  }
+}
+

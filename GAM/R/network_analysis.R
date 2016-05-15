@@ -1,4 +1,5 @@
 #' @import BioNet 
+#' @import plyr
 NULL
 
 # Preprocess experiment set's differential expression data for genes
@@ -27,9 +28,11 @@ preprocessGeneDE <- function(es, gene.ids) {
                                   from=gene.id.map[,get(gene.ids)], 
                                   to=gene.id.map[,get(es$network$gene.ids)])
     }    
-    es$gene.de$origin <- NULL
+    # es$gene.de$origin <- NULL
+    gene.de <- rename(es$gene.de, c("origin"="origin.bak"))
     message("Converting gene p-values to reactions...")
-    es$rxn.de <- convertPval(es$gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+    es$rxn.de <- convertPval(gene.de, from=es$network$rxn2gene$gene, to=es$network$rxn2gene$rxn)
+    es$rxn.de <- rename(es$rxn.de, c("origin.bak"="origin", "origin"="gene"))
         
     es
 }
@@ -105,7 +108,7 @@ processReactionDE <- function(es, plot) {
     if ("symbol" %in% colnames(es$rxn.de)) {
         symbol <- with(es$rxn.de, { x <- symbol; names(x) <- ID; x[intersect(ID, es$network$rxn2name$rxn)] } )
         es$network$rxn2name$name[match(names(symbol), es$network$rxn2name$rxn)] <- symbol
-    } else if ("origin" %in% colnames(es$rxn.de)) {
+    } else if ("gene" %in% colnames(es$rxn.de)) {
         
         es$rxn.de <- es$rxn.de[es$rxn.de$ID %in% es$graph.raw$rxn, ]            
         
@@ -119,8 +122,8 @@ processReactionDE <- function(es, plot) {
         colnames(unknown.rxn2name) <- colnames(es$network$rxn2name)
         
         es$network$rxn2name <- rbind(es$network$rxn2name, unknown.rxn2name)
-        names.new <- gene.id.map$Symbol[match(es$rxn.de$origin, gene.id.map[[es$network$gene.ids]])]
-        names.new <- ifelse(!is.na(names.new), names.new, es$rxn.de$origin)
+        names.new <- gene.id.map$Symbol[match(es$rxn.de$gene, gene.id.map[[es$network$gene.ids]])]
+        names.new <- ifelse(!is.na(names.new), names.new, es$rxn.de$gene)
         es$network$rxn2name$name[match(es$rxn.de$ID, es$network$rxn2name$rxn)] <-
             names.new
         
@@ -210,7 +213,7 @@ makeSubnetWithReactionsAsNodes <- function(es) {
                    rename(es$graph.raw[, c("met.y", "rxn")], c("met.y" = "met")))
     edges <- unique(edges)
     
-    if (es$collapse.reactions && "origin" %in% names(es$rxn.de.ext)) {
+    if (es$collapse.reactions && "gene" %in% names(es$rxn.de.ext)) {
         message("Collapsing reactions by common most significant enzymes")
         
         edges.dt <- data.table(edges, key="met")
@@ -218,7 +221,7 @@ makeSubnetWithReactionsAsNodes <- function(es) {
         rxn.net <- unique(rxn.net[, list(rxn.x, rxn.y)])
         
         #rxn.de.origin.split <- es$rxn.de$origin
-        es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, es$rxn.de.ext$ID, es$rxn.de.ext$origin)
+        es$rxn.de.origin.split <- splitMappingByConnectivity(rxn.net, es$rxn.de.ext$ID, es$rxn.de.ext$gene)
         
         t <- data.frame(from=es$rxn.de.ext$ID, to=es$rxn.de.origin.split, stringsAsFactors=FALSE)                
         #from.table <- aggregate(from ~ to, t, function(x) paste(x, collapse="+"))
@@ -428,11 +431,11 @@ scoreNetwork <- function(es,
     scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$reactions.as.edges) {
         rxns.to.score <- E(net)$rxn
-        rxns.to.score.origin <- E(net)$origin
+        rxns.to.score.gene <- E(net)$gene
         scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score] }
     } else {
         rxns.to.score <- V(net)[nodeType == "rxn"]$name
-        rxns.to.score.origin <- V(net)[nodeType == "rxn"]$origin
+        rxns.to.score.gene <- V(net)[nodeType == "rxn"]$gene
         scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score] }
     }
                     
@@ -490,9 +493,9 @@ scoreNetwork <- function(es,
         rxn.scores <- rxn.scores[rxns.to.score]
         
         if (!es$reactions.as.edges) {
-            rxns.to.cut <- table(rxns.to.score.origin[rxn.scores > 0])            
+            rxns.to.cut <- table(rxns.to.score.gene[rxn.scores > 0])            
             rxns.to.cut <- rxns.to.cut[rxns.to.cut >= 4]
-            rxn.scores[rxns.to.score.origin %in% names(rxns.to.cut)] <- 0
+            rxn.scores[rxns.to.score.gene %in% names(rxns.to.cut)] <- 0
         }
         
         es$rxn.fdr <- rxn.fdr
