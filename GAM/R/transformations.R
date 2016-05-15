@@ -76,8 +76,16 @@ moveColumnsToFront <- function(d, cols) {
     d[, c(cols, seq_along(d)[-cols])]
 }
 
+#' Creates graph from node and edge tables
+#' @param node.table Table with node attribute values, possibly NULL
+#' @param edge.table Table with edge attribute values, mandatory
+#' @param node.col Column (number or column name) with vertex IDs
+#' @param edge.cols Columns (numbers or column names) with start and end edge nodes
+#' @param directed True if graph is directed, default=TRUE
+#' @param name.as.label True if name column should be renamed to label, default=TRUE
 #' @import igraph
 #' @importFrom plyr rbind.fill
+#' @export
 graph.from.tables <- function(node.table=NULL, edge.table,
                                  node.col=1, edge.cols=c(1,2),
                                  directed=TRUE,

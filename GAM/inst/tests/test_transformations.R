@@ -13,7 +13,7 @@ test_that("graph.from.tables works", {
         name=paste0("Connection", 1:4),
         stringsAsFactors=F)
     
-    g <- GAM:::graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
+    g <- graph.from.tables(node.table=list(met=met.nt, rxn=rxn.nt), edge.table=et, directed=F)
     
     expect_equal(is.directed(g), F)
     expect_equal(length(V(g)), nrow(met.nt) + nrow(rxn.nt))
@@ -42,7 +42,7 @@ test_that("module2list works", {
         pval=c(1e-12, 1e-42, 1e-4),
         stringsAsFactors=F)
     
-    g <- GAM:::graph.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
+    g <- graph.from.tables(node.table=list(met=met.nt), edge.table=et[et$rptype == "main", ], directed=F)
     l <- module2list(g)
     expect_equal(l$nodes[[1]]$pval, 1e-5)
     expect_equal(l$edges[[1]]$rxn, "R01")
@@ -58,7 +58,7 @@ test_that("get.edge.attributes works", {
         rxn=c("R01"),
         stringsAsFactors=F)
     
-    g <- GAM:::graph.from.tables(
+    g <- graph.from.tables(
         node.table=list(met=met.nt),
         edge.table=et, directed=F)
     
@@ -84,7 +84,7 @@ test_that("get.vertex.attributes works", {
         rxn=c("R01"),
         stringsAsFactors=F)
     
-    g <- GAM:::graph.from.tables(
+    g <- graph.from.tables(
         node.table=list(met=met.nt),
         edge.table=et, directed=F)
     
