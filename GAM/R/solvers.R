@@ -5,15 +5,22 @@ appendModule <- function(res, module.graph) {
 
 readGraph <- function(node.file, edge.file, network) {
     nodes <- as.matrix(read.table(file = node.file, 
-                                  na.strings = "n/a"))
+                                  na.strings = "n/a",
+                                  colClasses = c("character", "numeric")))
     nodes2 <- which(!is.na(as.numeric(nodes[, 2])))
     
     
     edges <- as.matrix(read.table(file = edge.file,
-                                  na.strings = "n/a"))
+                                  na.strings = "n/a",
+                                  colClasses = c("character", "character", "numeric")))
     edges2 <- which(!is.na(as.numeric(edges[, 3])))
     
-    res <- subgraph.edges(network, eids = edges2, delete.vertices = T)
+    if (length(edges2) > 0) {
+        res <- subgraph.edges(network, eids = edges2, delete.vertices = T)    
+    } else {
+        res <- induced.subgraph(network, vids = nodes2)
+    }
+    
     stopifnot(setequal(V(network)[nodes2]$name, V(res)$name))
     res
 }
