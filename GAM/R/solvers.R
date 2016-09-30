@@ -427,3 +427,110 @@ gmwcs.solver <- function (gmwcs, nthreads = 1, timeLimit = -1) {
   }
 }
 
+
+#' @export
+sgmwcs.solver <- function (sgmwcs, nthreads = 1, timeLimit = -1,
+                           nodes.group.by=NULL, edges.group.by=NULL,
+                           c.size=NULL, group.only.positive=F, quite=T,
+                          minimize.size=F) {
+    function(network) {
+        network.orig <- network
+        score.edges <- "score" %in% list.edge.attributes(network)
+        score.nodes <- "score" %in% list.vertex.attributes(network)
+        if (!score.nodes) {
+            V(network)$score <- 0
+        }
+        if (!score.edges) {
+            E(network)$score <- 0
+        }
+        
+        graph.dir <- tempfile("graph")
+        
+        instance <- writeSgmwcsInstance(graph.dir = graph.dir,
+                                       network=network,
+                                       nodes.group.by = nodes.group.by,
+                                       edges.group.by = edges.group.by,
+                                       group.only.positive = group.only.positive
+        )
+        
+        system2(sgmwcs, c("--nodes", instance$nodes.file,
+                         "--edges", instance$edges.file,
+                         if (!is.null(instance$synonyms.file)) c("--synonyms", instance$synonyms.file, "-B", 1) else NULL,
+                         "--threads", nthreads, 
+                         "--timelimit", timeLimit,
+                         if (!is.null(c.size)) c("-c", c.size) else NULL,
+                         if (minimize.size) c("-p", 1e-3) else NULL,
+                         "--break"
+        ))
+        solution.file <- paste0(instance$nodes.file, ".out")
+        if (!file.exists(solution.file)) {
+            warning("Solution file not found")
+            return(NULL)
+        }
+        res <- GAM:::readGraph(node.file = solution.file,
+                               edge.file = paste0(instance$edges.file, ".out"),
+                               network = network)
+        #attr(res, "optimal") <- any(grepl("SOLVED TO OPTIMALITY", out))
+        return(res)
+    }
+}
+
+writeSgmwcsInstance <- function(graph.dir, network,
+                               nodes.group.by=NULL, 
+                               edges.group.by=NULL,
+                               group.only.positive=F) {
+    
+    
+    
+    dir.create(graph.dir, showWarnings = FALSE)
+    edges.file <- file.path(graph.dir, "edges.txt")
+    nodes.file <- file.path(graph.dir, "nodes.txt")
+    synonyms.file <- file.path(graph.dir, "synonyms.txt")
+    
+    synonyms <- c()
+    
+    nt <- get.vertex.attributes(network)
+    if (!is.null(nodes.group.by)) {
+        synonyms <- c(synonyms, aggregate(as.formula(sprintf("name ~ %s", nodes.group.by)),
+                                          data=nt, paste0, collapse=" ")$name)
+    } else {
+        synonyms <- c(synonyms, nt$name)
+    }
+    nt <- rename(nt[, c("name", "score")], c("name"="#name"))
+    
+    et <- get.edge.attributes(network, include.ends = T)
+    if (!is.null(edges.group.by)) {
+        etx <- if (group.only.positive) { 
+            synonyms <- c(synonyms, with(et[et$score <= 0,], sprintf("%s -- %s", from, to)))
+            et[et$score > 0,] 
+        } else { 
+            et 
+        }
+        if (nrow(etx) > 0) {
+            synonyms <- c(synonyms, 
+                          aggregate(name ~ edges.group.by,
+                                    data=list(
+                                        name=sprintf("%s -- %s", etx$from, etx$to),
+                                        edges.group.by=etx[[edges.group.by]]),
+                                    paste0, collapse=" ")$name
+            )    
+        }
+        
+        
+    }        
+    et <- rename(et[, c("from", "to", "score")], c("from"="#from"))
+    
+    write.table(nt, file=nodes.file, quote = F, row.names = F, 
+              col.names = T, sep = "\t")
+    write.table(et, file=edges.file, quote = F, row.names = F, 
+              col.names = T, sep = "\t")
+    writeLines(sprintf("%s", synonyms), con=synonyms.file)
+    
+    if (length(synonyms) == 0) {
+        synonyms.file <- NULL
+    }
+    
+    list(nodes.file=nodes.file, 
+         edges.file=edges.file, 
+         synonyms.file=synonyms.file)
+}
