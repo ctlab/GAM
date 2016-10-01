@@ -73,7 +73,7 @@ preprocessMetDE <- function(es, met.ids, plot=TRUE) {
     
     es$met.pval <- es$met.de$pval
     names(es$met.pval) <- es$met.de$ID
-    es$fb.met <- fitBumModel(es$met.pval, plot=FALSE)
+    es$fb.met <- fitBumModel(es$met.pval[!duplicated(es$met.pval)], plot=FALSE)
     if (plot) {
         hist(es$fb.met, main="Histogram of metabolite p-values")
         plot(es$fb.met, main="QQ-Plot for metabolite BUM-model")
@@ -326,11 +326,20 @@ makeExperimentSet <- function(network,
     
         
     message("Building network")    
-    
-    met.de.ext <- data.frame(ID=unique(c(es$graph.raw$met.x, es$graph.raw$met.y)), stringsAsFactors=FALSE)
+
+    lazyData("kegg.db")    
+    allMets <- unique(c(es$graph.raw$met.x, 
+                        es$graph.raw$met.y,
+                        kegg.db$rpairs$met.x,
+                        kegg.db$rpairs$met.y))
+    met.de.ext <- data.frame(ID=allMets, stringsAsFactors=FALSE)
     met.de.ext <- merge(met.de.ext, es$met.de, all.x=TRUE) # all.x=TRUE — we keep mets if there is no MS data
     met.de.ext <- merge(met.de.ext, es$network$met2name, by.x="ID", by.y="met", all.x=TRUE)
     met.de.ext$logPval <- log(met.de.ext$pval)
+    if (!"ion" %in% colnames(met.de.ext)) {
+        met.de.ext$ion <- sprintf("%s_%.2f", met.de.ext$formula, -met.de.ext$logPval)
+    }
+    
     es$met.de.ext <- met.de.ext
     
     
@@ -428,8 +437,9 @@ scoreNetwork <- function(es,
     V(net)$score <- 0
     E(net)$score <- 0
     
-    mets.to.score <- V(net)[nodeType == "met"]$name
-    scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
+    ions.to.score <- unique(V(net)[nodeType == "met"]$ion)
+    met.origin <- V(net)[nodeType == "met"]$ion
+    scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[met.origin] }
     if (es$graph.type == "reactions_as_nodes") {
         genes.to.score <- unique(V(net)[nodeType == "rxn"]$origin)
         rxn.origin <- V(net)[nodeType == "rxn"]$origin
@@ -442,29 +452,43 @@ scoreNetwork <- function(es,
                     
     if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
         fb <- es$fb.met
-        pvals <- with(es$met.de.ext, { x <- pval; names(x) <- ID; na.omit(x) })
+        pvals <- with(es$met.de.ext, { 
+            x <- setNames(pval, ion); 
+            x <- na.omit(x)
+            x <- x[!duplicated(names(x))]
+        })
             
         if (is.na(met.fdr)) {
             met.fdr <- recommendedFDR(fb, pvals, num.positive=num.positive)
             message(sprintf("Using FDR of %.1e for metabolites", met.fdr))
         }
         
-        met.scores <- scoreValue(fb, pvals, met.fdr)
+        ion.scores <- scoreValue(fb, pvals, met.fdr)
                 
         if (is.null(absent.met.score)) {
-            absent.met.score <- min(met.scores)
+            absent.met.score <- min(ion.scores)
             message(sprintf("Set score of absent metabolites to %.1f", absent.met.score))            
         }
         
-        absent.met.scores <- sapply(mets.to.score, function(x) absent.met.score)
+        absent.met.scores <- sapply(ions.to.score, function(x) absent.met.score)
         
-        met.scores <- c(met.scores, absent.met.scores)
-        met.scores <- met.scores[!duplicated(names(met.scores))]
-        met.scores <- met.scores[names(met.scores) %in% mets.to.score]
+        ion.scores <- c(ion.scores, absent.met.scores)
+        ion.scores <- ion.scores[names(ion.scores) %in% ions.to.score]
+        
+        if (discount.repeats) {
+            positive <- names(which(ion.scores > 0))
+            counts <- table(met.origin)
+            counts <- setNames(as.vector(counts), names(counts))
+            positiveCounts <- counts[names(counts) %in% positive]
+            toMask <- names(positiveCounts[positiveCounts >= 2])
+            ion.scores[toMask] <- ion.scores[toMask] / counts[toMask]
+        }
+        
+        
         es$met.fdr <- met.fdr
     } else {
-        met.scores <- rep(met.score, length(mets.to.score))
-        names(met.scores) <- mets.to.score
+        ion.scores <- rep(met.score, length(ions.to.score))
+        names(ion.scores) <- ions.to.score
         es$met.score <- met.score
     }
     
@@ -489,7 +513,6 @@ scoreNetwork <- function(es,
         absent.gene.scores <- sapply(genes.to.score, function(x) absent.rxn.score)
         
         gene.scores <- c(gene.scores, absent.gene.scores)
-        gene.scores <- gene.scores[!duplicated(names(gene.scores))]
         gene.scores <- gene.scores[names(gene.scores) %in% genes.to.score]
         gene.scores <- gene.scores[genes.to.score]
 
@@ -519,7 +542,7 @@ scoreNetwork <- function(es,
     #     }
     # }
     # 
-    scoreMets(met.scores)
+    scoreMets(ion.scores)
     scoreRxns(gene.scores)
     
     es$subnet.scored <- net
