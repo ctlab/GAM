@@ -126,13 +126,13 @@ processReactionDE <- function(es, plot) {
         
     }
     
-    es$rxn.pval <- es$rxn.de$pval
-    names(es$rxn.pval) <- es$rxn.de$ID
+    es$gene.pval <- es$rxn.de$pval[!duplicated(es$rxn.de$origin)]
+    names(es$gene.pval) <- unique(es$rxn.de$origin)
     
-    es$fb.rxn <- fitBumModel(es$rxn.pval, plot=FALSE)
+    es$fb.gene <- fitBumModel(es$gene.pval, plot=FALSE)
     if (plot) {
-        hist(es$fb.rxn, main="Histogram of gene p-values")
-        plot(es$fb.rxn, main="QQ-Plot for gene BUM-model")
+        hist(es$fb.gene, main="Histogram of gene p-values")
+        plot(es$fb.gene, main="QQ-Plot for gene BUM-model")
     }            
     
     es
@@ -288,7 +288,7 @@ makeSubnetWithReactionsAsNodes <- function(es) {
 #'                            graph.type="reactions_as_edges")
 #' @export
 makeExperimentSet <- function(network, 
-                              met.de=NULL, gene.de=NULL, rxn.de=NULL,
+                              met.de=NULL, gene.de=NULL,
                               met.ids=NULL, gene.ids=NULL,
                               graph.type=c("atom", "reactions_as_edges", "reactions_as_nodes"),
                               collapse.reactions=TRUE,
@@ -310,7 +310,7 @@ makeExperimentSet <- function(network,
     es$network <- network
     es$met.de <- met.de
     es$gene.de <- gene.de
-    es$rxn.de <- rxn.de 
+  
     
     
     es$graph.raw <- es$network$graph.raw
@@ -319,14 +319,7 @@ makeExperimentSet <- function(network,
     es$collapse.reactions <- collapse.reactions
     es$drop.nonexpressed <- drop.nonexpressed
     
-    if (is.null(rxn.de)) {
-        es <- preprocessGeneDE(es, gene.ids=gene.ids)    
-    } else {
-        if (!is.null(gene.de)) {
-            warning("gene.de is not used because rxn.de is supplied")
-        }            
-    }
-    
+    es <- preprocessGeneDE(es, gene.ids=gene.ids)    
     es <- preprocessMetDE(es, met.ids=met.ids, plot=plot)
     es <- processReactionDE(es, plot)
     
@@ -422,6 +415,7 @@ scoreNetwork <- function(es,
                        met.score=0,
                        rxn.score=0,
                        num.positive=150,
+                       discount.repeats=FALSE,
                        rxn.bias=0) {
     
     net <- es$subnet
@@ -437,13 +431,13 @@ scoreNetwork <- function(es,
     mets.to.score <- V(net)[nodeType == "met"]$name
     scoreMets <- function(scores) { V(net)[nodeType == "met"]$score <<- scores[mets.to.score] }
     if (es$graph.type == "reactions_as_nodes") {
-        rxns.to.score <- V(net)[nodeType == "rxn"]$name
-        rxns.to.score.origin <- V(net)[nodeType == "rxn"]$origin
-        scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxns.to.score] }
+        genes.to.score <- unique(V(net)[nodeType == "rxn"]$origin)
+        rxn.origin <- V(net)[nodeType == "rxn"]$origin
+        scoreRxns <- function(scores) { V(net)[nodeType == "rxn"]$score <<- scores[rxn.origin] }
     } else {
-        rxns.to.score <- E(net)$rxn
-        rxns.to.score.origin <- E(net)$origin
-        scoreRxns <- function(scores) { E(net)$score <<- scores[rxns.to.score] }
+        genes.to.score <- unique(E(net)$origin)
+        rxn.origin <- E(net)$origin
+        scoreRxns <- function(scores) { E(net)$score <<- scores[rxn.origin] }
     }
                     
     if (!is.null(es$fb.met) && !is.null(met.fdr)) {            
@@ -474,46 +468,48 @@ scoreNetwork <- function(es,
         es$met.score <- met.score
     }
     
-    if (!is.null(es$fb.rxn) && !is.null(rxn.fdr)) {
-        fb <- es$fb.rxn 
-        pvals <- with(es$rxn.de.ext, { x <- pval; names(x) <- ID; na.omit(x) })
+    if (!is.null(es$fb.gene) && !is.null(rxn.fdr)) {
+        fb <- es$fb.gene 
+        pvals <- es$gene.pval
                 
         if (is.na(rxn.fdr)) {
             rxn.fdr <- GAM:::recommendedFDR(fb, pvals, num.positive=num.positive)
             message(sprintf("Using FDR of %.1e for reactions", rxn.fdr))
         }
         
-        rxn.scores <- GAM:::scoreValue(fb, pvals, rxn.fdr)
+        gene.scores <- GAM:::scoreValue(fb, pvals, rxn.fdr)
         
         if (is.null(absent.rxn.score)) {
-            absent.rxn.score <- min(rxn.scores)
-            if (length(setdiff(rxns.to.score, names(rxn.scores))) > 0) {            
+            absent.rxn.score <- min(gene.scores)
+            if (length(setdiff(genes.to.score, names(gene.scores))) > 0) {            
                 message(sprintf("Set score of absent reactions to %.1f", absent.rxn.score))            
             }            
         }
         
-        absent.rxn.scores <- sapply(rxns.to.score, function(x) absent.rxn.score)
+        absent.gene.scores <- sapply(genes.to.score, function(x) absent.rxn.score)
         
-        rxn.scores <- c(rxn.scores, absent.rxn.scores)
-        rxn.scores <- rxn.scores[!duplicated(names(rxn.scores))]
-        rxn.scores <- rxn.scores[names(rxn.scores) %in% rxns.to.score]
-        rxn.scores <- rxn.scores[rxns.to.score]
+        gene.scores <- c(gene.scores, absent.gene.scores)
+        gene.scores <- gene.scores[!duplicated(names(gene.scores))]
+        gene.scores <- gene.scores[names(gene.scores) %in% genes.to.score]
+        gene.scores <- gene.scores[genes.to.score]
 
-        # :ToDo: add option for signal/normalization      
-        # if (!es$reactions.as.edges) {
-        #     rxns.to.cut <- table(rxns.to.score.origin[rxn.scores > 0])            
-        #     rxns.to.cut <- rxns.to.cut[rxns.to.cut >= 4]
-        #     rxn.scores[rxns.to.score.origin %in% names(rxns.to.cut)] <- 0
-        # }
+        if (discount.repeats) {
+            positive <- names(which(gene.scores > 0))
+            counts <- table(rxn.origin)
+            counts <- setNames(as.vector(counts), names(counts))
+            positiveCounts <- counts[names(counts) %in% positive]
+            toMask <- names(positiveCounts[positiveCounts >= 2])
+            gene.scores[toMask] <- gene.scores[toMask] / counts[toMask]
+        }
         
         es$rxn.fdr <- rxn.fdr
     } else {
-        rxn.scores <- rep(rxn.score, length(rxns.to.score))
-        names(rxn.scores) <- rxns.to.score
+        gene.scores <- rep(rxn.score, length(genes.to.score))
+        names(gene.scores) <- genes.to.score
         es$rxn.score <- rxn.score
     }
    
-    # :ToDo: check what 
+    # :ToDo: check if needed 
     # if (!is.null(rxn.bias)) {
     #     met.pos.sum <- sum(met.scores[met.scores > 0])
     #     rxn.pos.sum <- sum(rxn.scores[rxn.scores > 0])
@@ -524,7 +520,7 @@ scoreNetwork <- function(es,
     # }
     # 
     scoreMets(met.scores)
-    scoreRxns(rxn.scores)
+    scoreRxns(gene.scores)
     
     es$subnet.scored <- net
     return(es)
