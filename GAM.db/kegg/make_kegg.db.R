@@ -19,5 +19,8 @@ kegg.db$mets2mask <- read.table("mets2mask.lst", colClasses="character")[,1]
 kegg.db$rxns2mask <- read.table("rxns2mask.lst", colClasses="character")[,1]
 kegg.db$mets2collapse <- read.table("mets2collapse.tsv", header=T, colClasses="character")
 
+kegg.db$rpairs <- read.table("rpairs.tsv", header=T, colClasses="character")
+kegg.db$rpaligns <- read.table("rpaligns.tsv", header=T, colClasses="character")
+
 save(kegg.db, file="kegg.db.rda", compress="xz")
 
