@@ -1,3 +1,5 @@
+**The package is deprecated in favor of https://github.com/ctlab/gatom**
+
 # GAM: integrated analysis of transcriptional and metabolic profiling
 
 GAM consists of three packages: 
